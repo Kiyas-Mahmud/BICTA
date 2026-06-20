@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="16" fill="#0a0a0a"/>
+  <text x="50%" y="50%" dy="2" text-anchor="middle" dominant-baseline="middle"
+        font-family="'Schibsted Grotesk', 'Segoe UI', system-ui, sans-serif"
+        font-size="34" font-weight="800" fill="#ffffff" letter-spacing="-1">B</text>
+  <circle cx="47" cy="42" r="3.4" fill="#ffffff"/>
+</svg>
