@@ -1,0 +1,983 @@
+[
+  {
+    "id": "1",
+    "title": "BICTA Hackathon 2026",
+    "status": "ongoing",
+    "startDate": "2026-07-30",
+    "endDate": "2026-07-10",
+    "location": "Dhaka, Bangladesh",
+    "prize": "৳500,000",
+    "tags": [
+      "AI/ML",
+      "Web3",
+      "HealthTech",
+      "Open Innovation"
+    ],
+    "organizer": "Bangladesh ICT Association",
+    "teamSizeMin": 2,
+    "teamSizeMax": 5,
+    "description": "The flagship annual hackathon of BICTA brings together the brightest minds across Bangladesh to solve real-world problems using cutting-edge technology. Build AI-powered solutions, blockchain applications, or innovative health-tech prototypes in this 3-week intensive competition.",
+    "imageUrl": "https://placehold.co/800x400/2563eb/ffffff?text=BICTA+Hackathon+2026",
+    "registrationDeadline": "2026-06-28",
+    "website": "https://bicta.org/hackathon-2026",
+    "eligibility": "All College and university students. Students only. cross university students allowed.",
+    "judges": [
+      {
+        "name": "Dr. Ahmed Rahman",
+        "role": "AI Research Lead",
+        "avatar": "https://placehold.co/80x80/2563eb/ffffff?text=AR"
+      },
+      {
+        "name": "Sarah Khan",
+        "role": "CTO, TechBD",
+        "avatar": "https://placehold.co/80x80/7c3aed/ffffff?text=SK"
+      },
+      {
+        "name": "Prof. Nusrat Jahan",
+        "role": "CS Department Head",
+        "avatar": "https://placehold.co/80x80/059669/ffffff?text=NJ"
+      },
+      {
+        "name": "Karim Hassan",
+        "role": "VP Engineering, DataCo",
+        "avatar": "https://placehold.co/80x80/ea580c/ffffff?text=KH"
+      }
+    ],
+    "sponsors": [
+      {
+        "name": "TechBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=TechBD"
+      },
+      {
+        "name": "DataCamp BD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=DataCamp"
+      },
+      {
+        "name": "CloudServe",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=CloudServe"
+      },
+      {
+        "name": "InnovateBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=InnovateBD"
+      }
+    ],
+    "rules": [
+      "All participants must be currently enrolled in a recognized educational institution or be working professionals.",
+      "Teams must consist of a minimum of 2 and a maximum of 5 members.",
+      "All code must be written during the competition period. Pre-existing projects are not allowed.",
+      "Participants may use open-source libraries and APIs, but must disclose all third-party dependencies.",
+      "Submissions must include a working demo, source code, and a presentation pitch.",
+      "Judges' decisions are final. Plagiarism or dishonesty will result in immediate disqualification.",
+      "Participants retain intellectual property rights to their submissions."
+    ],
+    "faqs": [
+      {
+        "id": 1,
+        "question": "Who can participate?",
+        "answer": "Anyone who meets the eligibility criteria can participate. Students, professionals, and hobbyists are all welcome. International participants may join if the event supports online participation."
+      },
+      {
+        "id": 2,
+        "question": "Is there a registration fee?",
+        "answer": "No, participation is completely free. All tools, resources, and mentorship are provided at no cost."
+      },
+      {
+        "id": 3,
+        "question": "Can I participate solo?",
+        "answer": "This event requires teams of 2–5 members. If you don't have a team, join our Discord to find teammates."
+      },
+      {
+        "id": 4,
+        "question": "What should I bring?",
+        "answer": "Your laptop, charger, and creativity. If the event is in-person, we provide meals, workspace, and internet. For online events, ensure you have a stable internet connection."
+      },
+      {
+        "id": 5,
+        "question": "How are projects judged?",
+        "answer": "Projects are evaluated on innovation (25%), technical complexity (25%), design & UX (20%), impact & feasibility (20%), and presentation quality (10%)."
+      }
+    ]
+  },
+  {
+    "id": "2",
+    "title": "National Datathon Championship",
+    "status": "ongoing",
+    "startDate": "2026-06-15",
+    "endDate": "2026-07-05",
+    "location": "Online",
+    "prize": "৳300,000",
+    "tags": [
+      "Data Science",
+      "Machine Learning",
+      "Analytics",
+      "Big Data"
+    ],
+    "organizer": "BICTA & DataCamp BD",
+    "teamSizeMin": 1,
+    "teamSizeMax": 3,
+    "description": "Dive deep into real-world datasets and uncover insights that matter. The National Datathon challenges participants to build predictive models, create visualizations, and present data-driven solutions to pressing national issues.",
+    "imageUrl": "https://placehold.co/800x400/7c3aed/ffffff?text=National+Datathon",
+    "registrationDeadline": "2026-06-25",
+    "website": "https://bicta.org/datathon",
+    "judges": [
+      {
+        "name": "Dr. Ahmed Rahman",
+        "role": "AI Research Lead",
+        "avatar": "https://placehold.co/80x80/2563eb/ffffff?text=AR"
+      },
+      {
+        "name": "Sarah Khan",
+        "role": "CTO, TechBD",
+        "avatar": "https://placehold.co/80x80/7c3aed/ffffff?text=SK"
+      },
+      {
+        "name": "Prof. Nusrat Jahan",
+        "role": "CS Department Head",
+        "avatar": "https://placehold.co/80x80/059669/ffffff?text=NJ"
+      },
+      {
+        "name": "Karim Hassan",
+        "role": "VP Engineering, DataCo",
+        "avatar": "https://placehold.co/80x80/ea580c/ffffff?text=KH"
+      }
+    ],
+    "sponsors": [
+      {
+        "name": "TechBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=TechBD"
+      },
+      {
+        "name": "DataCamp BD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=DataCamp"
+      },
+      {
+        "name": "CloudServe",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=CloudServe"
+      },
+      {
+        "name": "InnovateBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=InnovateBD"
+      }
+    ],
+    "rules": [
+      "All participants must be currently enrolled in a recognized educational institution or be working professionals.",
+      "Teams must consist of a minimum of 1 and a maximum of 3 members.",
+      "All code must be written during the competition period. Pre-existing projects are not allowed.",
+      "Participants may use open-source libraries and APIs, but must disclose all third-party dependencies.",
+      "Submissions must include a working demo, source code, and a presentation pitch.",
+      "Judges' decisions are final. Plagiarism or dishonesty will result in immediate disqualification.",
+      "Participants retain intellectual property rights to their submissions."
+    ],
+    "faqs": [
+      {
+        "id": 1,
+        "question": "Who can participate?",
+        "answer": "Anyone who meets the eligibility criteria can participate. Students, professionals, and hobbyists are all welcome. International participants may join if the event supports online participation."
+      },
+      {
+        "id": 2,
+        "question": "Is there a registration fee?",
+        "answer": "No, participation is completely free. All tools, resources, and mentorship are provided at no cost."
+      },
+      {
+        "id": 3,
+        "question": "Can I participate solo?",
+        "answer": "Yes! Solo participation is allowed for this event."
+      },
+      {
+        "id": 4,
+        "question": "What should I bring?",
+        "answer": "Your laptop, charger, and creativity. If the event is in-person, we provide meals, workspace, and internet. For online events, ensure you have a stable internet connection."
+      },
+      {
+        "id": 5,
+        "question": "How are projects judged?",
+        "answer": "Projects are evaluated on innovation (25%), technical complexity (25%), design & UX (20%), impact & feasibility (20%), and presentation quality (10%)."
+      }
+    ]
+  },
+  {
+    "id": "3",
+    "title": "CyberSec CTF Challenge",
+    "status": "upcoming",
+    "startDate": "2026-08-01",
+    "endDate": "2026-08-03",
+    "location": "BUET Campus, Dhaka",
+    "prize": "৳200,000",
+    "tags": [
+      "Cybersecurity",
+      "CTF",
+      "Ethical Hacking",
+      "Network Security"
+    ],
+    "organizer": "BICTA & CyberSec BD",
+    "teamSizeMin": 2,
+    "teamSizeMax": 4,
+    "description": "Test your cybersecurity skills in this intense 48-hour Capture The Flag competition. Solve challenges across cryptography, reverse engineering, web exploitation, and forensics to claim the title of Bangladesh's top security team.",
+    "imageUrl": "https://placehold.co/800x400/059669/ffffff?text=CyberSec+CTF",
+    "registrationDeadline": "2026-07-25",
+    "website": "https://bicta.org/ctf-2026",
+    "judges": [
+      {
+        "name": "Dr. Ahmed Rahman",
+        "role": "AI Research Lead",
+        "avatar": "https://placehold.co/80x80/2563eb/ffffff?text=AR"
+      },
+      {
+        "name": "Sarah Khan",
+        "role": "CTO, TechBD",
+        "avatar": "https://placehold.co/80x80/7c3aed/ffffff?text=SK"
+      },
+      {
+        "name": "Prof. Nusrat Jahan",
+        "role": "CS Department Head",
+        "avatar": "https://placehold.co/80x80/059669/ffffff?text=NJ"
+      },
+      {
+        "name": "Karim Hassan",
+        "role": "VP Engineering, DataCo",
+        "avatar": "https://placehold.co/80x80/ea580c/ffffff?text=KH"
+      }
+    ],
+    "sponsors": [
+      {
+        "name": "TechBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=TechBD"
+      },
+      {
+        "name": "DataCamp BD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=DataCamp"
+      },
+      {
+        "name": "CloudServe",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=CloudServe"
+      },
+      {
+        "name": "InnovateBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=InnovateBD"
+      }
+    ],
+    "rules": [
+      "All participants must be currently enrolled in a recognized educational institution or be working professionals.",
+      "Teams must consist of a minimum of 2 and a maximum of 4 members.",
+      "All code must be written during the competition period. Pre-existing projects are not allowed.",
+      "Participants may use open-source libraries and APIs, but must disclose all third-party dependencies.",
+      "Submissions must include a working demo, source code, and a presentation pitch.",
+      "Judges' decisions are final. Plagiarism or dishonesty will result in immediate disqualification.",
+      "Participants retain intellectual property rights to their submissions."
+    ],
+    "faqs": [
+      {
+        "id": 1,
+        "question": "Who can participate?",
+        "answer": "Anyone who meets the eligibility criteria can participate. Students, professionals, and hobbyists are all welcome. International participants may join if the event supports online participation."
+      },
+      {
+        "id": 2,
+        "question": "Is there a registration fee?",
+        "answer": "No, participation is completely free. All tools, resources, and mentorship are provided at no cost."
+      },
+      {
+        "id": 3,
+        "question": "Can I participate solo?",
+        "answer": "This event requires teams of 2–4 members. If you don't have a team, join our Discord to find teammates."
+      },
+      {
+        "id": 4,
+        "question": "What should I bring?",
+        "answer": "Your laptop, charger, and creativity. If the event is in-person, we provide meals, workspace, and internet. For online events, ensure you have a stable internet connection."
+      },
+      {
+        "id": 5,
+        "question": "How are projects judged?",
+        "answer": "Projects are evaluated on innovation (25%), technical complexity (25%), design & UX (20%), impact & feasibility (20%), and presentation quality (10%)."
+      }
+    ]
+  },
+  {
+    "id": "4",
+    "title": "Green Tech Innovation Sprint",
+    "status": "upcoming",
+    "startDate": "2026-09-10",
+    "endDate": "2026-09-14",
+    "location": "Chittagong, Bangladesh",
+    "prize": "৳400,000",
+    "tags": [
+      "CleanTech",
+      "Sustainability",
+      "IoT",
+      "Green Energy"
+    ],
+    "organizer": "BICTA & GreenTech Alliance",
+    "teamSizeMin": 3,
+    "teamSizeMax": 5,
+    "description": "Build technology solutions that address climate change and environmental sustainability. From smart agriculture to renewable energy monitoring, this sprint focuses on innovations that create a greener future for Bangladesh.",
+    "imageUrl": "https://placehold.co/800x400/ea580c/ffffff?text=Green+Tech+Sprint",
+    "registrationDeadline": "2026-09-01",
+    "website": "https://bicta.org/greentech",
+    "judges": [
+      {
+        "name": "Dr. Ahmed Rahman",
+        "role": "AI Research Lead",
+        "avatar": "https://placehold.co/80x80/2563eb/ffffff?text=AR"
+      },
+      {
+        "name": "Sarah Khan",
+        "role": "CTO, TechBD",
+        "avatar": "https://placehold.co/80x80/7c3aed/ffffff?text=SK"
+      },
+      {
+        "name": "Prof. Nusrat Jahan",
+        "role": "CS Department Head",
+        "avatar": "https://placehold.co/80x80/059669/ffffff?text=NJ"
+      },
+      {
+        "name": "Karim Hassan",
+        "role": "VP Engineering, DataCo",
+        "avatar": "https://placehold.co/80x80/ea580c/ffffff?text=KH"
+      }
+    ],
+    "sponsors": [
+      {
+        "name": "TechBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=TechBD"
+      },
+      {
+        "name": "DataCamp BD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=DataCamp"
+      },
+      {
+        "name": "CloudServe",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=CloudServe"
+      },
+      {
+        "name": "InnovateBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=InnovateBD"
+      }
+    ],
+    "rules": [
+      "All participants must be currently enrolled in a recognized educational institution or be working professionals.",
+      "Teams must consist of a minimum of 3 and a maximum of 5 members.",
+      "All code must be written during the competition period. Pre-existing projects are not allowed.",
+      "Participants may use open-source libraries and APIs, but must disclose all third-party dependencies.",
+      "Submissions must include a working demo, source code, and a presentation pitch.",
+      "Judges' decisions are final. Plagiarism or dishonesty will result in immediate disqualification.",
+      "Participants retain intellectual property rights to their submissions."
+    ],
+    "faqs": [
+      {
+        "id": 1,
+        "question": "Who can participate?",
+        "answer": "Anyone who meets the eligibility criteria can participate. Students, professionals, and hobbyists are all welcome. International participants may join if the event supports online participation."
+      },
+      {
+        "id": 2,
+        "question": "Is there a registration fee?",
+        "answer": "No, participation is completely free. All tools, resources, and mentorship are provided at no cost."
+      },
+      {
+        "id": 3,
+        "question": "Can I participate solo?",
+        "answer": "This event requires teams of 3–5 members. If you don't have a team, join our Discord to find teammates."
+      },
+      {
+        "id": 4,
+        "question": "What should I bring?",
+        "answer": "Your laptop, charger, and creativity. If the event is in-person, we provide meals, workspace, and internet. For online events, ensure you have a stable internet connection."
+      },
+      {
+        "id": 5,
+        "question": "How are projects judged?",
+        "answer": "Projects are evaluated on innovation (25%), technical complexity (25%), design & UX (20%), impact & feasibility (20%), and presentation quality (10%)."
+      }
+    ]
+  },
+  {
+    "id": "5",
+    "title": "EduTech Builders Challenge",
+    "status": "upcoming",
+    "startDate": "2026-10-05",
+    "endDate": "2026-10-12",
+    "location": "Online",
+    "prize": "৳250,000",
+    "tags": [
+      "EdTech",
+      "E-Learning",
+      "Accessibility",
+      "Mobile Apps"
+    ],
+    "organizer": "BICTA & Ministry of Education",
+    "teamSizeMin": 2,
+    "teamSizeMax": 4,
+    "description": "Reimagine education for the digital age. Create platforms, tools, or applications that make quality education accessible to every student in Bangladesh, regardless of location or socioeconomic background.",
+    "imageUrl": "https://placehold.co/800x400/db2777/ffffff?text=EduTech+Challenge",
+    "registrationDeadline": "2026-09-28",
+    "website": "https://bicta.org/edutech",
+    "judges": [
+      {
+        "name": "Dr. Ahmed Rahman",
+        "role": "AI Research Lead",
+        "avatar": "https://placehold.co/80x80/2563eb/ffffff?text=AR"
+      },
+      {
+        "name": "Sarah Khan",
+        "role": "CTO, TechBD",
+        "avatar": "https://placehold.co/80x80/7c3aed/ffffff?text=SK"
+      },
+      {
+        "name": "Prof. Nusrat Jahan",
+        "role": "CS Department Head",
+        "avatar": "https://placehold.co/80x80/059669/ffffff?text=NJ"
+      },
+      {
+        "name": "Karim Hassan",
+        "role": "VP Engineering, DataCo",
+        "avatar": "https://placehold.co/80x80/ea580c/ffffff?text=KH"
+      }
+    ],
+    "sponsors": [
+      {
+        "name": "TechBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=TechBD"
+      },
+      {
+        "name": "DataCamp BD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=DataCamp"
+      },
+      {
+        "name": "CloudServe",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=CloudServe"
+      },
+      {
+        "name": "InnovateBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=InnovateBD"
+      }
+    ],
+    "rules": [
+      "All participants must be currently enrolled in a recognized educational institution or be working professionals.",
+      "Teams must consist of a minimum of 2 and a maximum of 4 members.",
+      "All code must be written during the competition period. Pre-existing projects are not allowed.",
+      "Participants may use open-source libraries and APIs, but must disclose all third-party dependencies.",
+      "Submissions must include a working demo, source code, and a presentation pitch.",
+      "Judges' decisions are final. Plagiarism or dishonesty will result in immediate disqualification.",
+      "Participants retain intellectual property rights to their submissions."
+    ],
+    "faqs": [
+      {
+        "id": 1,
+        "question": "Who can participate?",
+        "answer": "Anyone who meets the eligibility criteria can participate. Students, professionals, and hobbyists are all welcome. International participants may join if the event supports online participation."
+      },
+      {
+        "id": 2,
+        "question": "Is there a registration fee?",
+        "answer": "No, participation is completely free. All tools, resources, and mentorship are provided at no cost."
+      },
+      {
+        "id": 3,
+        "question": "Can I participate solo?",
+        "answer": "This event requires teams of 2–4 members. If you don't have a team, join our Discord to find teammates."
+      },
+      {
+        "id": 4,
+        "question": "What should I bring?",
+        "answer": "Your laptop, charger, and creativity. If the event is in-person, we provide meals, workspace, and internet. For online events, ensure you have a stable internet connection."
+      },
+      {
+        "id": 5,
+        "question": "How are projects judged?",
+        "answer": "Projects are evaluated on innovation (25%), technical complexity (25%), design & UX (20%), impact & feasibility (20%), and presentation quality (10%)."
+      }
+    ]
+  },
+  {
+    "id": "6",
+    "title": "FinTech Innovation Hackathon",
+    "status": "past",
+    "startDate": "2026-03-15",
+    "endDate": "2026-03-22",
+    "location": "Dhaka, Bangladesh",
+    "prize": "৳350,000",
+    "tags": [
+      "FinTech",
+      "Blockchain",
+      "Digital Payments",
+      "Banking"
+    ],
+    "organizer": "BICTA & Bangladesh Bank",
+    "teamSizeMin": 2,
+    "teamSizeMax": 5,
+    "description": "The FinTech Innovation Hackathon brought together developers and finance experts to build the next generation of financial services. Participants created solutions for digital payments, micro-lending, and financial inclusion.",
+    "imageUrl": "https://placehold.co/800x400/1e40af/ffffff?text=FinTech+Hackathon",
+    "registrationDeadline": "2026-03-10",
+    "website": "https://bicta.org/fintech-2026",
+    "judges": [
+      {
+        "name": "Dr. Ahmed Rahman",
+        "role": "AI Research Lead",
+        "avatar": "https://placehold.co/80x80/2563eb/ffffff?text=AR"
+      },
+      {
+        "name": "Sarah Khan",
+        "role": "CTO, TechBD",
+        "avatar": "https://placehold.co/80x80/7c3aed/ffffff?text=SK"
+      },
+      {
+        "name": "Prof. Nusrat Jahan",
+        "role": "CS Department Head",
+        "avatar": "https://placehold.co/80x80/059669/ffffff?text=NJ"
+      },
+      {
+        "name": "Karim Hassan",
+        "role": "VP Engineering, DataCo",
+        "avatar": "https://placehold.co/80x80/ea580c/ffffff?text=KH"
+      }
+    ],
+    "sponsors": [
+      {
+        "name": "TechBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=TechBD"
+      },
+      {
+        "name": "DataCamp BD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=DataCamp"
+      },
+      {
+        "name": "CloudServe",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=CloudServe"
+      },
+      {
+        "name": "InnovateBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=InnovateBD"
+      }
+    ],
+    "rules": [
+      "All participants must be currently enrolled in a recognized educational institution or be working professionals.",
+      "Teams must consist of a minimum of 2 and a maximum of 5 members.",
+      "All code must be written during the competition period. Pre-existing projects are not allowed.",
+      "Participants may use open-source libraries and APIs, but must disclose all third-party dependencies.",
+      "Submissions must include a working demo, source code, and a presentation pitch.",
+      "Judges' decisions are final. Plagiarism or dishonesty will result in immediate disqualification.",
+      "Participants retain intellectual property rights to their submissions."
+    ],
+    "faqs": [
+      {
+        "id": 1,
+        "question": "Who can participate?",
+        "answer": "Anyone who meets the eligibility criteria can participate. Students, professionals, and hobbyists are all welcome. International participants may join if the event supports online participation."
+      },
+      {
+        "id": 2,
+        "question": "Is there a registration fee?",
+        "answer": "No, participation is completely free. All tools, resources, and mentorship are provided at no cost."
+      },
+      {
+        "id": 3,
+        "question": "Can I participate solo?",
+        "answer": "This event requires teams of 2–5 members. If you don't have a team, join our Discord to find teammates."
+      },
+      {
+        "id": 4,
+        "question": "What should I bring?",
+        "answer": "Your laptop, charger, and creativity. If the event is in-person, we provide meals, workspace, and internet. For online events, ensure you have a stable internet connection."
+      },
+      {
+        "id": 5,
+        "question": "How are projects judged?",
+        "answer": "Projects are evaluated on innovation (25%), technical complexity (25%), design & UX (20%), impact & feasibility (20%), and presentation quality (10%)."
+      }
+    ]
+  },
+  {
+    "id": "7",
+    "title": "AI for Good Hackathon",
+    "status": "past",
+    "startDate": "2026-01-20",
+    "endDate": "2026-01-27",
+    "location": "Rajshahi, Bangladesh",
+    "prize": "৳280,000",
+    "tags": [
+      "Artificial Intelligence",
+      "Social Impact",
+      "NLP",
+      "Computer Vision"
+    ],
+    "organizer": "BICTA & AI Research Lab BD",
+    "teamSizeMin": 2,
+    "teamSizeMax": 4,
+    "description": "Harness the power of artificial intelligence to solve critical social challenges. From healthcare diagnostics to disaster response, participants built AI solutions that make a real difference in people's lives.",
+    "imageUrl": "https://placehold.co/800x400/0891b2/ffffff?text=AI+for+Good",
+    "registrationDeadline": "2026-01-15",
+    "website": "https://bicta.org/ai-for-good",
+    "judges": [
+      {
+        "name": "Dr. Ahmed Rahman",
+        "role": "AI Research Lead",
+        "avatar": "https://placehold.co/80x80/2563eb/ffffff?text=AR"
+      },
+      {
+        "name": "Sarah Khan",
+        "role": "CTO, TechBD",
+        "avatar": "https://placehold.co/80x80/7c3aed/ffffff?text=SK"
+      },
+      {
+        "name": "Prof. Nusrat Jahan",
+        "role": "CS Department Head",
+        "avatar": "https://placehold.co/80x80/059669/ffffff?text=NJ"
+      },
+      {
+        "name": "Karim Hassan",
+        "role": "VP Engineering, DataCo",
+        "avatar": "https://placehold.co/80x80/ea580c/ffffff?text=KH"
+      }
+    ],
+    "sponsors": [
+      {
+        "name": "TechBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=TechBD"
+      },
+      {
+        "name": "DataCamp BD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=DataCamp"
+      },
+      {
+        "name": "CloudServe",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=CloudServe"
+      },
+      {
+        "name": "InnovateBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=InnovateBD"
+      }
+    ],
+    "rules": [
+      "All participants must be currently enrolled in a recognized educational institution or be working professionals.",
+      "Teams must consist of a minimum of 2 and a maximum of 4 members.",
+      "All code must be written during the competition period. Pre-existing projects are not allowed.",
+      "Participants may use open-source libraries and APIs, but must disclose all third-party dependencies.",
+      "Submissions must include a working demo, source code, and a presentation pitch.",
+      "Judges' decisions are final. Plagiarism or dishonesty will result in immediate disqualification.",
+      "Participants retain intellectual property rights to their submissions."
+    ],
+    "faqs": [
+      {
+        "id": 1,
+        "question": "Who can participate?",
+        "answer": "Anyone who meets the eligibility criteria can participate. Students, professionals, and hobbyists are all welcome. International participants may join if the event supports online participation."
+      },
+      {
+        "id": 2,
+        "question": "Is there a registration fee?",
+        "answer": "No, participation is completely free. All tools, resources, and mentorship are provided at no cost."
+      },
+      {
+        "id": 3,
+        "question": "Can I participate solo?",
+        "answer": "This event requires teams of 2–4 members. If you don't have a team, join our Discord to find teammates."
+      },
+      {
+        "id": 4,
+        "question": "What should I bring?",
+        "answer": "Your laptop, charger, and creativity. If the event is in-person, we provide meals, workspace, and internet. For online events, ensure you have a stable internet connection."
+      },
+      {
+        "id": 5,
+        "question": "How are projects judged?",
+        "answer": "Projects are evaluated on innovation (25%), technical complexity (25%), design & UX (20%), impact & feasibility (20%), and presentation quality (10%)."
+      }
+    ]
+  },
+  {
+    "id": "8",
+    "title": "Mobile App Development Contest",
+    "status": "past",
+    "startDate": "2025-11-10",
+    "endDate": "2025-11-17",
+    "location": "Sylhet, Bangladesh",
+    "prize": "৳150,000",
+    "tags": [
+      "Mobile Development",
+      "Flutter",
+      "React Native",
+      "UI/UX"
+    ],
+    "organizer": "BICTA & Google Developer Groups",
+    "teamSizeMin": 1,
+    "teamSizeMax": 3,
+    "description": "Design and develop mobile applications that solve everyday problems for Bangladeshi citizens. From transportation to local commerce, the best apps were selected for incubation support and play store featuring.",
+    "imageUrl": "https://placehold.co/800x400/6d28d9/ffffff?text=Mobile+App+Contest",
+    "registrationDeadline": "2025-11-05",
+    "website": "https://bicta.org/mobile-2025",
+    "judges": [
+      {
+        "name": "Dr. Ahmed Rahman",
+        "role": "AI Research Lead",
+        "avatar": "https://placehold.co/80x80/2563eb/ffffff?text=AR"
+      },
+      {
+        "name": "Sarah Khan",
+        "role": "CTO, TechBD",
+        "avatar": "https://placehold.co/80x80/7c3aed/ffffff?text=SK"
+      },
+      {
+        "name": "Prof. Nusrat Jahan",
+        "role": "CS Department Head",
+        "avatar": "https://placehold.co/80x80/059669/ffffff?text=NJ"
+      },
+      {
+        "name": "Karim Hassan",
+        "role": "VP Engineering, DataCo",
+        "avatar": "https://placehold.co/80x80/ea580c/ffffff?text=KH"
+      }
+    ],
+    "sponsors": [
+      {
+        "name": "TechBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=TechBD"
+      },
+      {
+        "name": "DataCamp BD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=DataCamp"
+      },
+      {
+        "name": "CloudServe",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=CloudServe"
+      },
+      {
+        "name": "InnovateBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=InnovateBD"
+      }
+    ],
+    "rules": [
+      "All participants must be currently enrolled in a recognized educational institution or be working professionals.",
+      "Teams must consist of a minimum of 1 and a maximum of 3 members.",
+      "All code must be written during the competition period. Pre-existing projects are not allowed.",
+      "Participants may use open-source libraries and APIs, but must disclose all third-party dependencies.",
+      "Submissions must include a working demo, source code, and a presentation pitch.",
+      "Judges' decisions are final. Plagiarism or dishonesty will result in immediate disqualification.",
+      "Participants retain intellectual property rights to their submissions."
+    ],
+    "faqs": [
+      {
+        "id": 1,
+        "question": "Who can participate?",
+        "answer": "Anyone who meets the eligibility criteria can participate. Students, professionals, and hobbyists are all welcome. International participants may join if the event supports online participation."
+      },
+      {
+        "id": 2,
+        "question": "Is there a registration fee?",
+        "answer": "No, participation is completely free. All tools, resources, and mentorship are provided at no cost."
+      },
+      {
+        "id": 3,
+        "question": "Can I participate solo?",
+        "answer": "Yes! Solo participation is allowed for this event."
+      },
+      {
+        "id": 4,
+        "question": "What should I bring?",
+        "answer": "Your laptop, charger, and creativity. If the event is in-person, we provide meals, workspace, and internet. For online events, ensure you have a stable internet connection."
+      },
+      {
+        "id": 5,
+        "question": "How are projects judged?",
+        "answer": "Projects are evaluated on innovation (25%), technical complexity (25%), design & UX (20%), impact & feasibility (20%), and presentation quality (10%)."
+      }
+    ]
+  },
+  {
+    "id": "9",
+    "title": "Smart City Hackathon",
+    "status": "upcoming",
+    "startDate": "2026-11-01",
+    "endDate": "2026-11-08",
+    "location": "Dhaka, Bangladesh",
+    "prize": "৳450,000",
+    "tags": [
+      "Smart City",
+      "IoT",
+      "Urban Planning",
+      "Transportation"
+    ],
+    "organizer": "BICTA & Dhaka City Corporation",
+    "teamSizeMin": 3,
+    "teamSizeMax": 5,
+    "description": "Envision and prototype solutions for the cities of tomorrow. Tackle challenges in urban mobility, waste management, energy efficiency, and citizen engagement using IoT, AI, and data-driven approaches.",
+    "imageUrl": "https://placehold.co/800x400/c2410c/ffffff?text=Smart+City+Hack",
+    "registrationDeadline": "2026-10-25",
+    "website": "https://bicta.org/smartcity",
+    "judges": [
+      {
+        "name": "Dr. Ahmed Rahman",
+        "role": "AI Research Lead",
+        "avatar": "https://placehold.co/80x80/2563eb/ffffff?text=AR"
+      },
+      {
+        "name": "Sarah Khan",
+        "role": "CTO, TechBD",
+        "avatar": "https://placehold.co/80x80/7c3aed/ffffff?text=SK"
+      },
+      {
+        "name": "Prof. Nusrat Jahan",
+        "role": "CS Department Head",
+        "avatar": "https://placehold.co/80x80/059669/ffffff?text=NJ"
+      },
+      {
+        "name": "Karim Hassan",
+        "role": "VP Engineering, DataCo",
+        "avatar": "https://placehold.co/80x80/ea580c/ffffff?text=KH"
+      }
+    ],
+    "sponsors": [
+      {
+        "name": "TechBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=TechBD"
+      },
+      {
+        "name": "DataCamp BD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=DataCamp"
+      },
+      {
+        "name": "CloudServe",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=CloudServe"
+      },
+      {
+        "name": "InnovateBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=InnovateBD"
+      }
+    ],
+    "rules": [
+      "All participants must be currently enrolled in a recognized educational institution or be working professionals.",
+      "Teams must consist of a minimum of 3 and a maximum of 5 members.",
+      "All code must be written during the competition period. Pre-existing projects are not allowed.",
+      "Participants may use open-source libraries and APIs, but must disclose all third-party dependencies.",
+      "Submissions must include a working demo, source code, and a presentation pitch.",
+      "Judges' decisions are final. Plagiarism or dishonesty will result in immediate disqualification.",
+      "Participants retain intellectual property rights to their submissions."
+    ],
+    "faqs": [
+      {
+        "id": 1,
+        "question": "Who can participate?",
+        "answer": "Anyone who meets the eligibility criteria can participate. Students, professionals, and hobbyists are all welcome. International participants may join if the event supports online participation."
+      },
+      {
+        "id": 2,
+        "question": "Is there a registration fee?",
+        "answer": "No, participation is completely free. All tools, resources, and mentorship are provided at no cost."
+      },
+      {
+        "id": 3,
+        "question": "Can I participate solo?",
+        "answer": "This event requires teams of 3–5 members. If you don't have a team, join our Discord to find teammates."
+      },
+      {
+        "id": 4,
+        "question": "What should I bring?",
+        "answer": "Your laptop, charger, and creativity. If the event is in-person, we provide meals, workspace, and internet. For online events, ensure you have a stable internet connection."
+      },
+      {
+        "id": 5,
+        "question": "How are projects judged?",
+        "answer": "Projects are evaluated on innovation (25%), technical complexity (25%), design & UX (20%), impact & feasibility (20%), and presentation quality (10%)."
+      }
+    ]
+  },
+  {
+    "id": "10",
+    "title": "Women in Tech Hackathon",
+    "status": "upcoming",
+    "startDate": "2026-08-20",
+    "endDate": "2026-08-25",
+    "location": "Online",
+    "prize": "৳200,000",
+    "tags": [
+      "Women in Tech",
+      "Diversity",
+      "Social Impact",
+      "Mentorship"
+    ],
+    "organizer": "BICTA & Women in Digital",
+    "teamSizeMin": 2,
+    "teamSizeMax": 4,
+    "description": "An inclusive hackathon celebrating women in technology. Open to all genders, this event focuses on building solutions that promote gender equality, women's safety, and economic empowerment through technology.",
+    "imageUrl": "https://placehold.co/800x400/be185d/ffffff?text=Women+in+Tech",
+    "registrationDeadline": "2026-08-15",
+    "website": "https://bicta.org/women-in-tech",
+    "judges": [
+      {
+        "name": "Dr. Ahmed Rahman",
+        "role": "AI Research Lead",
+        "avatar": "https://placehold.co/80x80/2563eb/ffffff?text=AR"
+      },
+      {
+        "name": "Sarah Khan",
+        "role": "CTO, TechBD",
+        "avatar": "https://placehold.co/80x80/7c3aed/ffffff?text=SK"
+      },
+      {
+        "name": "Prof. Nusrat Jahan",
+        "role": "CS Department Head",
+        "avatar": "https://placehold.co/80x80/059669/ffffff?text=NJ"
+      },
+      {
+        "name": "Karim Hassan",
+        "role": "VP Engineering, DataCo",
+        "avatar": "https://placehold.co/80x80/ea580c/ffffff?text=KH"
+      }
+    ],
+    "sponsors": [
+      {
+        "name": "TechBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=TechBD"
+      },
+      {
+        "name": "DataCamp BD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=DataCamp"
+      },
+      {
+        "name": "CloudServe",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=CloudServe"
+      },
+      {
+        "name": "InnovateBD",
+        "logo": "https://placehold.co/120x50/e2e8f0/475569?text=InnovateBD"
+      }
+    ],
+    "rules": [
+      "All participants must be currently enrolled in a recognized educational institution or be working professionals.",
+      "Teams must consist of a minimum of 2 and a maximum of 4 members.",
+      "All code must be written during the competition period. Pre-existing projects are not allowed.",
+      "Participants may use open-source libraries and APIs, but must disclose all third-party dependencies.",
+      "Submissions must include a working demo, source code, and a presentation pitch.",
+      "Judges' decisions are final. Plagiarism or dishonesty will result in immediate disqualification.",
+      "Participants retain intellectual property rights to their submissions."
+    ],
+    "faqs": [
+      {
+        "id": 1,
+        "question": "Who can participate?",
+        "answer": "Anyone who meets the eligibility criteria can participate. Students, professionals, and hobbyists are all welcome. International participants may join if the event supports online participation."
+      },
+      {
+        "id": 2,
+        "question": "Is there a registration fee?",
+        "answer": "No, participation is completely free. All tools, resources, and mentorship are provided at no cost."
+      },
+      {
+        "id": 3,
+        "question": "Can I participate solo?",
+        "answer": "This event requires teams of 2–4 members. If you don't have a team, join our Discord to find teammates."
+      },
+      {
+        "id": 4,
+        "question": "What should I bring?",
+        "answer": "Your laptop, charger, and creativity. If the event is in-person, we provide meals, workspace, and internet. For online events, ensure you have a stable internet connection."
+      },
+      {
+        "id": 5,
+        "question": "How are projects judged?",
+        "answer": "Projects are evaluated on innovation (25%), technical complexity (25%), design & UX (20%), impact & feasibility (20%), and presentation quality (10%)."
+      }
+    ]
+  }
+]
