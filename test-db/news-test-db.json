@@ -1,0 +1,92 @@
+[
+  {
+    "id": "1",
+    "title": "BICTA 2026 Registration Opens with Record Interest",
+    "category": "Announcement",
+    "date": "2026-06-18",
+    "excerpt": "Over 500 teams have pre-registered for BICTA 2026, making it the most anticipated edition in the festival's history.",
+    "imageUrl": "https://placehold.co/600x340/2563eb/ffffff?text=Registration+Opens",
+    "url": "/news/bicta-2026-registration"
+  },
+  {
+    "id": "2",
+    "title": "New AI/ML Track Added to National Datathon",
+    "category": "Competition",
+    "date": "2026-06-10",
+    "excerpt": "The National Datathon Championship introduces a dedicated AI/ML track with exclusive mentorship from industry leaders.",
+    "imageUrl": "https://placehold.co/600x340/7c3aed/ffffff?text=AI+ML+Track",
+    "url": "/news/datathon-ai-track"
+  },
+  {
+    "id": "3",
+    "title": "Partnership with Google Developer Groups Announced",
+    "category": "Partnership",
+    "date": "2026-06-05",
+    "excerpt": "BICTA partners with GDG Bangladesh to provide cloud credits, mentorship, and exclusive workshops for all participants.",
+    "imageUrl": "https://placehold.co/600x340/059669/ffffff?text=GDG+Partnership",
+    "url": "/news/gdg-partnership"
+  },
+  {
+    "id": "4",
+    "title": "Prize Pool Increased to ৳3 Million for 2026",
+    "category": "Announcement",
+    "date": "2026-05-28",
+    "excerpt": "Thanks to new sponsors, the total prize pool across all BICTA 2026 competitions has been raised to ৳3 million.",
+    "imageUrl": "https://placehold.co/600x340/ea580c/ffffff?text=Prize+Pool+Update",
+    "url": "/news/prize-pool-2026"
+  },
+  {
+    "id": "5",
+    "title": "CyberSec CTF: What You Need to Know",
+    "category": "Guide",
+    "date": "2026-05-20",
+    "excerpt": "A comprehensive guide to preparing for the upcoming CyberSec CTF Challenge, including recommended tools and practice platforms.",
+    "imageUrl": "https://placehold.co/600x340/0891b2/ffffff?text=CTF+Guide",
+    "url": "/news/ctf-preparation-guide"
+  },
+  {
+    "id": "6",
+    "title": "Winners of AI for Good Hackathon Build Healthcare AI",
+    "category": "Results",
+    "date": "2026-05-15",
+    "excerpt": "Team NeuralCare won the AI for Good Hackathon with an AI-powered diagnostic tool for rural healthcare centers.",
+    "imageUrl": "https://placehold.co/600x340/1e40af/ffffff?text=AI+Winners",
+    "url": "/news/ai-hackathon-winners"
+  },
+  {
+    "id": "7",
+    "title": "Workshop Series: Building with Large Language Models",
+    "category": "Workshop",
+    "date": "2026-05-08",
+    "excerpt": "Join our free 4-part workshop series on building production-ready applications using LLMs, RAG, and vector databases.",
+    "imageUrl": "https://placehold.co/600x340/db2777/ffffff?text=LLM+Workshop",
+    "url": "/news/llm-workshop-series"
+  },
+  {
+    "id": "8",
+    "title": "BICTA Alumni Raise $2M in Seed Funding",
+    "category": "Community",
+    "date": "2026-04-30",
+    "excerpt": "Three startups founded by BICTA alumni have collectively raised $2 million in seed funding from international VCs.",
+    "imageUrl": "https://placehold.co/600x340/6d28d9/ffffff?text=Alumni+Funding",
+    "url": "/news/alumni-funding"
+  },
+  {
+    "id": "9",
+    "title": "Green Tech Sprint Venue Announced: Chittagong",
+    "category": "Event Update",
+    "date": "2026-04-22",
+    "excerpt": "The Green Tech Innovation Sprint will be held at the Chittagong Convention Center, featuring dedicated IoT labs and maker spaces.",
+    "imageUrl": "https://placehold.co/600x340/c2410c/ffffff?text=Venue+Announced",
+    "url": "/news/greentech-venue"
+  },
+  {
+    "id": "10",
+    "title": "How to Build a Winning Hackathon Team",
+    "category": "Guide",
+    "date": "2026-04-15",
+    "excerpt": "Expert tips on assembling the perfect hackathon team — from finding complementary skills to effective collaboration strategies.",
+    "imageUrl": "https://placehold.co/600x340/047857/ffffff?text=Team+Building",
+    "url": "/news/winning-team-guide"
+  }
+]

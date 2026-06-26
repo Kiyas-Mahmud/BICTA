@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "step": "01",
+    "title": "Register Your Team",
+    "description": "Form a team of 2-5 members and sign up for one of the competition tracks. Make sure to complete your profile before the registration deadline.",
+    "icon": "lucide:users"
+  },
+  {
+    "id": 2,
+    "step": "02",
+    "title": "Build & Innovate",
+    "description": "Attend the kickoff ceremony and start building! You will have access to exclusive workshops, APIs from our partners, and dedicated technical mentors.",
+    "icon": "lucide:code-2"
+  },
+  {
+    "id": 3,
+    "step": "03",
+    "title": "Submit & Pitch",
+    "description": "Submit your project repository and a short video demo. Top teams will be selected to pitch live on the national stage to our panel of judges.",
+    "icon": "lucide:mic"
+  },
+  {
+    "id": 4,
+    "step": "04",
+    "title": "Win & Launch",
+    "description": "Win a share of the prize pool, secure internships with our industry partners, and get the seed support you need to turn your prototype into a real startup.",
+    "icon": "lucide:rocket"
+  }
+]

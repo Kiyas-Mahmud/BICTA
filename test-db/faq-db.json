@@ -1,0 +1,27 @@
+[
+  {
+    "id": "faq-1",
+    "question": "Who can participate in BICTA competitions?",
+    "answer": "BICTA competitions are open to all university students and working professionals in Bangladesh. Some specific tracks may have restrictions, so please check the rules for each event."
+  },
+  {
+    "id": "faq-2",
+    "question": "Is there any registration fee?",
+    "answer": "No, all BICTA hackathons and programming contests are completely free to enter. We believe in providing equal opportunities for all tech enthusiasts."
+  },
+  {
+    "id": "faq-3",
+    "question": "Can I participate individually or do I need a team?",
+    "answer": "Most of our hackathons require a team of 2-5 members. However, some specific algorithmic contests may allow individual participation. Check the specific competition guidelines."
+  },
+  {
+    "id": "faq-4",
+    "question": "What kind of projects are expected?",
+    "answer": "We encourage innovative solutions to real-world problems. Tracks typically include Web3, AI/ML, HealthTech, EdTech, and Open Innovation."
+  },
+  {
+    "id": "faq-5",
+    "question": "Are the events held online or in-person?",
+    "answer": "The initial rounds and qualifications are usually held online. However, the final rounds, award ceremonies, and mentorship sessions take place in person in Dhaka."
+  }
+]

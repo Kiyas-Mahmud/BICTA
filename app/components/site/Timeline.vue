@@ -1,42 +1,58 @@
 <script setup lang="ts">
-defineProps<{ milestones: { id: number; label: string; date?: string | null; note?: string | null }[] }>()
-const icons = ['lucide:flag', 'lucide:calendar-x', 'lucide:upload', 'lucide:medal', 'lucide:award']
+export interface TimelineItem {
+  id: string
+  title: string
+  description: string
+  timestamp: string | Date
+  status: 'completed' | 'active' | 'pending'
+}
+
+defineProps<{ items: TimelineItem[] }>()
+
+function getIcon(status: string) {
+  if (status === 'completed') return 'lucide:check-circle-2'
+  if (status === 'active') return 'lucide:circle-dot'
+  return 'lucide:circle-dashed'
+}
+
+function getColor(status: string) {
+  if (status === 'completed') return 'text-brand-600 bg-brand-50 border-brand-200'
+  if (status === 'active') return 'text-blue-600 bg-blue-50 border-blue-200'
+  return 'text-ink-faint bg-mist-1 border-line'
+}
+
+function getLineColor(status: string) {
+  if (status === 'completed') return 'bg-brand-600'
+  if (status === 'active') return 'bg-blue-300'
+  return 'bg-line'
+}
+
+function format(date: string | Date) {
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return ''
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(d)
+}
 </script>
 
 <template>
-  <!-- horizontal on desktop, vertical on mobile -->
-  <div class="relative">
-    <!-- desktop -->
-    <div class="hidden md:block">
-      <div class="relative grid" :style="{ gridTemplateColumns: `repeat(${milestones.length}, minmax(0, 1fr))` }">
-        <div class="absolute left-0 right-0 top-6 h-px bg-line" />
-        <div
-          v-for="(m, i) in milestones"
-          :key="m.id"
-          class="relative flex flex-col items-center px-3 text-center"
-        >
-          <span class="relative z-10 flex h-12 w-12 items-center justify-center rounded-full border border-line bg-white text-brand-600 shadow-soft">
-            <Icon :name="icons[i % icons.length]" />
-          </span>
-          <p v-if="m.date" class="mt-3 text-sm font-bold text-ink">{{ formatDate(m.date) }}</p>
-          <p class="mt-1 text-sm font-semibold text-ink-soft">{{ m.label }}</p>
-          <p v-if="m.note" class="mt-0.5 text-xs text-ink-faint">{{ m.note }}</p>
-        </div>
-      </div>
-    </div>
-    <!-- mobile -->
-    <ol class="space-y-6 md:hidden">
-      <li v-for="(m, i) in milestones" :key="m.id" class="flex gap-4">
+  <div class="relative py-2">
+    <ol class="space-y-8">
+      <li v-for="(item, i) in items" :key="item.id" class="relative flex gap-6">
         <div class="flex flex-col items-center">
-          <span class="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-white text-brand-600 shadow-soft">
-            <Icon :name="icons[i % icons.length]" />
+          <span 
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border shadow-sm z-10 relative"
+            :class="getColor(item.status)"
+          >
+            <!-- Glowing ring for active status -->
+            <span v-if="item.status === 'active'" class="absolute -inset-1 rounded-full bg-blue-400 opacity-20 animate-pulse" />
+            <Icon :name="getIcon(item.status)" class="text-xl" />
           </span>
-          <span v-if="i < milestones.length - 1" class="mt-1 w-px flex-1 bg-line" />
+          <span v-if="i < items.length - 1" class="absolute top-10 bottom-[-2rem] w-0.5" :class="getLineColor(item.status)" />
         </div>
-        <div class="-mt-0.5 pb-2">
-          <p v-if="m.date" class="text-sm font-bold text-ink">{{ formatDate(m.date) }}</p>
-          <p class="text-sm font-semibold text-ink-soft">{{ m.label }}</p>
-          <p v-if="m.note" class="text-xs text-ink-faint">{{ m.note }}</p>
+        <div class="flex-1 pb-2">
+          <p class="text-xs font-bold tracking-wider text-brand-600 uppercase">{{ format(item.timestamp) }}</p>
+          <h3 class="mt-1 text-lg font-bold text-ink">{{ item.title }}</h3>
+          <p class="mt-1 text-sm leading-relaxed text-ink-soft">{{ item.description }}</p>
         </div>
       </li>
     </ol>
