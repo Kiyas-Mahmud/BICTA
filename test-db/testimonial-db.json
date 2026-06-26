@@ -1,0 +1,44 @@
+[
+  {
+    "id": 1,
+    "name": "Ayesha Rahman",
+    "role": "CS Student @ BUET",
+    "avatar": "https://i.pravatar.cc/150?u=ayesha",
+    "content": "BICTA Hackathon was a game-changer for me. Building a working health-tech prototype in 48 hours and getting direct feedback from industry CTOs completely changed how I approach software engineering."
+  },
+  {
+    "id": 2,
+    "name": "Kamrul Islam",
+    "role": "Frontend Developer",
+    "avatar": "https://i.pravatar.cc/150?u=kamrul",
+    "content": "The mentorship I received during the finals was incredible. We didn't win the grand prize, but the connections we made landed our entire team internships at top tech firms in Dhaka."
+  },
+  {
+    "id": 3,
+    "name": "Samia Hossain",
+    "role": "Founder, EdTech BD",
+    "avatar": "https://i.pravatar.cc/150?u=samia",
+    "content": "Our startup actually started as a BICTA hackathon project. The initial seed money and validation we got from the judges gave us the confidence to turn our project into a real company."
+  },
+  {
+    "id": 4,
+    "name": "Fahim Ahmed",
+    "role": "Software Engineer @ TechCorp",
+    "avatar": "https://i.pravatar.cc/150?u=fahim",
+    "content": "I've participated in many programming contests, but the scale and organization of the National ICT Programming Festival is unmatched. The energy on the competition floor is simply electric."
+  },
+  {
+    "id": 5,
+    "name": "Nafisa Chowdhury",
+    "role": "AI Researcher",
+    "avatar": "https://i.pravatar.cc/150?u=nafisa",
+    "content": "What impressed me most was the diversity of tracks. As someone focused on Machine Learning, I was thrilled to find a dedicated track with highly specialized mentors who truly understood our technical hurdles."
+  },
+  {
+    "id": 6,
+    "name": "Tariq Mahmud",
+    "role": "Product Manager",
+    "avatar": "https://i.pravatar.cc/150?u=tariq",
+    "content": "Beyond just coding, BICTA emphasizes product viability and UX. Learning how to pitch our technical solution to business leaders was the most valuable part of the entire festival."
+  }
+]

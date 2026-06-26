@@ -13,36 +13,41 @@ const cards = computed(() => [
 </script>
 
 <template>
-  <section class="container-site section">
+  <section class="container-site section pb-24">
     <SiteBackButton to="/" label="Back to home" />
-    <h1 class="text-display mt-6">Get in touch</h1>
-    <p class="mt-3 max-w-lg text-lg text-ink-soft">
-      Questions about the festival, sponsorship, or partnerships? Reach out through any channel below.
-    </p>
 
-    <div class="mt-10 grid gap-5" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))">
-      <component
-        :is="c.href ? 'a' : 'div'"
-        v-for="c in cards"
-        :key="c.label"
-        :href="c.href"
-        :target="c.href && c.href.startsWith('http') ? '_blank' : undefined"
-        :rel="c.href && c.href.startsWith('http') ? 'noopener' : undefined"
-        class="card card-hover flex items-start gap-4 p-6"
+    <div class="mx-auto mt-6 max-w-5xl">
+      <UiContactCard
+        title="Get in touch"
+        description="If you have any questions regarding our Services or need help, please fill out the form here. We do our best to respond within 1 business day."
+        :contact-info="[
+          { icon: 'lucide:mail', label: 'Email', value: s('contact_email') || 'contact@bicta.com' },
+          { icon: 'lucide:phone', label: 'Phone', value: '+880 1234 567890' },
+          { icon: 'lucide:map-pin', label: 'Address', value: s('venue_address') || 'Dhaka, Bangladesh', className: 'col-span-2 sm:col-span-1 xl:col-span-2' }
+        ]"
       >
-        <span class="tile h-11 w-11 shrink-0 text-xl" :class="c.tile"><Icon :name="c.icon" /></span>
-        <div class="min-w-0">
-          <p class="text-xs font-bold uppercase tracking-wide text-ink-faint">{{ c.label }}</p>
-          <p class="mt-0.5 font-bold tracking-tight">{{ c.value }}</p>
-          <p v-if="c.sub" class="mt-0.5 text-sm text-ink-soft">{{ c.sub }}</p>
-        </div>
-      </component>
-    </div>
-
-    <div v-if="s('venue_map_embed')" class="card mt-8 overflow-hidden">
-      <div class="aspect-[21/9] w-full bg-mist-2">
-        <iframe :src="s('venue_map_embed')" class="h-full w-full" style="border: 0" loading="lazy" title="Venue map" />
-      </div>
+        <form @submit.prevent="" class="w-full space-y-4">
+          <div class="flex flex-col gap-2">
+            <UiLabel>Name</UiLabel>
+            <UiInput type="text" placeholder="Your name" />
+          </div>
+          <div class="flex flex-col gap-2">
+            <UiLabel>Email</UiLabel>
+            <UiInput type="email" placeholder="you@email.com" />
+          </div>
+          <div class="flex flex-col gap-2">
+            <UiLabel>Phone</UiLabel>
+            <UiInput type="tel" placeholder="Optional" />
+          </div>
+          <div class="flex flex-col gap-2">
+            <UiLabel>Message</UiLabel>
+            <UiTextarea placeholder="How can we help?" />
+          </div>
+          <UiButton class="w-full mt-2" type="button">
+            Submit
+          </UiButton>
+        </form>
+      </UiContactCard>
     </div>
   </section>
 </template>

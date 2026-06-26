@@ -4,6 +4,7 @@
 
 @layer base {
   html {
+    font-size: 14px;
     @apply scroll-smooth;
     -webkit-tap-highlight-color: transparent;
   }
@@ -233,7 +234,6 @@
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
-  background: linear-gradient(180deg, #f5f9ff 0%, rgba(245, 249, 255, 0) 100%);
 }
 .float-blob {
   position: absolute;
@@ -243,12 +243,10 @@
 }
 .float-blob-1 {
   width: 38vw; height: 38vw; top: -10vw; right: -6vw;
-  background: radial-gradient(circle, #dbe8fe 0%, transparent 70%);
   animation: float-a 18s ease-in-out infinite;
 }
 .float-blob-2 {
   width: 30vw; height: 30vw; top: 20vh; left: -8vw;
-  background: radial-gradient(circle, #ede9fe 0%, transparent 70%);
   animation: float-b 22s ease-in-out infinite;
 }
 @keyframes float-a {
@@ -339,6 +337,33 @@
 .page-enter-from { opacity: 0; transform: translateY(10px); }
 .page-leave-to { opacity: 0; transform: translateY(-6px); }
 
+/* ---------- navbar sliding underline ---------- */
+.nav-underline {
+  transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1),
+              width 400ms cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 200ms ease;
+}
+
+/* ---------- swiper overrides ---------- */
+.featured-swiper .swiper-pagination-bullet,
+.news-swiper .swiper-pagination-bullet {
+  background: theme('colors.brand.300');
+  opacity: 0.5;
+  width: 8px;
+  height: 8px;
+  transition: all 200ms ease;
+}
+.featured-swiper .swiper-pagination-bullet-active,
+.news-swiper .swiper-pagination-bullet-active {
+  background: theme('colors.brand.600');
+  opacity: 1;
+  width: 24px;
+  border-radius: 4px;
+}
+.featured-swiper .swiper-slide {
+  transition: transform 400ms ease;
+}
+
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   .float-blob-1, .float-blob-2, .floating, .floating-slow,
@@ -351,4 +376,6 @@
   .reveal, .rise { opacity: 1; transform: none; transition: none; animation: none; }
   .card-hover:hover, .btn-primary:hover, .btn-secondary:hover,
   .btn-primary:active, .btn-secondary:active, .back-btn:hover { transform: none; }
+  .nav-underline { transition: none; }
+  .tilt-card { transform: none !important; }
 }
