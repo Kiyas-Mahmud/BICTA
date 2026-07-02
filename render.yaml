@@ -1,37 +1,22 @@
 # Render Blueprint — https://render.com/docs/blueprint-spec
 #
-# Deploys BICTA as a single Node web service with a persistent disk for the
-# SQLite database and uploaded images (both are gitignored, so they must
-# live on the disk, not in the repo image).
-#
-# The app has no native concept of a "build DB, then run" split — the DB
-# file only exists once the persistent disk is mounted, which happens at
-# *runtime*, not during the build step. So migrations + seeding run at the
-# start of every boot, ahead of the server. Both are idempotent
-# (drizzle-kit only applies pending migrations; scripts/seed.ts upserts the
-# admin account and skips sample data once real events exist) — safe to
-# repeat on every restart.
+# Free-tier deploy: no persistent disk (Render's free plan doesn't support
+# one — that requires Starter+ and payment info on file). The SQLite
+# database and uploaded images therefore live on the service's ephemeral
+# filesystem and are WIPED on every redeploy and on every restart after the
+# free instance spins down from inactivity (~15 min idle). Fine for a demo/
+# preview; do not rely on this for data you want to keep. Migrations + seed
+# run at the start of every boot since the filesystem starts empty each
+# time — both are idempotent, safe to repeat.
 services:
   - type: web
     name: bicta
     runtime: node
-    plan: starter # persistent disks require Starter or higher, not available on Free
-    region: singapore # closest Render region to Bangladesh; change if needed
+    plan: free
     branch: main
     buildCommand: npm install && npm run build
-    startCommand: >
-      mkdir -p /var/data/db /var/data/uploads &&
-      rm -rf .data public/uploads &&
-      ln -s /var/data/db .data &&
-      ln -s /var/data/uploads public/uploads &&
-      npx drizzle-kit migrate &&
-      npx tsx scripts/seed.ts &&
-      node .output/server/index.mjs
+    startCommand: npx drizzle-kit migrate && npx tsx scripts/seed.ts && node .output/server/index.mjs
     healthCheckPath: /
-    disk:
-      name: bicta-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
