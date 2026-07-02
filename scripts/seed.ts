@@ -122,20 +122,63 @@ async function main() {
   ])
   await db.insert(schema.prizes).values(prizeRows)
 
+  const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString()
   await db.insert(schema.news).values([
     {
-      title: 'BICTA 2026 announced — registration now open',
+      title: 'BICTA 2026 announced: registration now open',
       slug: 'bicta-2026-announced',
       excerpt: 'Three tracks, a bigger prize pool, and a new venue. Here is everything you need to know.',
-      content: '<p>We are thrilled to announce BICTA 2026, taking place September 10–12 in Dhaka.</p>',
+      content:
+        '<p>We are thrilled to announce BICTA 2026, taking place September 10 to 12 in Dhaka. This edition brings three competition tracks, a bigger prize pool, and a national stage for innovators.</p><p>Registration is open now. Pick your track, form your team, and submit before the deadline.</p>',
+      coverImage: '/gallery-images/hackathons.jpg',
       status: 'published',
-      publishedAt: new Date().toISOString(),
+      publishedAt: daysAgo(1),
+    },
+    {
+      title: 'Prize pool grows to 465,000 BDT for 2026',
+      slug: 'prize-pool-2026',
+      excerpt: 'Bigger rewards across all three tracks, with the Champion of each competition taking home a record prize.',
+      content:
+        '<p>Thanks to our sponsors, the total prize pool for BICTA 2026 has grown to 465,000 BDT across Project Showcase, Datathon, and Hackathon.</p><p>Full prize breakdowns are listed on each competition page.</p>',
+      coverImage: '/gallery-images/images (1).jpg',
+      status: 'published',
+      publishedAt: daysAgo(4),
+    },
+    {
+      title: 'Meet the judges: industry leaders join BICTA 2026',
+      slug: 'meet-the-judges-2026',
+      excerpt: 'Founders, engineers, and researchers from the country’s top tech companies will score this year’s entries.',
+      content:
+        '<p>Our judging panel brings decades of experience from AI research, large-scale data platforms, and cloud engineering.</p><p>Meet them all on the home page, then bring work worth judging.</p>',
+      coverImage: '/gallery-images/images (2).jpg',
+      status: 'published',
+      publishedAt: daysAgo(8),
+    },
+    {
+      title: 'BICTA 2025 highlights: 400+ builders, three champions',
+      slug: 'bicta-2025-highlights',
+      excerpt: 'Relive the best moments from last year’s edition, from the opening keynote to the final awards night.',
+      content:
+        '<p>BICTA 2025 hosted more than 400 participants across two tracks. Team Quantum, Team Nexus, and Team Vertex took home the crowns.</p><p>Browse the gallery for photos from the event.</p>',
+      coverImage: '/gallery-images/images (3).jpg',
+      status: 'published',
+      publishedAt: daysAgo(15),
+    },
+    {
+      title: 'Campus roadshow: BICTA comes to 12 universities',
+      slug: 'campus-roadshow-2026',
+      excerpt: 'Our team is visiting campuses across the country with workshops, demos, and on-the-spot registration help.',
+      content:
+        '<p>Throughout July and August, the BICTA crew will run info sessions and mini workshops at 12 universities.</p><p>Follow our social channels for the schedule and venue details.</p>',
+      coverImage: '/gallery-images/images (4).jpg',
+      status: 'published',
+      publishedAt: daysAgo(21),
     },
     {
       title: 'Judges panel reveal (draft)',
       slug: 'judges-panel-reveal',
       excerpt: 'Meet the experts scoring this year’s competitions.',
-      content: '<p>Draft article — judge bios coming soon.</p>',
+      content: '<p>Draft article. Judge bios coming soon.</p>',
       status: 'draft',
     },
   ])

@@ -272,6 +272,15 @@
 .floating-slow {
   animation: floating 9s ease-in-out infinite;
 }
+.floating-delay {
+  animation: floating 7s ease-in-out 1.2s infinite;
+}
+
+/* decorative dot grid (brand-tinted) */
+.dot-grid {
+  background-image: radial-gradient(circle, theme('colors.brand.200') 1.5px, transparent 1.5px);
+  background-size: 18px 18px;
+}
 @keyframes floating {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
