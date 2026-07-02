@@ -15,7 +15,7 @@ services:
     plan: free
     branch: main
     buildCommand: npm install && npm run build
-    startCommand: npx drizzle-kit migrate && npx tsx scripts/seed.ts && node .output/server/index.mjs
+    startCommand: mkdir -p .data && npx drizzle-kit migrate && npx tsx scripts/seed.ts && node .output/server/index.mjs
     healthCheckPath: /
     envVars:
       - key: NODE_ENV
