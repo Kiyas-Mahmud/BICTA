@@ -1,5 +1,4 @@
 import type { Ref } from 'vue'
-import newsData from '~~/test-db/news-test-db.json'
 
 export interface NewsItem {
   id: string
@@ -11,13 +10,9 @@ export interface NewsItem {
   url: string
 }
 
-/**
- * Composable to access news items from the test JSON data.
- * Swap-ready: to switch to a real API, replace the data source below
- * and the rest of the app requires zero changes.
- */
+// Backed by the admin database via /api/public/site-news, prefetched into
+// useState by app/plugins/content.ts.
 export function useNews(): { news: Ref<NewsItem[]>; loading: Ref<boolean> } {
-  const news = ref<NewsItem[]>(newsData as NewsItem[])
-  const loading = ref(false)
-  return { news, loading }
+  const news = useState<NewsItem[]>('site-news', () => [])
+  return { news, loading: ref(false) }
 }

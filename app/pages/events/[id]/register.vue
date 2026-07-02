@@ -34,6 +34,10 @@ interface TeamMember {
 let memberIdCounter = 0
 const teamMembers = ref<TeamMember[]>([])
 
+// Anti-spam time-trap token (see /api/registrations).
+const formToken = ref('')
+onMounted(() => { formToken.value = String(Date.now()) })
+
 function addMember() {
   if (teamMembers.value.length < maxMembers.value) {
     teamMembers.value.push({ id: ++memberIdCounter, name: '', email: '', phone: '' })
@@ -52,11 +56,26 @@ async function submit() {
   error.value = ''
   submitting.value = true
   try {
-    // Simulate submission — in production, this would hit a real API
-    await new Promise((resolve) => setTimeout(resolve, 1200))
+    await $fetch('/api/registrations', {
+      method: 'POST',
+      body: {
+        competitionId: Number(ev.id),
+        fullName: form.fullName,
+        email: form.email,
+        phone: form.phone,
+        institution: form.institution,
+        teamName: form.teamName || null,
+        teamMembers: teamMembers.value
+          .filter((m) => m.name && m.email)
+          .map((m) => ({ name: m.name, email: m.email })),
+        notes: form.notes || null,
+        website: form.website,
+        formToken: formToken.value,
+      },
+    })
     submitted.value = true
-  } catch (e: unknown) {
-    error.value = 'Something went wrong. Please try again.'
+  } catch (e: any) {
+    error.value = e?.data?.statusMessage ?? 'Something went wrong. Please try again.'
   } finally {
     submitting.value = false
   }

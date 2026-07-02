@@ -1,5 +1,4 @@
 import type { Ref } from 'vue'
-import eventsData from '~~/test-db/dummy-event-data.json'
 
 export interface HackathonEvent {
   id: string
@@ -18,37 +17,36 @@ export interface HackathonEvent {
   registrationDeadline: string
   website: string
   eligibility?: string
+  registrationOpen?: boolean
   judges: Array<{ name: string; role: string; avatar: string }>
   sponsors: Array<{ name: string; logo: string }>
   rules: string[]
   faqs: Array<{ id: number; question: string; answer: string }>
 }
 
-/**
- * Composable to access hackathon events from the test JSON data.
- * Swap-ready: to switch to a real API, replace the data source below
- * and the rest of the app requires zero changes.
- */
+// Data now comes from the admin database via /api/public/hackathon-events,
+// prefetched into useState by app/plugins/content.ts. Same synchronous API the
+// pages already use, so swapping the source required no page changes.
+function eventsState() {
+  return useState<HackathonEvent[]>('hackathon-events', () => [])
+}
+
 export function useEvents(): { events: Ref<HackathonEvent[]>; loading: Ref<boolean> } {
-  const events = ref<HackathonEvent[]>(eventsData as HackathonEvent[])
-  const loading = ref(false)
-  return { events, loading }
+  return { events: eventsState(), loading: ref(false) }
 }
 
 export function useEventById(id: string): { event: Ref<HackathonEvent | undefined>; loading: Ref<boolean> } {
-  const event = ref<HackathonEvent | undefined>(
-    (eventsData as HackathonEvent[]).find((e) => e.id === id),
-  )
-  const loading = ref(false)
-  return { event, loading }
+  const events = eventsState()
+  const event = computed(() => events.value.find((e) => e.id === id))
+  return { event, loading: ref(false) }
 }
 
 export function useEventsByStatus(status: HackathonEvent['status']): Ref<HackathonEvent[]> {
-  return ref((eventsData as HackathonEvent[]).filter((e) => e.status === status))
+  const events = eventsState()
+  return computed(() => events.value.filter((e) => e.status === status))
 }
 
 export function useFeaturedEvents(): Ref<HackathonEvent[]> {
-  return ref(
-    (eventsData as HackathonEvent[]).filter((e) => e.status === 'ongoing' || e.status === 'upcoming'),
-  )
+  const events = eventsState()
+  return computed(() => events.value.filter((e) => e.status === 'ongoing' || e.status === 'upcoming'))
 }
