@@ -8,18 +8,23 @@
 # preview; do not rely on this for data you want to keep. Migrations + seed
 # run at the start of every boot since the filesystem starts empty each
 # time — both are idempotent, safe to repeat.
+#
+# NODE_ENV is deliberately NOT set to "production" here: Render's build
+# skips devDependencies (e.g. @nuxtjs/tailwindcss, drizzle-kit, tsx — all
+# needed just to prepare/build/start the app) when it sees NODE_ENV=
+# production, and scripts/seed.ts intentionally skips demo data in that
+# mode too, which we don't want on a preview deploy. `--include=dev` on
+# the install is belt-and-suspenders in case Render sets NODE_ENV itself.
 services:
   - type: web
     name: bicta
     runtime: node
     plan: free
     branch: main
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: mkdir -p .data && npx drizzle-kit migrate && npx tsx scripts/seed.ts && node .output/server/index.mjs
     healthCheckPath: /
     envVars:
-      - key: NODE_ENV
-        value: production
       - key: NUXT_SESSION_PASSWORD
         generateValue: true # Render generates a random 32+ char secret at provision time
       - key: ADMIN_NAME
