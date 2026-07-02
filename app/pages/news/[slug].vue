@@ -20,7 +20,7 @@ useSeoMeta({
       <p class="mt-8 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-ink-faint">
         <Icon name="lucide:calendar" /> {{ formatDate(article.publishedAt) }}
       </p>
-      <h1 class="text-title mt-3 !text-4xl">{{ article.title }}</h1>
+      <h1 class="text-title mt-3">{{ article.title }}</h1>
       <div v-if="article.coverImage" class="img-zoom group mt-8 overflow-hidden rounded-2xl border border-line">
         <img :src="article.coverImage" :alt="article.title" class="w-full object-cover" />
       </div>

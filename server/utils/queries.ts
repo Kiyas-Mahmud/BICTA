@@ -143,6 +143,14 @@ export function getFaqs() {
   return useDb().select().from(schema.faqs).orderBy(asc(schema.faqs.sortOrder)).all()
 }
 
+export function getTestimonials() {
+  return useDb().select().from(schema.testimonials).orderBy(asc(schema.testimonials.sortOrder)).all()
+}
+
+export function getHowItWorksSteps() {
+  return useDb().select().from(schema.howItWorksSteps).orderBy(asc(schema.howItWorksSteps.sortOrder)).all()
+}
+
 export function getEventGallery(eventId: number) {
   return useDb()
     .select()

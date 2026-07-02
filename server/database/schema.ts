@@ -143,6 +143,33 @@ export const newsletterSubscribers = sqliteTable('newsletter_subscribers', {
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 })
 
+export const testimonials = sqliteTable('testimonials', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  role: text('role').notNull().default(''),
+  quote: text('quote').notNull(),
+  photoUrl: text('photo_url'),
+  sortOrder: integer('sort_order').notNull().default(0),
+})
+
+export const howItWorksSteps = sqliteTable('how_it_works_steps', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  body: text('body').notNull().default(''),
+  icon: text('icon'),
+  sortOrder: integer('sort_order').notNull().default(0),
+})
+
+export const contactMessages = sqliteTable('contact_messages', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  email: text('email').notNull(),
+  subject: text('subject').notNull().default(''),
+  message: text('message').notNull(),
+  isRead: integer('is_read', { mode: 'boolean' }).notNull().default(false),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+})
+
 export const admins = sqliteTable('admins', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
@@ -168,4 +195,7 @@ export type Person = typeof people.$inferSelect
 export type Winner = typeof winners.$inferSelect
 export type Faq = typeof faqs.$inferSelect
 export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect
+export type Testimonial = typeof testimonials.$inferSelect
+export type HowItWorksStep = typeof howItWorksSteps.$inferSelect
+export type ContactMessage = typeof contactMessages.$inferSelect
 export type Admin = typeof admins.$inferSelect

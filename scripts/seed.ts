@@ -180,6 +180,33 @@ async function main() {
     { question: 'How are winners selected?', answer: '<p>A panel of industry judges scores each submission against published criteria.</p>', sortOrder: 4 },
   ])
 
+  // Gallery photos for the current event (files shipped in public/gallery-images).
+  await db.insert(schema.galleryImages).values(
+    [
+      '/gallery-images/hackathons.jpg',
+      '/gallery-images/images (1).jpg',
+      '/gallery-images/images (2).jpg',
+      '/gallery-images/images (3).jpg',
+      '/gallery-images/images (4).jpg',
+      '/gallery-images/images.jpg',
+      '/gallery-images/photo-1624996752380-8ec242e0f85d.avif',
+      '/gallery-images/photo-1688733720228-4f7a18681c4f.avif',
+    ].map((url, i) => ({ eventId: current!.id, url, sortOrder: i + 1 })),
+  )
+
+  await db.insert(schema.testimonials).values([
+    { name: 'Rafid Karim', role: 'Team Quantum, Datathon Champion 2025', quote: 'BICTA was the first stage where our work got seen by real industry leaders. We walked out with a trophy and two internship offers.', sortOrder: 1 },
+    { name: 'Sadia Noor', role: 'Hackathon Finalist 2025', quote: 'The mentorship during the 36-hour build changed how I think about shipping products. Best weekend of my year.', sortOrder: 2 },
+    { name: 'Tanjim Hasan', role: 'Project Showcase, 1st Runner-up 2025', quote: 'Professional judging, clear criteria, zero chaos. BICTA treats student builders like professionals.', sortOrder: 3 },
+  ])
+
+  await db.insert(schema.howItWorksSteps).values([
+    { title: 'Pick your track', body: 'Browse the competitions and choose the arena that fits your skills.', icon: 'list-checks', sortOrder: 1 },
+    { title: 'Register your team', body: 'Fill in the two-minute form, solo or with teammates.', icon: 'user-plus', sortOrder: 2 },
+    { title: 'Build and submit', body: 'Work on your project and submit before the deadline.', icon: 'rocket', sortOrder: 3 },
+    { title: 'Get judged and win', body: 'Present to the panel. Winners take prizes and recognition.', icon: 'trophy', sortOrder: 4 },
+  ])
+
   await db.insert(schema.siteSettings).values([
     { key: 'hero_eyebrow', value: 'National ICT Programming Festival' },
     { key: 'hero_tagline', value: 'Innovate. Code. Compete. Inspire.' },

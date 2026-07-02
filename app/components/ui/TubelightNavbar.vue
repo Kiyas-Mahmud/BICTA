@@ -86,52 +86,11 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="ml-2 border-l border-line/50 pl-2">
-        <NuxtLink to="/sign-in" class="button flex items-center justify-center font-bold text-sm">
-          <span class="button-content">Sign In</span>
+        <NuxtLink to="/events" class="btn-primary !rounded-full !px-5 !py-2 text-sm">
+          <span class="hidden sm:inline">Register Now</span>
+          <Icon name="lucide:arrow-right" class="sm:hidden" />
         </NuxtLink>
       </div>
     </nav>
   </div>
 </template>
-
-<style scoped>
-.button {
-  position: relative;
-  overflow: hidden;
-  height: 2.25rem; /* 36px to match navbar inner items */
-  padding: 0 1.25rem;
-  border-radius: 1.5rem;
-  background: #3d3a4e;
-  background-size: 400%;
-  color: #fff;
-  border: none;
-  cursor: pointer;
-}
-
-.button:hover::before {
-  transform: scaleX(1);
-}
-
-.button-content {
-  position: relative;
-  z-index: 1;
-}
-
-.button::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform: scaleX(0);
-  transform-origin: 0 50%;
-  width: 100%;
-  height: inherit;
-  border-radius: inherit;
-  background: linear-gradient(
-    82.3deg,
-    rgba(59, 130, 246, 1) 10.8%, /* Bluish */
-    rgba(37, 99, 235, 1) 94.3%   /* Bluish */
-  );
-  transition: all 0.475s;
-}
-</style>

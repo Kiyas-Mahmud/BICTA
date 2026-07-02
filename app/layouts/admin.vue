@@ -20,8 +20,11 @@ const groups = [
       { to: '/admin/sponsors', label: 'Sponsors', icon: 'lucide:handshake' },
       { to: '/admin/people', label: 'Judges & Speakers', icon: 'lucide:users' },
       { to: '/admin/winners', label: 'Winners', icon: 'lucide:trophy' },
+      { to: '/admin/testimonials', label: 'Testimonials', icon: 'lucide:quote' },
+      { to: '/admin/how-it-works', label: 'How It Works', icon: 'lucide:list-checks' },
       { to: '/admin/faq', label: 'FAQ', icon: 'lucide:circle-help' },
       { to: '/admin/newsletter', label: 'Newsletter', icon: 'lucide:mail' },
+      { to: '/admin/messages', label: 'Messages', icon: 'lucide:inbox' },
     ],
   },
   {

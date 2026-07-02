@@ -16,7 +16,7 @@ const year = new Date().getFullYear()
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-slate-50">
+  <div class="flex min-h-screen flex-col bg-paper">
     <!-- Tubelight Navbar -->
     <UiTubelightNavbar :items="navItems" />
 
@@ -72,8 +72,8 @@ const year = new Date().getFullYear()
         <div class="container-site flex flex-col items-center justify-between gap-3 py-6 text-sm text-white/50 sm:flex-row">
           <p>© {{ year }} BICTA. All rights reserved.</p>
           <div class="flex items-center gap-5">
-            <NuxtLink to="/contact" class="transition-colors hover:text-white">Privacy Policy</NuxtLink>
-            <NuxtLink to="/contact" class="transition-colors hover:text-white">Terms & Conditions</NuxtLink>
+            <NuxtLink to="/privacy" class="transition-colors hover:text-white">Privacy Policy</NuxtLink>
+            <NuxtLink to="/terms" class="transition-colors hover:text-white">Terms & Conditions</NuxtLink>
           </div>
         </div>
       </div>

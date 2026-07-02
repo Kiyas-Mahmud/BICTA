@@ -1,4 +1,4 @@
-import { asc, desc, eq, inArray } from 'drizzle-orm'
+import { asc, count, desc, eq, inArray } from 'drizzle-orm'
 import { useDb, schema } from '../database/client'
 
 // Maps the real admin database onto the shape Zubayer's front-end expects
@@ -28,6 +28,8 @@ export interface HackathonEventDTO {
   website: string
   eligibility?: string
   registrationOpen: boolean
+  registeredCount: number
+  prizes: Array<{ position: string; amount: string; note: string | null }>
   judges: Array<{ name: string; role: string; avatar: string }>
   sponsors: Array<{ name: string; logo: string }>
   rules: string[]
@@ -90,6 +92,13 @@ export async function getHackathonEvents(): Promise<HackathonEventDTO[]> {
     .where(inArray(schema.prizes.competitionId, competitions.map((c) => c.id)))
     .orderBy(asc(schema.prizes.sortOrder))
 
+  // Real registration counts per competition (public shows only the number).
+  const regCounts = await db
+    .select({ competitionId: schema.registrations.competitionId, n: count() })
+    .from(schema.registrations)
+    .groupBy(schema.registrations.competitionId)
+  const countByComp = new Map(regCounts.map((r) => [r.competitionId, r.n]))
+
   const judgeRows = await db
     .select()
     .from(schema.people)
@@ -108,7 +117,8 @@ export async function getHackathonEvents(): Promise<HackathonEventDTO[]> {
 
   return competitions.map((c) => {
     const e = eventById.get(c.eventId)
-    const topPrize = prizes.find((p) => p.competitionId === c.id)
+    const compPrizes = prizes.filter((p) => p.competitionId === c.id)
+    const topPrize = compPrizes[0]
     return {
       id: String(c.id),
       title: c.name,
@@ -127,6 +137,8 @@ export async function getHackathonEvents(): Promise<HackathonEventDTO[]> {
       website: '',
       eligibility: '',
       registrationOpen: !!c.registrationOpen,
+      registeredCount: countByComp.get(c.id) ?? 0,
+      prizes: compPrizes.map((p) => ({ position: p.position, amount: p.amount, note: p.note })),
       judges,
       sponsors,
       rules: htmlListToArray(c.rules),

@@ -41,11 +41,6 @@ export function useEventById(id: string): { event: Ref<HackathonEvent | undefine
   return { event, loading: ref(false) }
 }
 
-export function useEventsByStatus(status: HackathonEvent['status']): Ref<HackathonEvent[]> {
-  const events = eventsState()
-  return computed(() => events.value.filter((e) => e.status === status))
-}
-
 export function useFeaturedEvents(): Ref<HackathonEvent[]> {
   const events = eventsState()
   return computed(() => events.value.filter((e) => e.status === 'ongoing' || e.status === 'upcoming'))

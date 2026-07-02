@@ -1,4 +1,6 @@
 <script setup lang="ts">
+// Blue newsletter band, wired to POST /api/newsletter (rate limit + honeypot +
+// time-trap live server-side).
 const email = ref('')
 const website = ref('') // honeypot
 const formToken = ref('')
@@ -51,7 +53,11 @@ async function submit() {
           <label for="nl-website">Website</label>
           <input id="nl-website" v-model="website" tabindex="-1" autocomplete="off" />
         </div>
-        <button type="submit" class="shrink-0 rounded-xl bg-white px-6 py-3 text-sm font-bold text-brand-600 transition-transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60" :disabled="submitting">
+        <button
+          type="submit"
+          class="shrink-0 rounded-xl bg-white px-6 py-3 text-sm font-bold text-brand-600 transition-transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60"
+          :disabled="submitting"
+        >
           {{ submitting ? 'Subscribing…' : 'Subscribe' }}
         </button>
       </form>

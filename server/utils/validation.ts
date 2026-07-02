@@ -141,9 +141,34 @@ export const faqSchema = z.object({
   sortOrder: z.number().int().min(0).max(1000).default(0),
 })
 
+export const testimonialSchema = z.object({
+  name: z.string().trim().min(1).max(150),
+  role: z.string().trim().max(150).default(''),
+  quote: z.string().trim().min(1).max(1000),
+  photoUrl: imagePath.nullable().optional(),
+  sortOrder: z.number().int().min(0).max(1000).default(0),
+})
+
+export const howItWorksSchema = z.object({
+  title: z.string().trim().min(1).max(150),
+  body: z.string().trim().max(1000).default(''),
+  icon: z.string().trim().max(64).nullable().optional(),
+  sortOrder: z.number().int().min(0).max(1000).default(0),
+})
+
 // Public newsletter signup — strict, unknown keys stripped.
 export const newsletterSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
+  website: z.string().max(200).optional().default(''),
+  formToken: z.string().max(200).optional().default(''),
+})
+
+// Public contact form — third public write endpoint, same anti-spam contract.
+export const contactSchema = z.object({
+  name: z.string().trim().min(2).max(150),
+  email: z.string().trim().toLowerCase().email().max(254),
+  subject: z.string().trim().max(200).default(''),
+  message: z.string().trim().min(5).max(4000),
   website: z.string().max(200).optional().default(''),
   formToken: z.string().max(200).optional().default(''),
 })
