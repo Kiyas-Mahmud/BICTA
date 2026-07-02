@@ -94,7 +94,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
 
       <!-- Success state -->
       <template v-if="submitted">
-        <div class="mx-auto max-w-xl card mt-8 p-10 text-center sm:p-12 !bg-white/70 backdrop-blur-xl !border-white/40 shadow-xl">
+        <div class="card mx-auto mt-8 max-w-xl p-10 text-center shadow-soft sm:p-12">
           <span class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-600 text-white">
             <Icon name="lucide:check" class="text-3xl" />
           </span>
@@ -108,7 +108,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
 
       <!-- Registration closed -->
       <template v-else-if="!canRegister">
-        <div class="mx-auto max-w-xl card mt-8 p-10 text-center sm:p-12 !bg-white/70 backdrop-blur-xl !border-white/40 shadow-xl">
+        <div class="card mx-auto mt-8 max-w-xl p-10 text-center shadow-soft sm:p-12">
           <Icon name="lucide:clock" class="mx-auto text-4xl text-ink-faint" />
           <h1 class="mt-6 text-2xl font-extrabold tracking-tight">Registration Closed</h1>
           <p class="mx-auto mt-3 max-w-sm text-ink-soft">
@@ -152,7 +152,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
 
           <!-- Right Column -->
           <div class="lg:w-2/3 mt-8 lg:mt-0">
-            <form @submit.prevent="submit" class="border border-white/40 rounded-xl p-6 sm:p-8 bg-white/70 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative z-10">
+            <form @submit.prevent="submit" class="card relative z-10 p-6 shadow-soft sm:p-8">
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-6">
               
               <div class="col-span-full border-b border-line pb-2 mb-2">
@@ -243,7 +243,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
                   <div
                     v-for="(m, i) in teamMembers"
                     :key="m.id"
-                    class="rounded-xl border border-white/40 bg-white/50 backdrop-blur-md p-4 shadow-sm"
+                    class="rounded-xl border border-line bg-mist-1 p-4"
                   >
                     <div class="mb-3 flex items-center justify-between">
                       <span class="text-xs font-bold text-ink-soft">Member {{ i + 1 }}</span>
@@ -303,7 +303,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
             </div>
 
             <!-- Error -->
-            <p v-if="error" class="mt-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700">{{ error }}</p>
+            <p v-if="error" class="form-error mt-4">{{ error }}</p>
 
             <hr class="my-6 border-line" />
             

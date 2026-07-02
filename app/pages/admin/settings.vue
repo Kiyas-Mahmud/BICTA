@@ -46,6 +46,13 @@ const groups: { title: string; fields: { key: string; label: string }[] }[] = [
     ],
   },
   {
+    title: 'Legal pages',
+    fields: [
+      { key: 'privacy_policy', label: 'Privacy policy text' },
+      { key: 'terms_conditions', label: 'Terms & conditions text' },
+    ],
+  },
+  {
     title: 'Venue & location',
     fields: [
       { key: 'venue_heading', label: 'Venue heading' },

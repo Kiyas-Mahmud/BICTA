@@ -72,10 +72,11 @@ The upload endpoint is the most dangerous surface. Controls:
 
 ## 6a. Public Write Endpoints
 
-Two unauthenticated write paths exist; both are treated as hostile input by default and share the same hardening contract (`server/utils/rateLimit.ts`):
+Three unauthenticated write paths exist; all are treated as hostile input by default and share the same hardening contract (`server/utils/rateLimit.ts`):
 
 - **`POST /api/registrations`** — competition registration (PII).
 - **`POST /api/newsletter`** — newsletter signup (email only). Order: rate limit (5/h/IP) → honeypot (`website`) → time-trap (3s `formToken`) → Zod email → `onConflictDoNothing` dedupe insert; duplicates return a friendly success without confirming prior state. Email is the only field stored; treat the subscriber list as PII per §6b.
+- **`POST /api/contact`** — contact form (name, email, subject, message → `contact_messages`, admin-only read). Same order: rate limit (5/h/IP) → honeypot → time-trap → Zod (message ≤4000 chars) → insert. Message bodies are untrusted text: rendered escaped in the admin UI, never exposed in public payloads, kept out of logs.
 
 Any further public write endpoint requires explicit security review before merge.
 

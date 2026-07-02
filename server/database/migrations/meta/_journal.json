@@ -15,6 +15,13 @@
       "when": 1781417882599,
       "tag": "0001_tricky_red_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783005362034,
+      "tag": "0002_white_zzzax",
+      "breakpoints": true
     }
   ]
 }

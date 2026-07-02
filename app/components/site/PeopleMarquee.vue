@@ -1,7 +1,17 @@
 <script setup lang="ts">
-import type { Person } from '../../../server/database/schema'
+// Local shape (matches what SitePersonCard needs); no server-schema import in
+// client code.
+export interface MarqueePerson {
+  id: number
+  name: string
+  title: string
+  organization: string
+  photoUrl?: string | null
+  bio: string
+  socialUrl?: string | null
+}
 
-const props = defineProps<{ people: Person[] }>()
+const props = defineProps<{ people: MarqueePerson[] }>()
 
 // Three identical copies → seamless loop (translate one copy width = -33.333%).
 const copies = 3
