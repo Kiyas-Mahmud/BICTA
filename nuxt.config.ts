@@ -14,6 +14,17 @@ export default defineNuxtConfig({
 
   fonts: {
     families: [{ name: 'Schibsted Grotesk', provider: 'google', weights: [400, 500, 700, 800] }],
+    // Only Google is used; disable the rest so an unrelated provider's API
+    // outage/format change can't break the build (fontshare did exactly
+    // this during a Render build).
+    providers: {
+      fontshare: false,
+      bunny: false,
+      adobe: false,
+      fontsource: false,
+      googleicons: false,
+      npm: false,
+    },
   },
 
   app: {
