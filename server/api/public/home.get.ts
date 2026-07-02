@@ -18,7 +18,7 @@ export default defineEventHandler(async () => {
   const [current, news, pastEvents, settings, features, sponsors, people, winners, faqs, testimonials, steps] =
     await Promise.all([
       getCurrentEventFull(),
-      getPublishedNews(3),
+      getPublishedNews(5),
       getPastEvents(),
       getSettings(),
       getHomeFeatures(),

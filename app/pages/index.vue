@@ -56,6 +56,15 @@ const timelineItems = computed<TimelineItem[]>(() => {
 const marqueePeople = computed(() => [...(data.value?.judges ?? []), ...(data.value?.speakers ?? [])])
 const galleryImages = computed(() => (data.value?.gallery ?? []).map((g: any) => g.url))
 
+// Hero collage data.
+const heroPhotos = computed(() => galleryImages.value.slice(0, 2))
+const topPrize = computed(() => current.value?.competitions?.[0]?.prizes?.[0]?.amount ?? '')
+const registrationLive = computed(() => (current.value?.competitions ?? []).some((c: any) => c.registrationOpen))
+
+// Editorial news split: one featured + compact list.
+const featuredArticle = computed(() => data.value?.news?.[0])
+const restArticles = computed(() => (data.value?.news ?? []).slice(1, 5))
+
 useSeoMeta({
   title: current.value ? `${current.value.title}, the national ICT programming festival` : undefined,
   description: tagline.value,
@@ -88,34 +97,63 @@ useSeoMeta({
           </div>
         </div>
 
-        <!-- floating skyline artwork (brand palette via fill utilities) -->
-        <div class="rise rise-4 relative hidden lg:block">
-          <div class="floating">
-            <svg viewBox="0 0 520 300" class="w-full" role="img" aria-label="City skyline illustration">
-              <circle cx="400" cy="70" r="46" class="fill-brand-100" />
-              <g class="fill-brand-200">
-                <rect x="40" y="150" width="40" height="110" rx="4" />
-                <rect x="300" y="120" width="44" height="140" rx="4" />
-                <rect x="460" y="160" width="34" height="100" rx="4" />
-              </g>
-              <g class="fill-brand-400">
-                <rect x="90" y="110" width="46" height="150" rx="4" />
-                <rect x="250" y="90" width="44" height="170" rx="4" />
-                <rect x="410" y="130" width="44" height="130" rx="4" />
-              </g>
-              <g class="fill-brand-600">
-                <rect x="150" y="70" width="50" height="190" rx="5" />
-                <rect x="210" y="40" width="34" height="220" rx="5" />
-                <rect x="356" y="100" width="48" height="160" rx="5" />
-              </g>
-              <g class="fill-white" opacity="0.7">
-                <rect x="162" y="90" width="6" height="6" /><rect x="178" y="90" width="6" height="6" />
-                <rect x="162" y="110" width="6" height="6" /><rect x="178" y="110" width="6" height="6" />
-                <rect x="368" y="120" width="6" height="6" /><rect x="384" y="120" width="6" height="6" />
-                <rect x="220" y="70" width="6" height="6" /><rect x="220" y="90" width="6" height="6" />
-              </g>
-              <rect x="0" y="258" width="520" height="2" class="fill-brand-300" />
-            </svg>
+        <!-- layered photo collage + floating stat chips -->
+        <div class="rise rise-4 relative hidden min-h-[420px] lg:block">
+          <!-- decorative dot grids -->
+          <div class="dot-grid absolute -top-4 right-0 h-36 w-36 opacity-60" aria-hidden="true" />
+          <div class="dot-grid absolute -bottom-8 left-6 h-28 w-28 opacity-40" aria-hidden="true" />
+
+          <template v-if="heroPhotos.length">
+            <!-- main photo -->
+            <div class="floating relative ml-auto w-[78%] rotate-2">
+              <img
+                :src="heroPhotos[0]"
+                alt="Moments from BICTA"
+                class="aspect-[4/3] w-full rounded-3xl border-4 border-white object-cover shadow-lift"
+              />
+              <span v-if="registrationLive" class="pill-open absolute right-4 top-4 shadow-soft">
+                <span class="dot-live" /> Registration open
+              </span>
+            </div>
+            <!-- secondary photo -->
+            <img
+              v-if="heroPhotos[1]"
+              :src="heroPhotos[1]"
+              alt="BICTA participants"
+              class="floating-slow absolute -bottom-6 left-0 w-48 -rotate-3 rounded-2xl border-4 border-white object-cover shadow-lift"
+            />
+          </template>
+
+          <!-- fallback panel when no gallery photos yet -->
+          <div v-else class="floating relative ml-auto flex aspect-[4/3] w-[78%] rotate-2 items-center justify-center rounded-3xl bg-gradient-to-br from-brand-600 to-brand-400 shadow-lift">
+            <Icon name="lucide:trophy" class="text-8xl text-white/80" />
+          </div>
+
+          <!-- prize chip -->
+          <div v-if="topPrize" class="floating-delay card absolute left-0 top-10 flex items-center gap-3 p-4 shadow-lift">
+            <span class="tile tile-orange h-10 w-10 text-lg"><Icon name="lucide:trophy" /></span>
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wide text-ink-faint">Top prize</p>
+              <p class="text-base font-extrabold tracking-tight text-brand-600">{{ topPrize }}</p>
+            </div>
+          </div>
+
+          <!-- participants chip -->
+          <div class="floating-slow card absolute -bottom-10 right-6 flex items-center gap-3 p-4 shadow-lift">
+            <div class="flex -space-x-2.5">
+              <span
+                v-for="(p, i) in marqueePeople.slice(0, 3)"
+                :key="i"
+                class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white text-xs font-extrabold"
+                :class="['bg-brand-100 text-brand-700', 'bg-mist-2 text-ink-soft', 'bg-brand-600 text-white'][i % 3]"
+              >
+                {{ p.name.charAt(0) }}
+              </span>
+            </div>
+            <div>
+              <p class="text-base font-extrabold tracking-tight">{{ s('stat_participants', '2,340+') }}</p>
+              <p class="text-[11px] font-bold uppercase tracking-wide text-ink-faint">Participants</p>
+            </div>
           </div>
         </div>
       </div>
@@ -274,16 +312,81 @@ useSeoMeta({
       </section>
     </SiteSectionReveal>
 
-    <!-- 10. LATEST NEWS -->
-    <SiteSectionReveal v-if="data?.news?.length">
+    <!-- 10. LATEST NEWS (featured + compact list) -->
+    <SiteSectionReveal v-if="featuredArticle">
       <section class="section !pt-0">
         <div class="container-site">
           <div class="flex flex-wrap items-end justify-between gap-3">
             <h2 class="text-title">Latest news</h2>
             <NuxtLink to="/news" class="link-underline text-sm text-brand-600">All news</NuxtLink>
           </div>
-          <div class="mt-8 grid gap-5" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))">
-            <SiteNewsCard v-for="article in data!.news" :key="article.id" :article="article" />
+
+          <div class="mt-8 grid gap-5 lg:grid-cols-5">
+            <!-- featured article -->
+            <NuxtLink
+              :to="`/news/${featuredArticle.slug}`"
+              class="card card-hover group flex flex-col overflow-hidden lg:col-span-3"
+            >
+              <div class="img-zoom relative aspect-[16/9] w-full overflow-hidden bg-mist-2">
+                <img
+                  v-if="featuredArticle.coverImage"
+                  :src="featuredArticle.coverImage"
+                  :alt="featuredArticle.title"
+                  class="h-full w-full object-cover"
+                />
+                <div v-else class="flex h-full w-full items-center justify-center text-ink-faint">
+                  <Icon name="lucide:newspaper" class="text-4xl" />
+                </div>
+                <span class="badge badge-blue absolute left-4 top-4 shadow-soft">Featured</span>
+              </div>
+              <div class="flex flex-1 flex-col p-6">
+                <p class="flex items-center gap-1.5 text-xs font-semibold text-ink-faint">
+                  <Icon name="lucide:calendar" /> {{ formatDate(featuredArticle.publishedAt) }}
+                </p>
+                <h3 class="mt-2 text-2xl font-extrabold leading-snug tracking-tight transition-colors group-hover:text-brand-600">
+                  {{ featuredArticle.title }}
+                </h3>
+                <p class="mt-2 line-clamp-2 leading-relaxed text-ink-soft">{{ featuredArticle.excerpt }}</p>
+                <span class="mt-4 flex items-center gap-1.5 text-sm font-bold text-brand-600">
+                  Read more
+                  <Icon name="lucide:arrow-right" class="transition-transform duration-150 group-hover:translate-x-1" />
+                </span>
+              </div>
+            </NuxtLink>
+
+            <!-- compact list -->
+            <div class="flex flex-col gap-4 lg:col-span-2">
+              <NuxtLink
+                v-for="article in restArticles"
+                :key="article.id"
+                :to="`/news/${article.slug}`"
+                class="card card-hover group flex flex-1 items-center gap-4 p-3.5"
+              >
+                <div class="img-zoom h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-mist-2">
+                  <img
+                    v-if="article.coverImage"
+                    :src="article.coverImage"
+                    :alt="article.title"
+                    loading="lazy"
+                    class="h-full w-full object-cover"
+                  />
+                  <div v-else class="flex h-full w-full items-center justify-center text-ink-faint">
+                    <Icon name="lucide:newspaper" class="text-xl" />
+                  </div>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-[11px] font-semibold text-ink-faint">{{ formatDate(article.publishedAt) }}</p>
+                  <h3 class="mt-0.5 line-clamp-2 text-sm font-extrabold leading-snug tracking-tight transition-colors group-hover:text-brand-600">
+                    {{ article.title }}
+                  </h3>
+                  <p class="mt-0.5 line-clamp-1 text-xs text-ink-soft">{{ article.excerpt }}</p>
+                </div>
+                <Icon
+                  name="lucide:arrow-right"
+                  class="shrink-0 text-ink-faint transition-all duration-150 group-hover:translate-x-1 group-hover:text-brand-600"
+                />
+              </NuxtLink>
+            </div>
           </div>
         </div>
       </section>
