@@ -59,11 +59,13 @@ npm run build && node .output/server/index.mjs        # prod smoke test
 ## Environment
 
 - `.env` (gitignored): `NUXT_SESSION_PASSWORD` (≥32 chars), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, optional `DATABASE_URL`
-- Hosting undecided — keep everything portable; flag any change that locks to a platform.
+- Hosting: deploying to **Render** (free tier) via `render.yaml` Blueprint. No persistent disk on free tier — SQLite DB + uploads reset on every restart/redeploy; fine for a demo, not for real data. Upgrading to Starter + a disk is the recommended path if/when real registrations need to persist (see Implementation_Plan.md §6).
 
 ## Status
 
 - 2026-06-11: planning complete (4 plan docs). Requirement change same day: built-in registration form (no Google Forms), docs updated.
-- 2026-06-11: **Phases 1–3 implemented and verified.** Scaffold + DB + auth, full admin CRUD (events/competitions/prizes/news/registrations/gallery/settings/account), public site (home, competition detail, registration form, news, archive), anti-spam verified by direct API tests (honeypot, time-trap, duplicate 409, closed 403, rate limit 429), CSV injection escaping verified, cascade deletes verified, production build smoke-tested (security headers present).
-- Remaining: Phase 4 polish (Lighthouse pass, sitemap.xml/robots.txt, deeper responsive QA) and Phase 5 hosting decision (Postgres switch + S3 uploads only if serverless).
+- 2026-06-11: **Phases 1–3 implemented and verified.**
+- 2026-06 to 2026-07: major expansion beyond original scope — home page grew to 15 DB-driven sections (sponsors, judges, timeline, testimonials, how-it-works, etc.), design system rebuilt twice (achromatic glass → light blue-accent), merged a second contributor's parallel UI work and consolidated the resulting duplication (`ui-polish` branch → `main`), canonical event route moved to `/events/[id]`, added `POST /api/contact` as a third hardened public endpoint.
+- 2026-07-02/03: first Render deployment attempt — hit and fixed three real build failures in sequence (missing `.data` dir before migrate, `NODE_ENV=production` skipping devDependencies, `@nuxt/fonts` provider crash). Deploy verification in progress.
+- See `docs/Implementation_Plan.md` §6 for the current prioritized backlog (persistent storage decision is the top open item).
 - Gotchas: dev server must be stopped before `npm run build` (.nuxt contention). If build fails with "Cannot find native binding" (rolldown), run `npm install --no-save @rolldown/binding-win32-x64-msvc@<rolldown version>` — npm optional-deps bug. Session cookie is `Secure`; curl-style testing over http needs manual Cookie header replay.
