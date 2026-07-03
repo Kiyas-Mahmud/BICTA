@@ -1,125 +1,110 @@
 # BICTA — Implementation Plan
 
-Step-by-step build order. Each phase ends with a working, verifiable state. References: [Project_Plan.md](Project_Plan.md), [Architecture_Plan.md](Architecture_Plan.md), [Security_Plan.md](Security_Plan.md).
+Step-by-step build order and status. References: [Project_Plan.md](Project_Plan.md), [Architecture_Plan.md](Architecture_Plan.md), [Security_Plan.md](Security_Plan.md).
+
+**Overall status: Phases 1–3 shipped and expanded well beyond original scope; Phase 4 mostly done; Phase 5 partially done (deployed to Render, Postgres/S3 not wired).** See §6 for what's actually left.
 
 ---
 
-## Phase 1 — Scaffold & Foundation
+## Phase 1 — Scaffold & Foundation ✅ DONE
 
-**Goal:** running app, database with schema, seeded data, working admin login.
+- [x] Nuxt 4 + TypeScript, git, `.gitignore`
+- [x] Tailwind, Drizzle ORM, better-sqlite3, Zod, nuxt-auth-utils, bcryptjs, sanitize-html, `@nuxt/icon` (Lucide), `@vueuse/motion`, Swiper
+- [x] `nuxt.config.ts`, Tailwind tokens (`brand.*`, `ink.*`, `line`, `mist.*`), `.env.example`
+- [x] `server/database/schema.ts` — now **18 tables** (grew well past the original 8: events, competitions, prizes, registrations, news, gallery_images, admins, site_settings, home_features, timeline_milestones, sponsors, people, winners, faqs, newsletter_subscribers, testimonials, how_it_works_steps, contact_messages)
+- [x] `server/database/client.ts` — SQLite only; Postgres branch **not implemented**, just commented as a future switch point (see §6)
+- [x] `scripts/seed.ts` — admin from env + full demo dataset (events, competitions, prizes, news, features, timeline, sponsors, people, winners, faqs, testimonials, how-it-works steps, gallery images)
+- [x] Auth: rate limiter, login/logout, `requireAdmin`, admin middleware, login page + admin shell
 
-### 1.1 Project setup
-- [ ] `npx nuxi init` (Nuxt 4, TypeScript), git init, `.gitignore` (`.env`, `.data/`, `public/uploads/*`)
-- [ ] Install: `@nuxtjs/tailwindcss`, `drizzle-orm`, `drizzle-kit`, `better-sqlite3`, `zod`, `nuxt-auth-utils`, `bcryptjs`, `sanitize-html`, `@vueuse/motion`
-- [ ] `nuxt.config.ts`: modules, runtimeConfig (`sessionPassword`, `databaseUrl`), app head defaults (title template, lang)
-- [ ] Tailwind config: accent color token, font (Inter via `@nuxt/fonts` or fontsource), container defaults
-- [ ] `.env.example` with all required vars
-
-### 1.2 Database
-- [ ] `server/database/schema.ts` — all 8 tables (events, competitions, prizes, **registrations**, news, gallery_images, admins, site_settings) with FKs + cascade deletes + unique `(competition_id, email)` on registrations
-- [ ] `server/database/client.ts` — SQLite default, Postgres if `DATABASE_URL` set
-- [ ] `drizzle.config.ts`; generate + run first migration
-- [ ] `scripts/seed.ts` — admin from env (refuse weak/default password in production), 2 sample events (1 current, 1 past), 3 competitions with prizes, 2 news items; `npm run seed`
-
-### 1.3 Auth
-- [ ] `server/utils/rateLimit.ts` — shared limiter (used by login now; registrations + upload later)
-- [ ] `server/api/admin/auth/login.post.ts` — Zod validate, bcrypt compare, rate limit (5/15min/IP), set session
-- [ ] `server/api/admin/auth/logout.post.ts`
-- [ ] `server/utils/requireAdmin.ts` — throws 401 if no admin session
-- [ ] `app/middleware/admin.ts` — redirect unauthenticated to `/admin/login`
-- [ ] `app/pages/admin/login.vue` + `app/layouts/admin.vue` (sidebar shell)
-
-**✅ Checkpoint:** `npm run dev` → log in at `/admin/login` → see empty dashboard → logout works. Direct `POST /api/admin/events` without session returns 401.
+**Checkpoint verified:** login works, unauthenticated `/api/admin/*` returns 401.
 
 ---
 
-## Phase 2 — Admin CRUD
+## Phase 2 — Admin CRUD ✅ DONE (scope grew significantly)
 
-**Goal:** all content manageable from admin. Build shared pieces first, then entity screens (each follows the same pattern — fastest order below).
+- [x] Shared admin components: `Collection.vue` (generic field-config-driven list/edit screen) + `server/utils/crud.ts` factory — new pattern that replaced the originally-planned one-off DataTable/FormField per entity
+- [x] Upload endpoint — magic-byte check for JPEG/PNG/WebP **and SVG** (sanitized), 5 MB cap, UUID filenames
+- [x] Events (CRUD + set-current transaction), Competitions (CRUD + prizes inline editor), Registrations (list/filter/status/CSV export), News (CRUD + draft/publish), Gallery, Settings, Account — all original-scope items done
+- [x] **Beyond original scope**, all with full CRUD + admin screens: Home Features (Why Join), Timeline Milestones, Sponsors, People (judges/speakers), Winners, FAQs, Newsletter subscribers (list + CSV export), Testimonials, How It Works steps, Contact Messages (inbox with read toggle)
+- [x] Dashboard with entity counts + current event card
 
-### 2.1 Shared admin components
-- [ ] `ui/`: Button, Input, Textarea, Select, Modal, Badge
-- [ ] `admin/`: DataTable (list + actions), FormField wrapper, ConfirmDialog, ImageUploader, simple RichTextEditor (e.g. Tiptap starter kit), useToast composable
-
-### 2.2 Upload endpoint
-- [ ] `server/api/admin/upload.post.ts` — magic-byte type check (jpeg/png/webp), 5 MB cap, `crypto.randomUUID()` filename, write to `public/uploads/`, return URL (Security Plan §6)
-
-### 2.3 Entity APIs + screens (repeat pattern: Zod schema → API routes → list page → form page)
-- [ ] **Events** — CRUD + `set-current` endpoint (transaction: clear flag, set one). Screens: list, new, edit
-- [ ] **Competitions** — CRUD nested under event (edit screen reached from event page); rich text description/rules (sanitize on write); registration open/close + deadline + team settings; sort order
-- [ ] **Prizes** — inline editor inside competition form (add/remove rows, position, amount, note); saved with competition or via own endpoints
-- [ ] **Registrations (admin side)** — `index.get` (list w/ competition + status filters), `[id].put` (status change), `export.get` (CSV w/ formula-injection escaping); screen with DataTable, detail view, count badges
-- [ ] **News** — CRUD + status toggle (draft/published, sets `published_at`); list filter by status
-- [ ] **Gallery** — per-event multi-upload, captions, reorder, delete
-- [ ] **Settings** — single form, key/value upsert (`settings.put.ts`)
-- [ ] **Account** — change password (requires current password)
-- [ ] Dashboard — entity counts, current event card, quick links
-
-**✅ Checkpoint:** create full fake event with 3 competitions + prizes + news + gallery photos entirely through UI; insert fake registrations via script and confirm list/filter/status/CSV work. Delete event → cascades confirmed (incl. registrations).
+**Checkpoint verified:** full event lifecycle creatable through UI; cascade deletes confirmed (events → competitions → prizes/registrations; events → gallery).
 
 ---
 
-## Phase 3 — Public Site
+## Phase 3 — Public Site ✅ DONE (redesigned twice, consolidated once)
 
-**Goal:** all public pages rendering live DB content.
+- [x] Query utilities in `server/utils/queries.ts` + `server/utils/hackathon.ts` (DTO mapper)
+- [x] Layout + design tokens — **note:** the design system was built, then fully replaced (achromatic glass → light blue-accent per user reference), then unified again after merging a second contributor's parallel UI work (`ui-polish` cleanup, 2026-07)
+- [x] Home page — **grew from a 6-section page to 15 sections**, all DB-driven: hero (photo collage + floating stat chips), countdown + stats, why join, competitions carousel, timeline, sponsors, judges/speakers marquee, how-it-works, gallery, news (editorial featured + list layout), winners, testimonials, FAQ + venue, contact form, newsletter
+- [x] **Canonical event route is `/events/[id]`** (not `/competitions/[slug]` as originally planned) — real prize rows, real registration counts, shared PersonCard/SponsorWall/FaqAccordion components
+- [x] `/competitions/[slug]` and `/competitions/[slug]/register` kept as 301 redirects to `/events/[id]` for any old links
+- [x] Registration form + `POST /api/registrations` — rate limit, honeypot, time-trap, Zod, window/duplicate checks — all verified
+- [x] `/news` + `/news/[slug]`, `/events` + `/events/[id]`, `/gallery`, `/contact` (working form → `POST /api/contact`, a second hardened public endpoint), `/privacy`, `/terms` (settings-backed)
+- [x] 404/error page matching design
 
-### 3.1 Query utilities (`server/utils/queries/`)
-- [ ] `getCurrentEvent()` (with competitions + prize totals), `getCompetitionBySlug()`, `getPublishedNews(limit?, page?)`, `getNewsBySlug()`, `getPastEvents()`, `getEventBySlug()` (with competitions, gallery), `getSettings()`
-
-### 3.2 Layout & tokens
-- [ ] `layouts/default.vue` — header (logo, nav, mobile menu), footer (contact/socials from settings)
-- [ ] Typography/spacing scale in `main.css` per design guidelines (white bg, `py-24` sections, max-w container)
-
-### 3.3 Pages
-- [ ] `/` Home — hero (current event, countdown), competitions grid (`CompetitionCard` w/ prize money), total prize pool stat, latest 3 news, past events strip. **Empty state:** no current event → "next edition coming soon" hero
-- [ ] `/competitions/[slug]` — description, rules (sanitized `v-html`), `PrizeTable`, register button → `/competitions/[slug]/register` (hidden/disabled when closed or past deadline)
-- [ ] `/competitions/[slug]/register` — registration form (name, email, phone, institution; team fields when `team_based`); client validation mirrors server Zod; success confirmation screen
-- [ ] `POST /api/registrations` — public endpoint: rate limit → honeypot + time-trap → Zod → window/duplicate checks → insert (Security Plan §6a)
-- [ ] `/news` (pagination) + `/news/[slug]`
-- [ ] `/events` archive + `/events/[slug]` (details, competitions held, `GalleryGrid`)
-- [ ] 404 + error page matching design
-
-**✅ Checkpoint:** edit content in admin → refresh public page → change visible. Register via the public form → appears in admin Registrations instantly; closed/deadline/duplicate submissions rejected (test with curl too). All routes render with seed data and with empty DB.
+**Checkpoint verified:** admin edits reflect on public pages immediately; registration/newsletter/contact all tested end-to-end including anti-spam paths (honeypot, time-trap, rate limit 429).
 
 ---
 
-## Phase 4 — Polish
+## Phase 4 — Polish — MOSTLY DONE
 
-- [ ] `SectionReveal` component — `@vueuse/motion` fade + 16px slide-up, once, ~400ms; wrap home/detail sections
-- [ ] Card hover lift (~150ms), page transition fade, `prefers-reduced-motion` guard on all motion
-- [ ] Responsive pass: 360px / 768px / 1280px on every page; competitions grid 1→2→3 cols
-- [ ] SEO: `useSeoMeta` per page (title, description, OG image from event/news cover), `sitemap.xml`, `robots.txt`, canonical URLs
-- [ ] Security headers via Nitro routeRules (CSP, nosniff, frame deny — Security Plan §5)
-- [ ] Loading states (skeletons on payload navigation), image `loading="lazy"` + width/height to stop CLS
-- [ ] Lighthouse pass: ≥90 performance/SEO/accessibility on home
-
-**✅ Checkpoint:** full click-through on mobile + desktop; Lighthouse targets met; reduced-motion verified.
+- [x] `SectionReveal` scroll-in animation, card hover lift, page transitions, `prefers-reduced-motion` guards throughout
+- [x] `useSeoMeta` per page (title/description/OG image)
+- [x] Security headers via Nitro `routeRules` (nosniff, frame-deny, referrer-policy, CSP on `/uploads/**`)
+- [x] `NuxtLoadingIndicator`, `img loading="lazy"` on gallery/card images
+- [ ] **`sitemap.xml` / `robots.txt`** — not started, no files exist yet
+- [ ] **Lighthouse pass** — never formally run; no confirmed performance/accessibility score
+- [ ] **Systematic responsive QA** — spot-checked during builds at various points, not swept at fixed 360/768/1280 breakpoints per page
 
 ---
 
-## Phase 5 — Deploy Prep
+## Phase 5 — Deploy Prep — PARTIALLY DONE
 
-- [ ] `npm run build` + `node .output/server/index.mjs` production smoke test
-- [ ] Postgres switch verified once locally (set `DATABASE_URL`, run migrations, app boots)
-- [ ] Run full **Security Checklist** from [Security_Plan.md](Security_Plan.md) §10
-- [ ] README: setup, env vars, seed, admin guide (how to launch a new year's event), deployment recipes (VPS/Docker + serverless note re: uploads→S3), backup/restore steps
-- [ ] If serverless hosting chosen: swap upload storage to S3-compatible (single module change per Architecture Plan §3 flow)
-
-**✅ Done definition:** fresh clone → `.env` → install → migrate → seed → build → serve = working site; admin can run an entire yearly event cycle — including opening registration and exporting participants — without developer help.
+- [x] `npm run build` + prod smoke test — done repeatedly, including a from-scratch build (deleted `.nuxt`/`.output`) to catch environment-specific issues
+- [x] README — full setup, database, troubleshooting, admin guide
+- [x] **Render Blueprint** (`render.yaml`) — not in the original plan; added for a one-click free-tier deploy. Fixed through several real build failures: missing `.data` dir before migrate, `NODE_ENV=production` silently skipping devDependencies, and an unrelated `@nuxt/fonts` provider (`fontshare`) crashing the build. Deploy verification with the user is in progress as of the latest push.
+- [ ] **Persistent storage decision** — Render free tier has no disk; SQLite DB and uploaded images reset on every restart/redeploy. Fine for a demo, **not for real yearly-competition data**. This is the single biggest gap before real launch (see §6).
+- [ ] Postgres switch — still just a comment in `client.ts`, never implemented
+- [ ] S3-compatible upload swap — not needed unless serverless hosting is chosen; not started
+- [ ] Formal run-through of the Security Checklist in Security_Plan.md §10 (individual items have been verified ad hoc — anti-spam, sanitization, headers — but never checked off as a single pass)
 
 ---
 
-## Build Order Rationale
+## 6. What's actually left — prioritized backlog
 
-Auth before CRUD (every API needs `requireAdmin`). Admin before public site (public pages need real data to design against). Upload endpoint early in Phase 2 (events/news forms depend on it). Polish after content pages exist (animations applied to real sections). Security controls built inline per phase, verified as a gate in Phase 5 — not bolted on at the end.
+### Priority 1 — blocks real (non-demo) use
+1. **Decide persistent storage** and implement it: either (a) upgrade the Render service to Starter + a small persistent disk (~$7-8/mo total, no code changes needed — symlink `.data`/`public/uploads` to the disk at boot), or (b) do the Postgres + S3-compatible-storage swap for a fully serverless-friendly setup (real code work: new `client.ts` branch, `drizzle.config.ts` dialect switch, upload endpoint rewrite). **Recommendation: (a)** — far less work, keeps the SQLite model that's already built and tested.
+2. **Confirm the Render deploy is actually green end-to-end** (login, registration, admin CRUD all working on the live URL) — last few turns were fixing build failures one at a time; needs a final full pass.
+3. **`sitemap.xml` + `robots.txt`** — quick win, needed before any real public launch/SEO.
+
+### Priority 2 — quality bar before calling it "launched"
+4. Lighthouse pass (performance/accessibility/SEO ≥ 90 target from the original plan) and fix whatever it flags.
+5. Systematic responsive sweep — the target audience is students on phones (per PRODUCT.md); worth a deliberate pass at 360/768/1280.
+6. Registration confirmation email — registrants currently get no email at all; admin has to manually tell them. Was noted as future scope in Project_Plan.md; worth reconsidering now given the form is the primary conversion path.
+7. Contact Messages CSV export (Registrations and Newsletter already have it; Contact doesn't — minor parity gap).
+
+### Priority 3 — nice-to-have / defer until needed
+8. Automated tests — currently zero (no unit/e2e coverage anywhere in the repo).
+9. Backup automation (README documents the manual procedure; no script exists).
+10. Admin "forgot password" flow (currently: change password only, requires being logged in already).
+11. Custom domain on Render (currently `.onrender.com`).
+12. Multi-admin roles (all admins are currently equal; fine unless the org grows).
+
+---
+
+## Build Order Rationale (historical, still accurate)
+
+Auth before CRUD (every API needs `requireAdmin`). Admin before public site (public pages needed real data to design against). Upload endpoint early (events/news forms depend on it). Polish after content pages existed. Security controls built inline per phase, not bolted on at the end.
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
+| Risk | Status |
 |---|---|
-| Rich text editor scope creep | Tiptap starter kit only (bold/italic/headings/lists/links); no tables/embeds in v1 |
-| Hosting decision blocks uploads design | Storage isolated in one util; local-disk default, S3 swap is Phase 5 task |
-| `is_current` race / multiple current events | Single transaction endpoint; DB-level partial unique index where supported |
-| Registration spam floods DB | Rate limit + honeypot + time-trap from day one; Turnstile wire point ready if needed |
-| PII mishandling | Registrations admin-only, no bodies in logs, CSV escaping, retention policy in README (Security Plan §6b) |
-| Seed credentials reach production | Seed refuses default/weak password when `NODE_ENV=production` |
+| Rich text editor scope creep | Held the line — Tiptap starter kit only, no tables/embeds |
+| Hosting decision blocks uploads design | Still open — see Priority 1 above |
+| `is_current` race / multiple current events | Mitigated — single transaction endpoint |
+| Registration spam | Mitigated — rate limit + honeypot + time-trap, verified on all 3 public write endpoints |
+| PII mishandling | Mitigated — admin-only access, no bodies in logs, CSV escaping |
+| Seed credentials reach production | Mitigated — seed refuses default/weak password when `NODE_ENV=production` |
+| Free-tier hosting has no persistent storage | **Open** — flagged to user, decision pending (Priority 1) |
