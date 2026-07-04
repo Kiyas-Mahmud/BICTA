@@ -1,10 +1,10 @@
 <script setup lang="ts">
 definePageMeta({ layout: false })
 
-const { fetch: refreshSession, loggedIn } = useUserSession()
+const { fetch: refreshSession, loggedIn, session } = useUserSession()
 
-if (loggedIn.value) {
-  await navigateTo('/admin')
+if (loggedIn.value && (session.value as any)?.user) {
+  await navigateTo((session.value as any).user.role === 'volunteer' ? '/staff/scan' : '/admin')
 }
 
 const email = ref('')
@@ -16,12 +16,13 @@ async function submit() {
   error.value = ''
   loading.value = true
   try {
-    await $fetch('/api/admin/auth/login', {
+    const res = await $fetch('/api/admin/auth/login', {
       method: 'POST',
       body: { email: email.value, password: password.value },
     })
     await refreshSession()
-    await navigateTo('/admin')
+    // Volunteers only get the scanner; admins get the panel.
+    await navigateTo(res.role === 'volunteer' ? '/staff/scan' : '/admin')
   } catch (e: any) {
     error.value =
       e?.statusCode === 429

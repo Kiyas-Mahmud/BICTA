@@ -13,6 +13,14 @@ const groups = [
     ],
   },
   {
+    label: 'Event day',
+    links: [
+      { to: '/admin/checkpoints', label: 'Check-in Points', icon: 'lucide:map-pin' },
+      { to: '/admin/checkins', label: 'Collection Report', icon: 'lucide:package-check' },
+      { to: '/admin/volunteers', label: 'Scanner Volunteers', icon: 'lucide:scan-line' },
+    ],
+  },
+  {
     label: 'Home page',
     links: [
       { to: '/admin/home-features', label: 'Why Join', icon: 'lucide:sparkles' },

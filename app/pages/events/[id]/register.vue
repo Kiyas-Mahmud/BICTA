@@ -21,6 +21,7 @@ const form = reactive({
   institution: '',
   teamName: '',
   notes: '',
+  password: '', // leader's portal password (min 8 chars)
   website: '', // honeypot
 })
 
@@ -64,6 +65,7 @@ async function submit() {
         email: form.email,
         phone: form.phone,
         institution: form.institution,
+        password: form.password,
         teamName: form.teamName || null,
         teamMembers: teamMembers.value
           .filter((m) => m.name && m.email)
@@ -100,9 +102,13 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
           </span>
           <h1 class="mt-6 text-3xl font-extrabold tracking-tight">Registration received</h1>
           <p class="mx-auto mt-4 max-w-sm text-ink-soft">
-            You're in for <span class="font-bold text-ink">{{ ev.title }}</span>. We'll confirm your spot by email.
+            You're in for <span class="font-bold text-ink">{{ ev.title }}</span>. Your participant dashboard is ready,
+            and each teammate has been emailed an invite with their personal QR code.
           </p>
-          <NuxtLink :to="`/events/${ev.id}`" class="btn-primary mt-8">Back to event</NuxtLink>
+          <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <NuxtLink to="/portal/login" class="btn-primary">Open my dashboard</NuxtLink>
+            <NuxtLink :to="`/events/${ev.id}`" class="btn-secondary">Back to event</NuxtLink>
+          </div>
         </div>
       </template>
 
@@ -225,6 +231,25 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
                   placeholder="University or company"
                   class="mt-2"
                 />
+              </div>
+
+              <div class="col-span-full">
+                <UiLabel for="r-password" class="font-medium">
+                  Dashboard password<span class="text-red-500">*</span>
+                </UiLabel>
+                <UiInput
+                  type="password"
+                  id="r-password"
+                  v-model="form.password"
+                  required
+                  minlength="8"
+                  autocomplete="new-password"
+                  placeholder="Min 8 characters"
+                  class="mt-2"
+                />
+                <p class="mt-1.5 text-xs text-ink-soft">
+                  Creates your participant account — log in anytime to see your team, status and your personal QR code for event-day check-in.
+                </p>
               </div>
 
               <!-- Team Members Section -->

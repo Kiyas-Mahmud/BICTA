@@ -84,6 +84,9 @@ Step-by-step build order and status. References: [Project_Plan.md](Project_Plan.
 6. Registration confirmation email — registrants currently get no email at all; admin has to manually tell them. Was noted as future scope in Project_Plan.md; worth reconsidering now given the form is the primary conversion path.
 7. Contact Messages CSV export (Registrations and Newsletter already have it; Contact doesn't — minor parity gap).
 
+### DONE (2026-07 `participant-portal` branch) — Participant accounts + QR check-in
+Email+password participant accounts (leader active on registration, members emailed an invite + personal QR). Participant portal `/portal/*`: dashboard with QR, collection checklist, team roster; leader manages roster until deadline, members read-only (server-enforced). Per-person QR check-in: admin-configured `checkpoints`, volunteer scanner role at `/staff/scan` (camera + manual), `checkins` with unique `(account, checkpoint)` double-collection guard, admin Collection Report + CSV. Email via `server/utils/email.ts` (Resend when `RESEND_API_KEY` set, else console). Verified with a 22-case end-to-end pass. **Remaining for this feature:** wire a real `RESEND_API_KEY` (emails log to console until then); project submission (leader-only) still deferred.
+
 ### Priority 3 — nice-to-have / defer until needed
 8. Automated tests — currently zero (no unit/e2e coverage anywhere in the repo).
 9. Backup automation (README documents the manual procedure; no script exists).

@@ -66,6 +66,8 @@ export const registrationSchema = z.object({
   competitionId: z.number().int().positive(),
   fullName: z.string().trim().min(2).max(150),
   email: z.string().trim().toLowerCase().email().max(254),
+  // Leader's portal password, set at registration time (min 8 chars).
+  password: z.string().min(8).max(200),
   phone: z.string().trim().min(5).max(30).regex(/^[+\d][\d\s-]+$/, 'Invalid phone number'),
   institution: z.string().trim().max(200).default(''),
   teamName: z.string().trim().max(150).nullable().optional(),
@@ -81,6 +83,47 @@ export const registrationSchema = z.object({
 })
 
 export const idParam = z.coerce.number().int().positive()
+
+// ---- Participant accounts + check-in ----
+
+export const participantLoginSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+  password: z.string().min(1).max(200),
+})
+
+export const setPasswordSchema = z.object({
+  token: z.string().trim().min(20).max(200),
+  password: z.string().min(8).max(200),
+})
+
+export const forgotSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+  website: z.string().max(200).optional().default(''),
+  formToken: z.string().max(200).optional().default(''),
+})
+
+export const teamMemberAddSchema = z.object({
+  name: z.string().trim().min(2).max(150),
+  email: z.string().trim().toLowerCase().email().max(254),
+})
+
+export const checkpointSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  icon: z.string().trim().max(64).nullable().optional(),
+  active: z.boolean().default(true),
+  sortOrder: z.number().int().min(0).max(1000).default(0),
+})
+
+export const volunteerSchema = z.object({
+  name: z.string().trim().min(1).max(150),
+  email: z.string().trim().toLowerCase().email().max(254),
+  password: z.string().min(8).max(200),
+})
+
+export const checkinSchema = z.object({
+  accountId: z.number().int().positive(),
+  checkpointId: z.number().int().positive(),
+})
 
 const optUrl = z
   .string()

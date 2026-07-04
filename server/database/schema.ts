@@ -175,7 +175,60 @@ export const admins = sqliteTable('admins', {
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
+  // 'admin' = full panel; 'volunteer' = scan/check-in only (event-day staff).
+  role: text('role', { enum: ['admin', 'volunteer'] }).notNull().default('admin'),
 })
+
+// ---- Participant accounts + per-person QR check-in ----
+
+export const participantAccounts = sqliteTable('participant_accounts', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash'), // null until the invite is accepted
+  fullName: text('full_name').notNull(),
+  phone: text('phone'),
+  status: text('status', { enum: ['invited', 'active'] }).notNull().default('invited'),
+  inviteToken: text('invite_token').unique(),
+  resetToken: text('reset_token').unique(),
+  resetExpires: text('reset_expires'),
+  // Opaque value the personal QR encodes; never contains PII.
+  checkinToken: text('checkin_token').notNull().unique(),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+})
+
+export const teamMembers = sqliteTable(
+  'team_members',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    registrationId: integer('registration_id').notNull().references(() => registrations.id, { onDelete: 'cascade' }),
+    accountId: integer('account_id').notNull().references(() => participantAccounts.id, { onDelete: 'cascade' }),
+    role: text('role', { enum: ['leader', 'member'] }).notNull().default('member'),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  },
+  (t) => [uniqueIndex('team_members_registration_account_unique').on(t.registrationId, t.accountId)],
+)
+
+export const checkpoints = sqliteTable('checkpoints', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  eventId: integer('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  icon: text('icon'),
+  active: integer('active', { mode: 'boolean' }).notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
+})
+
+export const checkins = sqliteTable(
+  'checkins',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    accountId: integer('account_id').notNull().references(() => participantAccounts.id, { onDelete: 'cascade' }),
+    checkpointId: integer('checkpoint_id').notNull().references(() => checkpoints.id, { onDelete: 'cascade' }),
+    scannedBy: integer('scanned_by').references(() => admins.id),
+    collectedAt: text('collected_at').notNull().default(sql`(datetime('now'))`),
+  },
+  // One collection per person per checkpoint — the double-collection guard.
+  (t) => [uniqueIndex('checkins_account_checkpoint_unique').on(t.accountId, t.checkpointId)],
+)
 
 export const siteSettings = sqliteTable('site_settings', {
   key: text('key').primaryKey(),
@@ -199,3 +252,7 @@ export type Testimonial = typeof testimonials.$inferSelect
 export type HowItWorksStep = typeof howItWorksSteps.$inferSelect
 export type ContactMessage = typeof contactMessages.$inferSelect
 export type Admin = typeof admins.$inferSelect
+export type ParticipantAccount = typeof participantAccounts.$inferSelect
+export type TeamMember = typeof teamMembers.$inferSelect
+export type Checkpoint = typeof checkpoints.$inferSelect
+export type Checkin = typeof checkins.$inferSelect

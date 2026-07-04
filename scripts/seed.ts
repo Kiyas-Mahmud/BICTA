@@ -250,6 +250,22 @@ async function main() {
     { title: 'Get judged and win', body: 'Present to the panel. Winners take prizes and recognition.', icon: 'trophy', sortOrder: 4 },
   ])
 
+  // Event-day collection checkpoints (QR scan targets).
+  await db.insert(schema.checkpoints).values([
+    { eventId: current!.id, name: 'Welcome Kit', icon: 'package', sortOrder: 1 },
+    { eventId: current!.id, name: 'Lunch', icon: 'utensils', sortOrder: 2 },
+    { eventId: current!.id, name: 'Snacks', icon: 'coffee', sortOrder: 3 },
+  ])
+
+  // Sample volunteer (scanner-only staff login) for dev.
+  if (process.env.NODE_ENV !== 'production') {
+    const volunteerHash = await bcrypt.hash('bicta-volunteer-2026', 12)
+    await db
+      .insert(schema.admins)
+      .values({ name: 'Gate Volunteer', email: 'volunteer@bicta.local', passwordHash: volunteerHash, role: 'volunteer' })
+      .onConflictDoNothing()
+  }
+
   await db.insert(schema.siteSettings).values([
     { key: 'hero_eyebrow', value: 'National ICT Programming Festival' },
     { key: 'hero_tagline', value: 'Innovate. Code. Compete. Inspire.' },
