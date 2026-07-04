@@ -78,6 +78,8 @@ Three unauthenticated write paths exist; all are treated as hostile input by def
 - **`POST /api/newsletter`** — newsletter signup (email only). Order: rate limit (5/h/IP) → honeypot (`website`) → time-trap (3s `formToken`) → Zod email → `onConflictDoNothing` dedupe insert; duplicates return a friendly success without confirming prior state. Email is the only field stored; treat the subscriber list as PII per §6b.
 - **`POST /api/contact`** — contact form (name, email, subject, message → `contact_messages`, admin-only read). Same order: rate limit (5/h/IP) → honeypot → time-trap → Zod (message ≤4000 chars) → insert. Message bodies are untrusted text: rendered escaped in the admin UI, never exposed in public payloads, kept out of logs.
 
+**Participant auth endpoints** (`POST /api/participant/{login,set-password,forgot,reset}`): unauthenticated, each rate-limited on its own bucket. `login` mirrors admin login exactly — compare against a dummy bcrypt hash for unknown emails, one generic `Invalid credentials` for every failure, no account enumeration. `forgot` adds honeypot + time-trap and returns an identical response whether or not the email exists. Passwords bcrypt cost 12; invite tokens `randomBytes(32)`, reset tokens `randomBytes(32)` single-use + 1h expiry, `checkinToken` (the QR value) `randomBytes(24)` and contains no PII. `POST /api/staff/checkin` is staff-gated (not public); the unique `(accountId, checkpointId)` index is the double-collection guard. Leader-only roster mutations enforce leadership + deadline server-side in `requireTeamLeader` (UI hiding is not the boundary).
+
 Any further public write endpoint requires explicit security review before merge.
 
 Registration specifics below.

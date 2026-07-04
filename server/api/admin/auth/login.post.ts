@@ -26,8 +26,9 @@ export default defineEventHandler(async (event) => {
   }
 
   await setUserSession(event, {
-    user: { id: admin.id, name: admin.name, email: admin.email },
+    user: { id: admin.id, name: admin.name, email: admin.email, role: admin.role },
   })
 
-  return { ok: true }
+  // Client uses this to route volunteers to the scanner instead of the panel.
+  return { ok: true, role: admin.role }
 })
