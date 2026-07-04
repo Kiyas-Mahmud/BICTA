@@ -3,8 +3,7 @@ import bcrypt from 'bcryptjs'
 import { eq, and } from 'drizzle-orm'
 import { useDb, schema } from '../database/client'
 import { registrationSchema } from '../utils/validation'
-import { sendMail, inviteEmail, leaderConfirmationEmail } from '../utils/email'
-import { qrDataUrl } from '../utils/qr'
+import { sendMail, inviteEmail, leaderConfirmationEmail, qrImageUrl } from '../utils/email'
 
 // Public write endpoint. Handler order is the security contract
 // (Security_Plan.md §6a): rate limit → honeypot/time-trap → schema validation
@@ -134,7 +133,7 @@ export default defineEventHandler(async (event) => {
       name: leader!.fullName,
       teamName,
       competition: comp.name,
-      qrDataUrl: await qrDataUrl(leader!.checkinToken),
+      qrUrl: qrImageUrl(leader!.checkinToken),
     }),
   }).catch(() => {})
 
@@ -146,14 +145,14 @@ export default defineEventHandler(async (event) => {
           teamName,
           competition: comp.name,
           inviteToken: account.inviteToken,
-          qrDataUrl: await qrDataUrl(account.checkinToken),
+          qrUrl: qrImageUrl(account.checkinToken),
         })
       : leaderConfirmationEmail({
           // Existing active account added to a new team: no invite link needed.
           name,
           teamName,
           competition: comp.name,
-          qrDataUrl: await qrDataUrl(account.checkinToken),
+          qrUrl: qrImageUrl(account.checkinToken),
         })
     sendMail({ to: account.email, ...mail }).catch(() => {})
   }

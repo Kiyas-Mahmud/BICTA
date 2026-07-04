@@ -3,8 +3,7 @@ import { eq, count } from 'drizzle-orm'
 import { useDb, schema } from '../../../../database/client'
 import { teamMemberAddSchema, idParam } from '../../../../utils/validation'
 import { requireTeamLeader, syncLegacyRoster } from '../../../../utils/team'
-import { sendMail, inviteEmail, leaderConfirmationEmail } from '../../../../utils/email'
-import { qrDataUrl } from '../../../../utils/qr'
+import { sendMail, inviteEmail, leaderConfirmationEmail, qrImageUrl } from '../../../../utils/email'
 
 // Leader adds a teammate after registration (until the deadline).
 export default defineEventHandler(async (event) => {
@@ -52,13 +51,13 @@ export default defineEventHandler(async (event) => {
         teamName: registration.teamName ?? '',
         competition: comp.name,
         inviteToken: account!.inviteToken,
-        qrDataUrl: await qrDataUrl(account!.checkinToken),
+        qrUrl: qrImageUrl(account!.checkinToken),
       })
     : leaderConfirmationEmail({
         name: body.name,
         teamName: registration.teamName ?? '',
         competition: comp.name,
-        qrDataUrl: await qrDataUrl(account!.checkinToken),
+        qrUrl: qrImageUrl(account!.checkinToken),
       })
   sendMail({ to: account!.email, ...mail }).catch(() => {})
 
