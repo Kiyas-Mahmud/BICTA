@@ -73,7 +73,7 @@ function htmlListToArray(html: string): string[] {
 // Deterministic inline-SVG avatar/logo so nothing renders as a broken image.
 function initialsImage(name: string): string {
   const letter = (name.trim()[0] || '?').toUpperCase()
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" rx="14" fill="#eff5ff"/><text x="50%" y="50%" dy=".35em" text-anchor="middle" font-family="sans-serif" font-size="44" font-weight="700" fill="#2563eb">${letter}</text></svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" rx="14" fill="#e7ede1"/><text x="50%" y="50%" dy=".35em" text-anchor="middle" font-family="sans-serif" font-size="44" font-weight="700" fill="#5e6f54">${letter}</text></svg>`
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
 }
 

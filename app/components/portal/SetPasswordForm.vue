@@ -41,11 +41,11 @@ async function submit() {
   <form v-else class="space-y-4" @submit.prevent="submit">
     <div>
       <label class="mb-1.5 block text-sm font-bold" for="pw">New password</label>
-      <input id="pw" v-model="password" type="password" required minlength="8" autocomplete="new-password" class="field" placeholder="Min 8 characters" />
+      <PortalPasswordInput id="pw" v-model="password" autocomplete="new-password" placeholder="Min 8 characters" />
     </div>
     <div>
       <label class="mb-1.5 block text-sm font-bold" for="pw2">Confirm password</label>
-      <input id="pw2" v-model="confirm" type="password" required autocomplete="new-password" class="field" />
+      <PortalPasswordInput id="pw2" v-model="confirm" autocomplete="new-password" placeholder="Re-enter password" />
     </div>
     <p v-if="error" class="form-error">{{ error }}</p>
     <button type="submit" class="btn-primary w-full !py-3" :disabled="loading">

@@ -36,13 +36,15 @@ async function qrAttachment(checkinToken: string): Promise<Attachment> {
 }
 
 // ---- Email design system (table-based, inline styles — the only reliable way
-// across clients). Mirrors the site: brand blue #2563eb, ink header, soft
-// slate text, rounded card. ----
+// across clients). Mirrors the site: brand sage #5e6f54, ink header, soft
+// muted text, rounded card. ----
 
 const C = {
-  brand: '#2563eb', brandSoft: '#eff5ff', ink: '#0f172a', soft: '#475569',
-  faint: '#94a3b8', line: '#e2e8f0', bg: '#eef2f7', mist: '#f8fafc',
+  brand: '#5e6f54', brandSoft: '#f4f7f1', ink: '#26302a', soft: '#586158',
+  faint: '#98a29a', line: '#e3e7ea', bg: '#f4f6f8', mist: '#eef1f3',
 }
+// Signature sage gradient (with solid fallback for clients that ignore it).
+const GRAD = 'background:#5e6f54;background-image:linear-gradient(135deg,#445236 0%,#5b6d50 55%,#74886a 100%);'
 const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif"
 
 function shell(opts: { preheader?: string; body: string }) {
@@ -52,7 +54,7 @@ function shell(opts: { preheader?: string; body: string }) {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};padding:32px 12px;">
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 6px 28px rgba(15,23,42,0.08);">
-        <tr><td style="height:5px;background:${C.brand};font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr><td style="height:6px;${GRAD}font-size:0;line-height:0;">&nbsp;</td></tr>
         <tr><td style="background:${C.ink};padding:24px 34px;">
           <table role="presentation" width="100%"><tr>
             <td style="font-family:${FONT};font-size:23px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">BICTA<span style="color:${C.brand};">.</span></td>
@@ -73,7 +75,7 @@ function shell(opts: { preheader?: string; body: string }) {
 const heading = (t: string) => `<h1 style="margin:0 0 8px;font-size:23px;font-weight:800;color:${C.ink};letter-spacing:-0.4px;">${t}</h1>`
 const para = (t: string) => `<p style="margin:0 0 15px;font-size:15px;line-height:1.65;color:${C.soft};">${t}</p>`
 const button = (href: string, label: string) =>
-  `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:20px 0;"><tr><td style="border-radius:12px;background:${C.brand};box-shadow:0 4px 12px rgba(37,99,235,0.35);">
+  `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:20px 0;"><tr><td style="border-radius:12px;${GRAD}box-shadow:0 4px 14px rgba(56,67,47,0.4);">
     <a href="${href}" style="display:inline-block;padding:14px 30px;font-family:${FONT};font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">${label} &rarr;</a>
   </td></tr></table>`
 const qrBlock = () =>

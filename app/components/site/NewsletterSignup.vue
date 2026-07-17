@@ -28,7 +28,7 @@ async function submit() {
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-3xl bg-brand-600 px-6 py-8 sm:px-10">
+  <div class="gradient-brand overflow-hidden rounded-3xl px-6 py-8 sm:px-10">
     <div class="flex flex-col items-center gap-6 lg:flex-row lg:justify-between">
       <div class="flex items-center gap-4 text-white">
         <span class="hidden h-12 w-12 items-center justify-center rounded-2xl bg-white/15 sm:flex">

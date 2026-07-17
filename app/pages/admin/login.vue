@@ -9,6 +9,7 @@ if (loggedIn.value && (session.value as any)?.user) {
 
 const email = ref('')
 const password = ref('')
+const showPw = ref(false)
 const error = ref('')
 const loading = ref(false)
 
@@ -49,14 +50,25 @@ async function submit() {
         </div>
         <div>
           <label class="label" for="password">Password</label>
-          <input
-            id="password"
-            v-model="password"
-            type="password"
-            required
-            autocomplete="current-password"
-            class="input"
-          />
+          <div class="relative">
+            <input
+              id="password"
+              v-model="password"
+              :type="showPw ? 'text' : 'password'"
+              required
+              autocomplete="current-password"
+              class="input !pr-11"
+            />
+            <button
+              type="button"
+              class="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-ink-faint transition-colors hover:bg-neutral-100 hover:text-ink"
+              :aria-label="showPw ? 'Hide password' : 'Show password'"
+              tabindex="-1"
+              @click="showPw = !showPw"
+            >
+              <Icon :name="showPw ? 'lucide:eye-off' : 'lucide:eye'" />
+            </button>
+          </div>
         </div>
 
         <p v-if="error" class="text-sm text-red-600">{{ error }}</p>

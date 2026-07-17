@@ -221,7 +221,7 @@ useSeoMeta({
         </div>
 
         <div class="lg:sticky lg:top-20">
-          <div v-if="canRegister" class="card bg-brand-600 p-6 text-white">
+          <div v-if="canRegister" class="card gradient-brand border-0 p-6 text-white">
             <h3 class="text-xl font-extrabold">Ready to compete?</h3>
             <p class="mt-2 text-sm text-white/80">Form your team and register before the deadline. Registration takes about two minutes.</p>
             <NuxtLink

@@ -5,35 +5,37 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary brand blue (public + admin share it now).
+        // "Sage" identity — muted olive/sage green (inspiration #BBC8AF / #ABB9A6).
+        // Light shades = accents/tiles/badges; dark shades = forest buttons.
         brand: {
-          50: '#eff5ff',
-          100: '#dbe8fe',
-          200: '#bfd7fe',
-          300: '#93bbfd',
-          400: '#609afa',
-          500: '#3b7df6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#f4f7f1',
+          100: '#e7ede1',
+          200: '#d3ddca',
+          300: '#bbc8af', // inspiration
+          400: '#abb9a6', // inspiration
+          500: '#93a486',
+          600: '#77896b',
+          700: '#5e6f54',
+          800: '#4a5843',
+          900: '#38432f', // deep forest (primary buttons)
         },
-        // Legacy admin accent alias -> brand blue (keeps old classes working).
+        // Legacy admin accent alias -> brand (keeps old admin classes working).
         accent: {
-          DEFAULT: '#2563eb',
-          hover: '#1d4ed8',
-          soft: '#eff5ff',
+          DEFAULT: '#5e6f54',
+          hover: '#4a5843',
+          soft: '#f4f7f1',
         },
         ink: {
-          DEFAULT: '#0f172a',
-          soft: '#475569',
-          faint: '#94a3b8',
+          DEFAULT: '#26302a',
+          soft: '#586158',
+          faint: '#98a29a',
         },
-        line: '#e2e8f0',
-        paper: '#ffffff',
+        line: '#e3e7ea',
+        // Soft off-white page background (rgb 244,246,248); cards stay white.
+        paper: '#f4f6f8',
         mist: {
-          1: '#f8fafc',
-          2: '#f1f5f9',
+          1: '#eef1f3',
+          2: '#e6ebe6',
         },
       },
       fontFamily: {
@@ -43,9 +45,14 @@ export default {
         site: '78rem',
       },
       boxShadow: {
-        soft: '0 1px 2px rgba(15,23,42,0.04), 0 8px 24px -12px rgba(15,23,42,0.12)',
-        lift: '0 12px 32px -12px rgba(15,23,42,0.18)',
-        glow: '0 12px 30px -10px rgba(37,99,235,0.45)',
+        soft: '0 1px 2px rgba(38,48,42,0.05), 0 8px 24px -12px rgba(38,48,42,0.14)',
+        lift: '0 12px 32px -12px rgba(38,48,42,0.20)',
+        glow: '0 12px 30px -10px rgba(56,67,47,0.4)',
+      },
+      backgroundImage: {
+        // Signature sage gradient — deep forest → sage (dark enough for white text).
+        'gradient-brand': 'linear-gradient(135deg, #445236 0%, #5b6d50 55%, #74886a 100%)',
+        'gradient-brand-soft': 'linear-gradient(120deg, #f4f7f1 0%, #e7ede1 100%)',
       },
       transitionTimingFunction: {
         'out-quart': 'cubic-bezier(0.25, 1, 0.5, 1)',

@@ -84,6 +84,6 @@ const buttons = computed(() => {
 :deep(.prose-edit ul) { list-style: disc; padding-left: 1.25rem; }
 :deep(.prose-edit ol) { list-style: decimal; padding-left: 1.25rem; }
 :deep(.prose-edit blockquote) { border-left: 3px solid #e5e5e5; padding-left: 0.75rem; color: #525252; }
-:deep(.prose-edit a) { color: #2563eb; text-decoration: underline; }
+:deep(.prose-edit a) { color: #5e6f54; text-decoration: underline; }
 :deep(.prose-edit p) { margin: 0.25rem 0; }
 </style>

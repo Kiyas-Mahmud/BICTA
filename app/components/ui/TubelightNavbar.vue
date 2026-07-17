@@ -82,10 +82,18 @@ onBeforeUnmount(() => {
         :style="indicatorStyle"
       >
         <!-- The tubelight glow -->
-        <div class="absolute -bottom-1.5 left-1/2 w-8 -translate-x-1/2 h-1 rounded-t-full bg-brand-600 shadow-[0_-2px_12px_rgba(37,99,235,0.8)]" />
+        <div class="absolute -bottom-1.5 left-1/2 w-8 -translate-x-1/2 h-1 rounded-t-full bg-brand-600 shadow-[0_-2px_12px_rgba(225,29,72,0.8)]" />
       </div>
 
-      <div class="ml-2 border-l border-line/50 pl-2">
+      <div class="ml-2 flex items-center gap-1 border-l border-line/50 pl-2">
+        <NuxtLink
+          to="/portal/login"
+          class="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-bold text-ink-soft transition-colors hover:bg-mist-1 hover:text-ink"
+          title="Participant login"
+        >
+          <Icon name="lucide:log-in" class="text-base" />
+          <span class="hidden sm:block">Log in</span>
+        </NuxtLink>
         <NuxtLink to="/events" class="btn-primary !rounded-full !px-5 !py-2 text-sm">
           <span class="hidden sm:inline">Register Now</span>
           <Icon name="lucide:arrow-right" class="sm:hidden" />

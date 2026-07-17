@@ -85,7 +85,7 @@ useSeoMeta({
           <span class="eyebrow rise rise-1">{{ s('hero_eyebrow', 'National ICT Programming Festival') }}</span>
           <h1 class="text-display rise rise-2 mt-5">
             {{ titleParts.main }}
-            <span v-if="titleParts.year" class="text-brand-600">{{ titleParts.year }}</span>
+            <span v-if="titleParts.year" class="gradient-text">{{ titleParts.year }}</span>
           </h1>
           <p class="rise rise-2 mt-4 text-xl font-bold text-ink">{{ tagline }}</p>
           <p class="rise rise-3 mt-3 max-w-md text-ink-soft">

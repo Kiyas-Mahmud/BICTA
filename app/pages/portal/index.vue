@@ -66,7 +66,7 @@ useSeoMeta({ title: 'My dashboard', robots: 'noindex' })
         <div class="space-y-6">
           <!-- QR card -->
           <div class="card overflow-hidden">
-            <div class="bg-brand-600 px-6 py-4 text-white">
+            <div class="gradient-brand px-6 py-4 text-white">
               <p class="flex items-center gap-2 text-sm font-bold"><Icon name="lucide:qr-code" /> Your entry QR</p>
               <p class="mt-0.5 text-xs text-white/70">Show this at kit, food & snack booths.</p>
             </div>
