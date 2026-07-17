@@ -1,11 +1,16 @@
 <script setup lang="ts">
-const { session, fetch: refreshSession } = useUserSession()
+const { session } = useUserSession()
 const participant = computed(() => (session.value as any)?.participant as { fullName: string; email: string } | undefined)
 
+const loggingOut = ref(false)
 async function logout() {
-  await $fetch('/api/participant/logout', { method: 'POST' })
-  await refreshSession()
-  await navigateTo('/portal/login')
+  if (loggingOut.value) return
+  loggingOut.value = true
+  await $fetch('/api/participant/logout', { method: 'POST' }).catch(() => {})
+  // Hard navigation: the server has dropped the participant session, so a full
+  // reload lands on the login page with fresh state. Avoids the client
+  // session-ref race that could bounce a soft navigateTo() redirect.
+  window.location.href = '/portal/login'
 }
 </script>
 
@@ -19,8 +24,9 @@ async function logout() {
         </NuxtLink>
         <div v-if="participant" class="flex items-center gap-4">
           <span class="hidden text-sm font-medium text-ink-soft sm:block">{{ participant.fullName }}</span>
-          <button class="btn-secondary !px-4 !py-2 text-sm" @click="logout">
-            <Icon name="lucide:log-out" /> Log out
+          <button class="btn-secondary !px-4 !py-2 text-sm" :disabled="loggingOut" @click="logout">
+            <Icon :name="loggingOut ? 'lucide:loader-2' : 'lucide:log-out'" :class="{ 'animate-spin': loggingOut }" />
+            {{ loggingOut ? 'Signing out…' : 'Log out' }}
           </button>
         </div>
         <NuxtLink v-else to="/" class="text-sm font-semibold text-ink-soft hover:text-ink">Back to site</NuxtLink>

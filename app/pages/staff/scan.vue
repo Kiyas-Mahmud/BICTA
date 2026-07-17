@@ -4,7 +4,7 @@
 // fallback when a camera isn't available.
 definePageMeta({ layout: false, middleware: 'admin' })
 
-const { session, fetch: refreshSession } = useUserSession()
+const { session } = useUserSession()
 const staff = computed(() => (session.value as any)?.user as { name: string; role?: string } | undefined)
 
 const { data: checkpoints } = await useFetch('/api/staff/checkpoints')
@@ -93,9 +93,9 @@ onBeforeUnmount(stopCamera)
 
 async function logout() {
   await stopCamera()
-  await $fetch('/api/admin/auth/logout', { method: 'POST' })
-  await refreshSession()
-  await navigateTo('/admin/login')
+  await $fetch('/api/admin/auth/logout', { method: 'POST' }).catch(() => {})
+  // Hard reload avoids the client session-ref race that can stall the redirect.
+  window.location.href = '/admin/login'
 }
 
 useSeoMeta({ title: 'Scanner', robots: 'noindex' })

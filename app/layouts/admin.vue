@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { user, clear } = useUserSession()
+const { user } = useUserSession()
 
 const groups = [
   {
@@ -45,9 +45,9 @@ const groups = [
 ]
 
 async function logout() {
-  await $fetch('/api/admin/auth/logout', { method: 'POST' })
-  await clear()
-  await navigateTo('/admin/login')
+  await $fetch('/api/admin/auth/logout', { method: 'POST' }).catch(() => {})
+  // Hard reload avoids the client session-ref race that can stall the redirect.
+  window.location.href = '/admin/login'
 }
 </script>
 
