@@ -3,7 +3,7 @@ import { eq, count } from 'drizzle-orm'
 import { useDb, schema } from '../../../../database/client'
 import { teamMemberAddSchema, idParam } from '../../../../utils/validation'
 import { requireTeamLeader, syncLegacyRoster } from '../../../../utils/team'
-import { sendMail, inviteEmail, leaderConfirmationEmail, qrImageUrl } from '../../../../utils/email'
+import { sendMail, inviteEmail, leaderConfirmationEmail } from '../../../../utils/email'
 
 // Leader adds a teammate after registration (until the deadline).
 export default defineEventHandler(async (event) => {
@@ -45,21 +45,10 @@ export default defineEventHandler(async (event) => {
 
   await syncLegacyRoster(registrationId)
 
-  const mail = account!.inviteToken
-    ? inviteEmail({
-        name: body.name,
-        teamName: registration.teamName ?? '',
-        competition: comp.name,
-        inviteToken: account!.inviteToken,
-        qrUrl: qrImageUrl(account!.checkinToken),
-      })
-    : leaderConfirmationEmail({
-        name: body.name,
-        teamName: registration.teamName ?? '',
-        competition: comp.name,
-        qrUrl: qrImageUrl(account!.checkinToken),
-      })
-  sendMail({ to: account!.email, ...mail }).catch(() => {})
+  const build = account!.inviteToken
+    ? inviteEmail({ name: body.name, teamName: registration.teamName ?? '', competition: comp.name, inviteToken: account!.inviteToken, checkinToken: account!.checkinToken })
+    : leaderConfirmationEmail({ name: body.name, teamName: registration.teamName ?? '', competition: comp.name, checkinToken: account!.checkinToken })
+  build.then((mail) => sendMail({ to: account!.email, ...mail })).catch(() => {})
 
   return { ok: true }
 })

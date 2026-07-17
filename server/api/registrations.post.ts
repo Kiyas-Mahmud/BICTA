@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import { eq, and } from 'drizzle-orm'
 import { useDb, schema } from '../database/client'
 import { registrationSchema } from '../utils/validation'
-import { sendMail, inviteEmail, leaderConfirmationEmail, qrImageUrl } from '../utils/email'
+import { sendMail, inviteEmail, leaderConfirmationEmail } from '../utils/email'
 
 // Public write endpoint. Handler order is the security contract
 // (Security_Plan.md §6a): rate limit → honeypot/time-trap → schema validation
@@ -127,34 +127,17 @@ export default defineEventHandler(async (event) => {
   // ---- Emails (console transport in dev; Resend when key is set). Failures
   // are logged inside sendMail and never break the registration. ----
   const teamName = registration!.teamName ?? ''
-  sendMail({
-    to: leader!.email,
-    ...leaderConfirmationEmail({
-      name: leader!.fullName,
-      teamName,
-      competition: comp.name,
-      qrUrl: qrImageUrl(leader!.checkinToken),
-    }),
-  }).catch(() => {})
+  leaderConfirmationEmail({ name: leader!.fullName, teamName, competition: comp.name, checkinToken: leader!.checkinToken })
+    .then((mail) => sendMail({ to: leader!.email, ...mail }))
+    .catch(() => {})
 
   for (const { account, name } of invites) {
     if (!account) continue
-    const mail = account.inviteToken
-      ? inviteEmail({
-          name,
-          teamName,
-          competition: comp.name,
-          inviteToken: account.inviteToken,
-          qrUrl: qrImageUrl(account.checkinToken),
-        })
-      : leaderConfirmationEmail({
-          // Existing active account added to a new team: no invite link needed.
-          name,
-          teamName,
-          competition: comp.name,
-          qrUrl: qrImageUrl(account.checkinToken),
-        })
-    sendMail({ to: account.email, ...mail }).catch(() => {})
+    const build = account.inviteToken
+      ? inviteEmail({ name, teamName, competition: comp.name, inviteToken: account.inviteToken, checkinToken: account.checkinToken })
+      : // Existing active account added to a new team: no invite link needed.
+        leaderConfirmationEmail({ name, teamName, competition: comp.name, checkinToken: account.checkinToken })
+    build.then((mail) => sendMail({ to: account!.email, ...mail })).catch(() => {})
   }
 
   // Confirmation only — no stored data echoed back.
