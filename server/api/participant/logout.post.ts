@@ -1,8 +1,9 @@
 export default defineEventHandler(async (event) => {
-  // Remove only the participant part of the session; an admin logged into the
-  // same browser keeps their staff session.
-  const session = await getUserSession(event)
-  const { participant: _drop, ...rest } = (session ?? {}) as Record<string, unknown>
-  await replaceUserSession(event, rest)
+  // Fully clear the sealed session cookie. We used to strip only the
+  // `participant` key via replaceUserSession(), but h3's useSession re-reads the
+  // original request cookie inside update() after clear(), so the participant
+  // was resealed and logout silently did nothing. clearUserSession() empties the
+  // cookie outright — the reliable logout path (same as admin logout).
+  await clearUserSession(event)
   return { ok: true }
 })
