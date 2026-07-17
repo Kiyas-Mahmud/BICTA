@@ -59,16 +59,16 @@ const buttons = computed(() => {
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-lg border border-line bg-white focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/20">
-    <div class="flex flex-wrap gap-1 border-b border-line bg-neutral-50 p-1.5">
+  <div class="overflow-hidden rounded-xl border border-line bg-white transition-shadow focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/15">
+    <div class="flex flex-wrap gap-1 border-b border-line bg-mist-1 p-1.5">
       <button
         v-for="btn in buttons"
         :key="btn.title"
         type="button"
         :title="btn.title"
         :aria-label="btn.title"
-        class="flex h-8 w-8 items-center justify-center rounded text-ink-soft transition-colors hover:bg-neutral-200"
-        :class="{ 'bg-neutral-200 !text-ink': btn.active }"
+        class="flex h-8 w-8 items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-mist-2 hover:text-ink"
+        :class="{ 'bg-brand-100 !text-brand-700': btn.active }"
         @click="btn.run"
       >
         <Icon :name="btn.icon" class="text-base" />

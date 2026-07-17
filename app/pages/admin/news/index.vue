@@ -17,57 +17,68 @@ async function remove(id: number, title: string) {
 
 <template>
   <div>
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold tracking-tight">News</h1>
+    <div class="admin-head">
+      <div>
+        <h1 class="admin-h1">News</h1>
+        <p class="admin-sub">Announcements and articles shown on the public site.</p>
+      </div>
       <NuxtLink to="/admin/news/new" class="btn-primary"><Icon name="lucide:plus" /> New article</NuxtLink>
     </div>
 
-    <div class="mt-4 flex gap-2">
+    <div class="mt-5 inline-flex gap-1 rounded-xl border border-line bg-white p-1 shadow-soft">
       <button
         v-for="f in ['all', 'published', 'draft'] as const"
         :key="f"
-        class="rounded-full border border-line px-3 py-1 text-sm font-medium capitalize"
-        :class="filter === f ? 'bg-ink text-white' : 'bg-white text-ink-soft hover:bg-neutral-50'"
+        class="rounded-lg px-3.5 py-1.5 text-sm font-semibold capitalize transition-colors"
+        :class="filter === f ? 'bg-brand-600 text-white' : 'text-ink-soft hover:bg-mist-1'"
         @click="filter = f"
       >
         {{ f }}
       </button>
     </div>
 
-    <div class="mt-4 overflow-hidden rounded-xl border border-line bg-white">
-      <table class="w-full text-left text-sm">
-        <thead class="border-b border-line bg-neutral-50 text-xs uppercase text-ink-soft">
-          <tr>
-            <th class="px-4 py-3">Title</th>
-            <th class="px-4 py-3">Status</th>
-            <th class="px-4 py-3">Published</th>
-            <th class="px-4 py-3 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="n in filtered" :key="n.id" class="border-b border-line transition-colors last:border-0 hover:bg-neutral-50">
-            <td class="px-4 py-3 font-medium">
-              <NuxtLink :to="`/admin/news/${n.id}`" class="hover:text-accent">{{ n.title }}</NuxtLink>
-            </td>
-            <td class="px-4 py-3">
-              <span
-                class="rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                :class="n.status === 'published' ? 'bg-green-50 text-green-700' : 'bg-neutral-100 text-ink-soft'"
-              >
-                {{ n.status }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-ink-soft">{{ n.publishedAt ? new Date(n.publishedAt).toLocaleDateString() : '—' }}</td>
-            <td class="px-4 py-3 text-right">
-              <NuxtLink :to="`/admin/news/${n.id}`" class="mr-3 font-medium text-accent hover:underline">Edit</NuxtLink>
-              <button class="font-medium text-red-600 hover:underline" @click="remove(n.id, n.title)">Delete</button>
-            </td>
-          </tr>
-          <tr v-if="!filtered?.length">
-            <td colspan="4" class="px-4 py-10 text-center text-ink-faint">No articles.</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="mt-5 overflow-hidden rounded-2xl border border-line bg-white shadow-soft">
+      <div class="overflow-x-auto">
+        <table class="admin-table min-w-[560px]">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Published</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="n in filtered" :key="n.id">
+              <td>
+                <NuxtLink :to="`/admin/news/${n.id}`" class="flex items-center gap-3">
+                  <img v-if="n.coverImage" :src="n.coverImage" alt="" class="h-9 w-12 shrink-0 rounded-lg border border-line object-cover" />
+                  <span v-else class="flex h-9 w-12 shrink-0 items-center justify-center rounded-lg bg-mist-1 text-ink-faint"><Icon name="lucide:newspaper" /></span>
+                  <p class="font-semibold text-ink hover:text-brand-700">{{ n.title }}</p>
+                </NuxtLink>
+              </td>
+              <td>
+                <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize" :class="n.status === 'published' ? 'bg-green-50 text-green-700' : 'bg-mist-2 text-ink-soft'">{{ n.status }}</span>
+              </td>
+              <td class="text-ink-soft">{{ n.publishedAt ? new Date(n.publishedAt).toLocaleDateString() : '—' }}</td>
+              <td>
+                <div class="flex items-center justify-end gap-1">
+                  <NuxtLink :to="`/admin/news/${n.id}`" class="icon-btn hover:bg-brand-50 hover:text-brand-700" aria-label="Edit"><Icon name="lucide:pencil" /></NuxtLink>
+                  <button class="icon-btn hover:bg-red-50 hover:text-red-600" aria-label="Delete" @click="remove(n.id, n.title)"><Icon name="lucide:trash-2" /></button>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="!filtered?.length">
+              <td colspan="4" class="px-5 py-12 text-center">
+                <div class="flex flex-col items-center gap-2 text-ink-faint">
+                  <Icon name="lucide:newspaper" class="text-3xl" />
+                  <p class="text-sm">No articles{{ filter !== 'all' ? ` (${filter})` : '' }}.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>

@@ -28,45 +28,68 @@ async function remove(id: number, name: string) {
   await $fetch(`/api/admin/volunteers/${id}`, { method: 'DELETE' })
   await refresh()
 }
+
+function initials(name: string) {
+  return (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('')
+}
 </script>
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold tracking-tight">Scanner Volunteers</h1>
-    <p class="mt-1 text-sm text-ink-soft">
-      Volunteers log in at <code class="rounded bg-neutral-100 px-1">/admin/login</code> and land straight on the QR scanner — they can only mark collections, not touch admin content.
-    </p>
+    <div class="admin-head">
+      <div>
+        <h1 class="admin-h1">Scanner Volunteers</h1>
+        <p class="admin-sub">Event-day staff who log in at <code class="rounded bg-mist-2 px-1.5 py-0.5 text-xs">/admin/login</code> and land on the QR scanner — scan only, no admin access.</p>
+      </div>
+    </div>
 
     <div class="mt-6 grid gap-6 lg:grid-cols-[1fr_320px]">
       <!-- list -->
-      <div class="overflow-hidden rounded-xl border border-line bg-white">
-        <table class="w-full text-left text-sm">
-          <thead class="border-b border-line bg-neutral-50 text-xs uppercase text-ink-soft">
-            <tr>
-              <th class="px-4 py-3">Name</th>
-              <th class="px-4 py-3">Email</th>
-              <th class="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="v in volunteers" :key="v.id" class="border-b border-line transition-colors last:border-0 hover:bg-neutral-50">
-              <td class="px-4 py-3 font-medium">{{ v.name }}</td>
-              <td class="px-4 py-3 text-ink-soft">{{ v.email }}</td>
-              <td class="px-4 py-3 text-right">
-                <button class="font-medium text-red-600 hover:underline" @click="remove(v.id, v.name)">Remove</button>
-              </td>
-            </tr>
-            <tr v-if="!volunteers?.length">
-              <td colspan="3" class="px-4 py-10 text-center text-ink-faint">No volunteers yet.</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="overflow-hidden rounded-2xl border border-line bg-white shadow-soft">
+        <div class="overflow-x-auto">
+          <table class="admin-table min-w-[420px]">
+            <thead>
+              <tr>
+                <th>Volunteer</th>
+                <th>Email</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="v in volunteers" :key="v.id">
+                <td>
+                  <div class="flex items-center gap-3">
+                    <span class="avatar-chip">{{ initials(v.name) }}</span>
+                    <span class="font-semibold text-ink">{{ v.name }}</span>
+                  </div>
+                </td>
+                <td class="text-ink-soft">{{ v.email }}</td>
+                <td>
+                  <div class="flex justify-end">
+                    <button class="icon-btn hover:bg-red-50 hover:text-red-600" aria-label="Remove" @click="remove(v.id, v.name)"><Icon name="lucide:trash-2" /></button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="!volunteers?.length">
+                <td colspan="3" class="px-5 py-12 text-center">
+                  <div class="flex flex-col items-center gap-2 text-ink-faint">
+                    <Icon name="lucide:scan-line" class="text-3xl" />
+                    <p class="text-sm">No volunteers yet.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- add form -->
-      <div class="admin-card p-5">
-        <h2 class="text-sm font-bold">Add volunteer</h2>
-        <div class="mt-4 space-y-3">
+      <div class="admin-panel h-fit">
+        <div class="mb-4 flex items-center gap-2.5">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-100 text-brand-700"><Icon name="lucide:user-plus" /></span>
+          <h2 class="text-sm font-bold text-ink">Add volunteer</h2>
+        </div>
+        <div class="space-y-3">
           <div>
             <label class="label">Name</label>
             <input v-model="form.name" class="input" maxlength="150" />
@@ -76,11 +99,12 @@ async function remove(id: number, name: string) {
             <input v-model="form.email" type="email" class="input" maxlength="254" />
           </div>
           <div>
-            <label class="label">Password (min 8)</label>
+            <label class="label">Password <span class="font-normal text-ink-faint">(min 8)</span></label>
             <input v-model="form.password" type="text" class="input" minlength="8" placeholder="Share this with them" />
           </div>
           <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
           <button class="btn-primary w-full" :disabled="adding" @click="add">
+            <Icon v-if="adding" name="lucide:loader-2" class="animate-spin" />
             {{ adding ? 'Adding…' : 'Add volunteer' }}
           </button>
         </div>

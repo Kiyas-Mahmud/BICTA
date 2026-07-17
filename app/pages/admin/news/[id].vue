@@ -22,11 +22,19 @@ async function save(data: any) {
 
 <template>
   <div v-if="article">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold tracking-tight">Edit article</h1>
-      <span v-if="savedAt" class="text-sm text-ink-faint">Saved {{ savedAt }}</span>
+    <NuxtLink to="/admin/news" class="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-ink-faint transition-colors hover:text-ink">
+      <Icon name="lucide:arrow-left" /> News
+    </NuxtLink>
+    <div class="admin-head">
+      <div class="flex items-center gap-3">
+        <h1 class="admin-h1">Edit article</h1>
+        <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize" :class="article.status === 'published' ? 'bg-green-50 text-green-700' : 'bg-mist-2 text-ink-soft'">{{ article.status }}</span>
+      </div>
+      <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0">
+        <span v-if="savedAt" class="inline-flex items-center gap-1 text-sm text-green-700"><Icon name="lucide:check-circle" /> Saved {{ savedAt }}</span>
+      </Transition>
     </div>
-    <div class="mt-6 rounded-xl border border-line bg-white p-6">
+    <div class="admin-panel mt-6">
       <AdminNewsForm :key="article.updatedAt" :initial="article" :saving="saving" @submit="save" />
     </div>
   </div>

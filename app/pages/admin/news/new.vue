@@ -16,8 +16,12 @@ async function create(data: any) {
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold tracking-tight">New article</h1>
-    <div class="mt-6 rounded-xl border border-line bg-white p-6">
+    <NuxtLink to="/admin/news" class="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-ink-faint transition-colors hover:text-ink">
+      <Icon name="lucide:arrow-left" /> News
+    </NuxtLink>
+    <h1 class="admin-h1">New article</h1>
+    <p class="admin-sub">Draft it, then publish when ready.</p>
+    <div class="admin-panel mt-6">
       <AdminNewsForm :saving="saving" @submit="create" />
     </div>
   </div>

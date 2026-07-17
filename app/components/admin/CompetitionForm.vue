@@ -71,24 +71,32 @@ function submit() {
       <AdminRichText v-model="form.rules" />
     </div>
 
-    <fieldset class="rounded-xl border border-line p-4">
-      <legend class="px-1 text-sm font-semibold">Registration</legend>
+    <fieldset class="rounded-2xl border border-line bg-mist-1 p-4">
+      <legend class="px-1.5 text-sm font-bold text-ink">Registration</legend>
       <div class="grid grid-cols-2 gap-4">
-        <label class="flex items-center gap-2 text-sm font-medium">
-          <input v-model="form.registrationOpen" type="checkbox" class="h-4 w-4 accent-accent" />
-          Registration open
+        <label class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-line bg-white px-3.5 py-2.5">
+          <span class="text-sm font-medium text-ink">Registration open</span>
+          <span class="relative inline-flex shrink-0">
+            <input v-model="form.registrationOpen" type="checkbox" class="peer sr-only" />
+            <span class="block h-5 w-9 rounded-full bg-line transition-colors peer-checked:bg-brand-600" />
+            <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />
+          </span>
         </label>
         <div>
           <label class="label">Deadline</label>
-          <input v-model="form.registrationDeadline" type="date" class="input" />
+          <input v-model="form.registrationDeadline" type="date" class="input !bg-white" />
         </div>
-        <label class="flex items-center gap-2 text-sm font-medium">
-          <input v-model="form.teamBased" type="checkbox" class="h-4 w-4 accent-accent" />
-          Team-based
+        <label class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-line bg-white px-3.5 py-2.5">
+          <span class="text-sm font-medium text-ink">Team-based</span>
+          <span class="relative inline-flex shrink-0">
+            <input v-model="form.teamBased" type="checkbox" class="peer sr-only" />
+            <span class="block h-5 w-9 rounded-full bg-line transition-colors peer-checked:bg-brand-600" />
+            <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />
+          </span>
         </label>
         <div v-if="form.teamBased">
           <label class="label">Max team size</label>
-          <input v-model.number="form.maxTeamSize" type="number" class="input" min="1" max="20" />
+          <input v-model.number="form.maxTeamSize" type="number" class="input !bg-white" min="1" max="20" />
         </div>
       </div>
     </fieldset>

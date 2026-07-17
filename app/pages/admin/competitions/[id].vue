@@ -22,17 +22,17 @@ async function save(data: any) {
 
 <template>
   <div v-if="comp">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight">{{ comp.name }}</h1>
-        <NuxtLink :to="`/admin/events/${comp.eventId}`" class="inline-flex items-center gap-1 text-sm text-accent hover:underline">
-          <Icon name="lucide:arrow-left" /> Back to event
-        </NuxtLink>
-      </div>
-      <span v-if="savedAt" class="text-sm text-ink-faint">Saved {{ savedAt }}</span>
+    <NuxtLink :to="`/admin/events/${comp.eventId}`" class="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-ink-faint transition-colors hover:text-ink">
+      <Icon name="lucide:arrow-left" /> Back to event
+    </NuxtLink>
+    <div class="admin-head">
+      <h1 class="admin-h1">{{ comp.name }}</h1>
+      <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0">
+        <span v-if="savedAt" class="inline-flex items-center gap-1 text-sm text-green-700"><Icon name="lucide:check-circle" /> Saved {{ savedAt }}</span>
+      </Transition>
     </div>
 
-    <div class="mt-6 rounded-xl border border-line bg-white p-6">
+    <div class="admin-panel mt-6">
       <AdminCompetitionForm :key="String(comp.id)" :initial="comp" :event-id="comp.eventId" :saving="saving" @submit="save" />
     </div>
   </div>

@@ -36,8 +36,11 @@ async function submit() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
-    <div class="rise w-full max-w-sm rounded-2xl border border-line bg-white p-8 shadow-sm">
+  <div class="flex min-h-screen items-center justify-center bg-paper px-4">
+    <div class="rise w-full max-w-sm rounded-2xl border border-line bg-white p-8 shadow-soft">
+      <span class="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-soft">
+        <Icon name="lucide:command" class="text-xl" />
+      </span>
       <h1 class="text-xl font-extrabold tracking-tight">
         BICTA <span class="text-xs font-semibold text-ink-faint">ADMIN</span>
       </h1>
@@ -61,7 +64,7 @@ async function submit() {
             />
             <button
               type="button"
-              class="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-ink-faint transition-colors hover:bg-neutral-100 hover:text-ink"
+              class="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-ink-faint transition-colors hover:bg-mist-1 hover:text-ink"
               :aria-label="showPw ? 'Hide password' : 'Show password'"
               tabindex="-1"
               @click="showPw = !showPw"

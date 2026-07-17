@@ -22,8 +22,12 @@ async function create(data: any) {
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold tracking-tight">New competition</h1>
-    <div class="mt-6 rounded-xl border border-line bg-white p-6">
+    <NuxtLink :to="`/admin/events/${eventId}`" class="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-ink-faint transition-colors hover:text-ink">
+      <Icon name="lucide:arrow-left" /> Back to event
+    </NuxtLink>
+    <h1 class="admin-h1">New competition</h1>
+    <p class="admin-sub">Add a contest, its rules, registration window and prizes.</p>
+    <div class="admin-panel mt-6">
       <AdminCompetitionForm :event-id="eventId" :saving="saving" @submit="create" />
     </div>
   </div>
