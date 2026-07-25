@@ -25,57 +25,66 @@ const form = reactive<EventFormData>({
   heroImage: props.initial?.heroImage ?? null,
   status: props.initial?.status ?? 'upcoming',
 })
+
+// Surfaced inline so a bad range is caught before the server rejects it.
+const dateWarning = computed(() =>
+  form.startDate && form.endDate && form.endDate < form.startDate ? 'End date is before the start date.' : '',
+)
 </script>
 
 <template>
-  <form class="max-w-2xl space-y-5" @submit.prevent="emit('submit', { ...form })">
-    <div class="grid grid-cols-2 gap-4">
-      <div class="col-span-2">
-        <label class="label">Title</label>
-        <input v-model="form.title" class="input" required maxlength="200" />
+  <form class="space-y-6" @submit.prevent="emit('submit', { ...form })">
+    <AdminFormSection title="Basics" description="How this edition is named and listed." icon="lucide:calendar-days">
+      <div>
+        <label class="label" for="ev-title">Title <span class="text-red-600">*</span></label>
+        <input id="ev-title" v-model="form.title" class="input" required maxlength="200" placeholder="BICTA 2026" />
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="label" for="ev-year">Year <span class="text-red-600">*</span></label>
+          <input id="ev-year" v-model.number="form.year" type="number" class="input" required min="2000" max="2100" />
+        </div>
+        <div>
+          <label class="label" for="ev-status">Status</label>
+          <select id="ev-status" v-model="form.status" class="input">
+            <option value="upcoming">Upcoming</option>
+            <option value="ongoing">Ongoing</option>
+            <option value="past">Past</option>
+          </select>
+        </div>
       </div>
       <div>
-        <label class="label">Year</label>
-        <input v-model.number="form.year" type="number" class="input" required min="2000" max="2100" />
+        <label class="label" for="ev-slug">Slug <span class="font-normal text-ink-faint">(optional — generated from the title)</span></label>
+        <input id="ev-slug" v-model="form.slug" class="input font-mono" maxlength="100" placeholder="bicta-2026" />
       </div>
-      <div>
-        <label class="label">Status</label>
-        <select v-model="form.status" class="input">
-          <option value="upcoming">Upcoming</option>
-          <option value="ongoing">Ongoing</option>
-          <option value="past">Past</option>
-        </select>
-      </div>
-      <div>
-        <label class="label">Start date</label>
-        <input v-model="form.startDate" type="date" class="input" />
-      </div>
-      <div>
-        <label class="label">End date</label>
-        <input v-model="form.endDate" type="date" class="input" />
-      </div>
-      <div class="col-span-2">
-        <label class="label">Venue</label>
-        <input v-model="form.venue" class="input" maxlength="200" />
-      </div>
-      <div class="col-span-2">
-        <label class="label">Slug <span class="text-ink-faint">(optional — generated from title)</span></label>
-        <input v-model="form.slug" class="input" maxlength="100" />
-      </div>
-    </div>
+    </AdminFormSection>
 
-    <div>
-      <label class="label">Description</label>
+    <AdminFormSection title="Schedule & venue" description="Dates power the public countdown and timeline." icon="lucide:map-pin">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="label" for="ev-start">Start date</label>
+          <input id="ev-start" v-model="form.startDate" type="date" class="input" />
+        </div>
+        <div>
+          <label class="label" for="ev-end">End date</label>
+          <input id="ev-end" v-model="form.endDate" type="date" class="input" :aria-invalid="Boolean(dateWarning)" />
+        </div>
+      </div>
+      <p v-if="dateWarning" class="form-error" role="alert">{{ dateWarning }}</p>
+      <div>
+        <label class="label" for="ev-venue">Venue</label>
+        <input id="ev-venue" v-model="form.venue" class="input" maxlength="200" placeholder="Main auditorium, City Campus" />
+      </div>
+    </AdminFormSection>
+
+    <AdminFormSection title="Description" description="Shown on the public event page." icon="lucide:text">
       <AdminRichText v-model="form.description" />
-    </div>
+    </AdminFormSection>
 
-    <div>
-      <label class="label">Hero image</label>
+    <AdminFormSection title="Hero image" description="Wide banner at the top of the event page." icon="lucide:image">
       <AdminImageUploader v-model="form.heroImage" />
-    </div>
+    </AdminFormSection>
 
-    <button type="submit" class="btn-primary" :disabled="saving">
-      {{ saving ? 'Saving…' : 'Save event' }}
-    </button>
+    <AdminFormActions :saving="saving" label="Save event" hint="Changes go live on the public site immediately." />
   </form>
 </template>

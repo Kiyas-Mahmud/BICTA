@@ -4,7 +4,7 @@ import { EffectCoverflow, Pagination, Autoplay } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/effect-coverflow'
 import 'swiper/css/pagination'
-import type { HackathonEvent } from '~/composables/useEvents'
+import type { Competition } from '~/composables/useCompetitions'
 import type { TimelineItem } from '~/components/site/Timeline.vue'
 
 const { data } = await useFetch('/api/public/home')
@@ -31,9 +31,9 @@ const stats = computed(() => [
 ])
 
 // Competitions carousel — DB-backed via the content plugin.
-const featuredEvents = useFeaturedEvents()
+const featuredEvents = useFeaturedCompetitions()
 
-function statusBadge(status: HackathonEvent['status']) {
+function statusBadge(status: Competition['status']) {
   if (status === 'ongoing') return { class: 'pill-open', label: 'Live', dot: true }
   if (status === 'upcoming') return { class: 'badge badge-blue', label: 'Upcoming', dot: false }
   return { class: 'badge badge-gray', label: 'Past', dot: false }
@@ -222,7 +222,7 @@ useSeoMeta({
                   class="!w-[320px] sm:!w-[380px] md:!w-[420px]"
                 >
                   <UiTiltCard :max="8">
-                    <NuxtLink :to="`/events/${event.id}`" class="group block">
+                    <NuxtLink :to="`/events/${event.eventId}/${event.id}`" class="group block">
                       <div class="relative aspect-[16/10] overflow-hidden rounded-2xl">
                         <img
                           :src="event.imageUrl"

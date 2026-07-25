@@ -8,12 +8,16 @@
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
-    "preview": "nuxt preview",
+    "preview": "wrangler dev",
+    "deploy": "nuxt build && wrangler deploy",
     "postinstall": "nuxt prepare",
+    "cf:types": "wrangler types",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node -e \"require('fs').mkdirSync('.data',{recursive:true})\" && drizzle-kit migrate",
+    "db:migrate": "wrangler d1 migrations apply bicta --local",
+    "db:migrate:remote": "wrangler d1 migrations apply bicta --remote",
     "setup": "npm install && npm run db:migrate && npm run seed",
-    "seed": "tsx --env-file=.env scripts/seed.ts"
+    "seed": "tsx --env-file=.env scripts/seed-d1.ts",
+    "seed:remote": "tsx --env-file=.env scripts/seed-d1.ts --remote"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.112",
@@ -22,24 +26,24 @@
     "@tiptap/vue-3": "^3.26.1",
     "@vueuse/motion": "^3.0.3",
     "bcryptjs": "^3.0.2",
-    "better-sqlite3": "^12.2.0",
     "drizzle-orm": "^0.44.2",
     "html5-qrcode": "^2.3.8",
     "nuxt": "^4.0.0",
     "nuxt-auth-utils": "^0.5.20",
-    "qrcode": "^1.5.4",
-    "resend": "^6.17.1",
     "sanitize-html": "^2.17.0",
     "swiper": "^12.2.0",
+    "uqr": "^0.1.3",
     "zod": "^3.25.0"
   },
   "devDependencies": {
     "@nuxt/fonts": "^0.11.4",
     "@nuxtjs/tailwindcss": "^6.14.0",
     "@types/better-sqlite3": "^7.6.13",
-    "@types/qrcode": "^1.5.6",
     "@types/sanitize-html": "^2.16.0",
+    "better-sqlite3": "^12.2.0",
     "drizzle-kit": "^0.31.1",
-    "tsx": "^4.20.3"
+    "nitro-cloudflare-dev": "^0.2.2",
+    "tsx": "^4.20.3",
+    "wrangler": "^4.114.0"
   }
 }

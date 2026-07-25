@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, checkpointSchema.parse)
   const db = useDb()
 
-  const current = db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.isCurrent, true)).get()
+  const current = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.isCurrent, true)).get()
   if (!current) throw createError({ statusCode: 400, statusMessage: 'Set a current event first' })
 
   const [row] = await db

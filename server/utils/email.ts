@@ -1,14 +1,16 @@
-import { Resend } from 'resend'
 import { qrBuffer } from './qr'
 
 // Single mail gateway for the whole app. With RESEND_API_KEY set, mail goes
-// out via Resend; without it (local dev), the message is printed to the server
-// console so flows stay testable end-to-end.
+// out via Resend's REST API; without it (local dev), the message is printed to
+// the server console so flows stay testable end-to-end.
+//
+// The REST endpoint is called with plain fetch rather than the `resend` SDK:
+// the SDK pulls in @react-email/render, which cannot be bundled for Workers.
 
 interface Attachment { filename: string; content: Buffer; contentType: string; contentId?: string }
 interface MailInput { to: string; subject: string; html: string; attachments?: Attachment[] }
 
-let _resend: Resend | null = null
+const RESEND_ENDPOINT = 'https://api.resend.com/emails'
 
 export async function sendMail({ to, subject, html, attachments }: MailInput): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY
@@ -19,9 +21,33 @@ export async function sendMail({ to, subject, html, attachments }: MailInput): P
     return
   }
 
-  if (!_resend) _resend = new Resend(apiKey)
-  const { error } = await _resend.emails.send({ from, to, subject, html, attachments })
-  if (error) console.error(`[mail] send failed to=${to} subject="${subject}": ${error.message}`)
+  try {
+    const res = await fetch(RESEND_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from,
+        to,
+        subject,
+        html,
+        attachments: attachments?.map((a) => ({
+          filename: a.filename,
+          content: a.content.toString('base64'),
+          content_type: a.contentType,
+          content_id: a.contentId,
+        })),
+      }),
+    })
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '')
+      console.error(`[mail] send failed to=${to} subject="${subject}": ${res.status} ${detail.slice(0, 200)}`)
+    }
+  } catch (err: any) {
+    console.error(`[mail] send failed to=${to} subject="${subject}": ${err?.message ?? err}`)
+  }
 }
 
 export function siteUrl(path = ''): string {

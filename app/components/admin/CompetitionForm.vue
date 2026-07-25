@@ -42,77 +42,65 @@ function submit() {
 </script>
 
 <template>
-  <form class="max-w-2xl space-y-5" @submit.prevent="submit">
-    <div class="grid grid-cols-2 gap-4">
-      <div>
-        <label class="label">Name</label>
-        <input v-model="form.name" class="input" required maxlength="200" />
-      </div>
-      <div>
-        <label class="label">Type <span class="text-ink-faint">(e.g. Hackathon)</span></label>
-        <input v-model="form.type" class="input" maxlength="100" />
-      </div>
-      <div class="col-span-2">
-        <label class="label">Slug <span class="text-ink-faint">(optional)</span></label>
-        <input v-model="form.slug" class="input" maxlength="100" />
-      </div>
-      <div>
-        <label class="label">Sort order</label>
-        <input v-model.number="form.sortOrder" type="number" class="input" min="0" max="1000" />
-      </div>
-    </div>
-
-    <div>
-      <label class="label">Description</label>
-      <AdminRichText v-model="form.description" />
-    </div>
-    <div>
-      <label class="label">Rules</label>
-      <AdminRichText v-model="form.rules" />
-    </div>
-
-    <fieldset class="rounded-2xl border border-line bg-mist-1 p-4">
-      <legend class="px-1.5 text-sm font-bold text-ink">Registration</legend>
-      <div class="grid grid-cols-2 gap-4">
-        <label class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-line bg-white px-3.5 py-2.5">
-          <span class="text-sm font-medium text-ink">Registration open</span>
-          <span class="relative inline-flex shrink-0">
-            <input v-model="form.registrationOpen" type="checkbox" class="peer sr-only" />
-            <span class="block h-5 w-9 rounded-full bg-line transition-colors peer-checked:bg-brand-600" />
-            <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />
-          </span>
-        </label>
+  <form class="space-y-6" @submit.prevent="submit">
+    <AdminFormSection title="Basics" description="Name, kind of contest and ordering on the public page." icon="lucide:trophy">
+      <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label class="label">Deadline</label>
-          <input v-model="form.registrationDeadline" type="date" class="input !bg-white" />
+          <label class="label" for="cp-name">Name <span class="text-red-600">*</span></label>
+          <input id="cp-name" v-model="form.name" class="input" required maxlength="200" placeholder="Hackathon" />
         </div>
-        <label class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-line bg-white px-3.5 py-2.5">
-          <span class="text-sm font-medium text-ink">Team-based</span>
-          <span class="relative inline-flex shrink-0">
-            <input v-model="form.teamBased" type="checkbox" class="peer sr-only" />
-            <span class="block h-5 w-9 rounded-full bg-line transition-colors peer-checked:bg-brand-600" />
-            <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />
-          </span>
-        </label>
-        <div v-if="form.teamBased">
-          <label class="label">Max team size</label>
-          <input v-model.number="form.maxTeamSize" type="number" class="input !bg-white" min="1" max="20" />
+        <div>
+          <label class="label" for="cp-type">Type <span class="font-normal text-ink-faint">(e.g. Hackathon)</span></label>
+          <input id="cp-type" v-model="form.type" class="input" maxlength="100" />
         </div>
       </div>
-    </fieldset>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="label" for="cp-slug">Slug <span class="font-normal text-ink-faint">(optional)</span></label>
+          <input id="cp-slug" v-model="form.slug" class="input font-mono" maxlength="100" />
+        </div>
+        <div>
+          <label class="label" for="cp-sort">Sort order</label>
+          <input id="cp-sort" v-model.number="form.sortOrder" type="number" class="input" min="0" max="1000" />
+        </div>
+      </div>
+    </AdminFormSection>
 
-    <div>
-      <label class="label">Prizes</label>
+    <AdminFormSection title="Registration" description="Controls whether the public form accepts entries." icon="lucide:clipboard-list">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <AdminSwitch v-model="form.registrationOpen" label="Registration open" hint="Sign-ups are refused when off." />
+        <div>
+          <label class="label" for="cp-deadline">Deadline</label>
+          <input id="cp-deadline" v-model="form.registrationDeadline" type="date" class="input" />
+        </div>
+        <AdminSwitch v-model="form.teamBased" label="Team-based" hint="Adds the team roster to the form." />
+        <div v-if="form.teamBased">
+          <label class="label" for="cp-team">Max team size</label>
+          <input id="cp-team" v-model.number="form.maxTeamSize" type="number" class="input" min="1" max="20" />
+        </div>
+      </div>
+      <p class="flex items-start gap-2 rounded-xl bg-mist-1 p-3 text-xs leading-relaxed text-ink-soft">
+        <Icon name="lucide:info" class="mt-0.5 shrink-0 text-brand-700" />
+        Both the open switch and the deadline are enforced again on the server, so a closed competition can never take an entry.
+      </p>
+    </AdminFormSection>
+
+    <AdminFormSection title="Description" description="Intro shown on the competition page." icon="lucide:text">
+      <AdminRichText v-model="form.description" />
+    </AdminFormSection>
+
+    <AdminFormSection title="Rules" description="Full rules and judging criteria." icon="lucide:scale">
+      <AdminRichText v-model="form.rules" />
+    </AdminFormSection>
+
+    <AdminFormSection title="Prizes" description="Listed in order on the public page." icon="lucide:banknote">
       <AdminPrizeEditor v-model="form.prizes" />
-    </div>
+    </AdminFormSection>
 
-    <div>
-      <label class="label">Cover image</label>
+    <AdminFormSection title="Cover image" description="Card image in competition listings." icon="lucide:image">
       <AdminImageUploader v-model="form.coverImage" />
-    </div>
+    </AdminFormSection>
 
-    <button type="submit" class="btn-primary" :disabled="saving">
-      {{ saving ? 'Saving…' : 'Save competition' }}
-    </button>
+    <AdminFormActions :saving="saving" label="Save competition" />
   </form>
 </template>

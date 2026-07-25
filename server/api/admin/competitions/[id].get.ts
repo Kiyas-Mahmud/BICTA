@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const id = idParam.parse(getRouterParam(event, 'id'))
   const db = useDb()
 
-  const row = db.select().from(schema.competitions).where(eq(schema.competitions.id, id)).get()
+  const row = await db.select().from(schema.competitions).where(eq(schema.competitions.id, id)).get()
   if (!row) throw createError({ statusCode: 404, statusMessage: 'Competition not found' })
 
   const prizes = await db

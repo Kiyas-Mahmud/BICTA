@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   await requireTeamLeader(event, registrationId)
   const db = useDb()
 
-  const row = db
+  const row = await db
     .select()
     .from(schema.teamMembers)
     .where(and(eq(schema.teamMembers.id, memberId), eq(schema.teamMembers.registrationId, registrationId)))

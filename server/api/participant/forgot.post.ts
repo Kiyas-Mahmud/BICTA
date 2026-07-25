@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDb()
-  const account = db
+  const account = await db
     .select()
     .from(schema.participantAccounts)
     .where(eq(schema.participantAccounts.email, body.email))

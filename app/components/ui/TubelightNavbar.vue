@@ -87,7 +87,7 @@ onBeforeUnmount(() => {
 
       <div class="ml-2 flex items-center gap-1 border-l border-line/50 pl-2">
         <NuxtLink
-          to="/portal/login"
+          to="/login"
           class="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-bold text-ink-soft transition-colors hover:bg-mist-1 hover:text-ink"
           title="Participant login"
         >

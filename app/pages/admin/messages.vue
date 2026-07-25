@@ -13,6 +13,8 @@ interface Message {
 
 const { data: messages, refresh } = await useFetch<Message[]>('/api/admin/contact-messages')
 const expanded = ref<number | null>(null)
+const toast = useToast()
+const { confirm } = useConfirm()
 
 async function toggleRead(m: Message) {
   await $fetch(`/api/admin/contact-messages/${m.id}`, { method: 'PUT', body: { isRead: !m.isRead } })
@@ -20,88 +22,125 @@ async function toggleRead(m: Message) {
 }
 
 async function remove(m: Message) {
-  if (!window.confirm(`Delete message from ${m.name}?`)) return
+  const ok = await confirm({
+    title: `Delete message from ${m.name}?`,
+    body: 'The enquiry is removed permanently. Reply by email first if you still need to.',
+  })
+  if (!ok) return
   await $fetch(`/api/admin/contact-messages/${m.id}`, { method: 'DELETE' })
   await refresh()
+  toast.success('Message deleted')
+}
+
+// Opening a message marks it read, the way an inbox is expected to behave.
+async function open(m: Message) {
+  const isOpening = expanded.value !== m.id
+  expanded.value = isOpening ? m.id : null
+  if (isOpening && !m.isRead) await toggleRead(m)
 }
 
 const unread = computed(() => messages.value?.filter((m) => !m.isRead).length ?? 0)
-function initials(name: string) {
-  return (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('')
+
+const filter = ref('all')
+const search = ref('')
+const visible = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  return (messages.value ?? []).filter((m) => {
+    const byState = filter.value === 'all' || (filter.value === 'unread' ? !m.isRead : m.isRead)
+    const byText = !q || [m.name, m.email, m.subject, m.message].filter(Boolean).some((v) => v.toLowerCase().includes(q))
+    return byState && byText
+  })
+})
+const filters = computed(() => [
+  { value: 'all', label: 'All', count: messages?.value?.length ?? 0 },
+  { value: 'unread', label: 'Unread', count: unread.value },
+  { value: 'read', label: 'Read', count: (messages.value?.length ?? 0) - unread.value },
+])
+
+function preview(text: string) {
+  return text.length > 90 ? `${text.slice(0, 90)}…` : text
 }
 </script>
 
 <template>
-  <div>
-    <div class="admin-head">
-      <div>
-        <h1 class="admin-h1">Contact messages</h1>
-        <p class="admin-sub">Enquiries submitted from the public contact form.</p>
+  <div class="space-y-6">
+    <AdminPageHeader title="Contact messages" subtitle="Enquiries submitted from the public contact form." icon="lucide:inbox">
+      <template #badge>
+        <span v-if="unread" class="status status-brand">{{ unread }} unread</span>
+      </template>
+    </AdminPageHeader>
+
+    <div class="toolbar fade-up stagger-1">
+      <AdminSegmented v-model="filter" :options="filters" aria-label="Filter messages" />
+      <div class="relative ml-auto min-w-[12rem] flex-1 sm:max-w-xs">
+        <Icon name="lucide:search" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+        <label class="sr-only" for="msg-search">Search messages</label>
+        <input id="msg-search" v-model="search" type="search" class="input !pl-9" placeholder="Search sender or text" />
       </div>
-      <span v-if="unread" class="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-sm font-bold text-brand-700">
-        <span class="h-1.5 w-1.5 rounded-full bg-brand-600" /> {{ unread }} unread
-      </span>
     </div>
 
-    <div class="mt-6 overflow-hidden rounded-2xl border border-line bg-white shadow-soft">
-      <div class="overflow-x-auto">
-        <table class="admin-table min-w-[720px]">
-          <thead>
-            <tr>
-              <th>From</th>
-              <th>Subject</th>
-              <th>Received</th>
-              <th>Status</th>
-              <th class="text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="m in messages" :key="m.id">
-              <tr :class="{ 'bg-brand-50/40': !m.isRead }">
-                <td>
-                  <button class="flex items-center gap-3 text-left" @click="expanded = expanded === m.id ? null : m.id">
-                    <span class="avatar-chip">{{ initials(m.name) }}</span>
-                    <div class="min-w-0">
-                      <p class="truncate text-ink hover:text-brand-700" :class="m.isRead ? 'font-medium' : 'font-bold'">{{ m.name }}</p>
-                      <p class="truncate text-xs text-ink-faint">{{ m.email }}</p>
-                    </div>
-                    <Icon name="lucide:chevron-down" class="text-ink-faint transition-transform" :class="{ 'rotate-180': expanded === m.id }" />
-                  </button>
-                </td>
-                <td class="text-ink-soft">{{ m.subject || '—' }}</td>
-                <td class="text-ink-soft">{{ new Date(m.createdAt + 'Z').toLocaleDateString() }}</td>
-                <td>
-                  <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="m.isRead ? 'bg-mist-2 text-ink-soft' : 'bg-brand-50 text-brand-700'">{{ m.isRead ? 'Read' : 'New' }}</span>
-                </td>
-                <td>
-                  <div class="flex items-center justify-end gap-1">
-                    <button class="icon-btn hover:bg-brand-50 hover:text-brand-700" :aria-label="m.isRead ? 'Mark unread' : 'Mark read'" @click="toggleRead(m)">
-                      <Icon :name="m.isRead ? 'lucide:mail' : 'lucide:mail-open'" />
-                    </button>
-                    <button class="icon-btn hover:bg-red-50 hover:text-red-600" aria-label="Delete" @click="remove(m)"><Icon name="lucide:trash-2" /></button>
-                  </div>
-                </td>
-              </tr>
-              <tr v-if="expanded === m.id" class="bg-mist-1">
-                <td colspan="5" class="px-5 py-4 text-sm">
-                  <p class="whitespace-pre-wrap text-ink-soft">{{ m.message }}</p>
-                  <a :href="`mailto:${m.email}`" class="mt-3 inline-flex items-center gap-1.5 font-semibold text-brand-700 hover:text-brand-800">
-                    <Icon name="lucide:reply" /> Reply by email
-                  </a>
-                </td>
-              </tr>
-            </template>
-            <tr v-if="!messages?.length">
-              <td colspan="5" class="px-5 py-12 text-center">
-                <div class="flex flex-col items-center gap-2 text-ink-faint">
-                  <Icon name="lucide:inbox" class="text-3xl" />
-                  <p class="text-sm">No messages yet.</p>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <section class="surface fade-up stagger-2 overflow-hidden">
+      <ul class="divide-y divide-line">
+        <li
+          v-for="m in visible"
+          :key="m.id"
+          class="transition-colors"
+          :class="[m.isRead ? '' : 'bg-brand-50/50', expanded === m.id ? 'bg-brand-50' : 'hover:bg-mist-1']"
+        >
+          <div class="flex items-start gap-3 p-4 sm:items-center sm:px-5">
+            <span v-if="!m.isRead" class="mt-2 h-2 w-2 shrink-0 rounded-full bg-brand-600 sm:mt-0" aria-label="Unread" />
+            <span v-else class="mt-2 h-2 w-2 shrink-0 sm:mt-0" aria-hidden="true" />
+
+            <AdminAvatar :name="m.name" />
+
+            <button
+              class="min-w-0 flex-1 rounded-lg text-left"
+              :aria-expanded="expanded === m.id"
+              @click="open(m)"
+            >
+              <span class="flex flex-wrap items-baseline gap-x-2">
+                <span class="truncate text-ink" :class="m.isRead ? 'font-semibold' : 'font-extrabold'">{{ m.name }}</span>
+                <span class="truncate text-xs text-ink-faint">{{ m.email }}</span>
+              </span>
+              <span class="mt-0.5 block truncate text-sm text-ink-soft">
+                <span class="font-semibold text-ink">{{ m.subject || 'No subject' }}</span>
+                <span class="text-ink-faint"> — {{ preview(m.message) }}</span>
+              </span>
+            </button>
+
+            <span class="hidden shrink-0 whitespace-nowrap text-xs text-ink-faint sm:block">{{ timeAgo(m.createdAt) }}</span>
+
+            <div class="row-actions shrink-0">
+              <button class="icon-btn-sm icon-btn-brand" :aria-label="m.isRead ? `Mark message from ${m.name} unread` : `Mark message from ${m.name} read`" :title="m.isRead ? 'Mark unread' : 'Mark read'" @click="toggleRead(m)">
+                <Icon :name="m.isRead ? 'lucide:mail' : 'lucide:mail-open'" />
+              </button>
+              <button class="icon-btn-sm icon-btn-danger" :aria-label="`Delete message from ${m.name}`" title="Delete" @click="remove(m)">
+                <Icon name="lucide:trash-2" />
+              </button>
+            </div>
+          </div>
+
+          <Transition name="row">
+            <div v-if="expanded === m.id" class="border-t border-line bg-white px-4 py-4 sm:px-5 sm:pl-[4.6rem]">
+              <p class="whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">{{ m.message }}</p>
+              <div class="mt-4 flex flex-wrap items-center gap-3">
+                <a :href="`mailto:${m.email}?subject=${encodeURIComponent('Re: ' + (m.subject || 'Your message to BICTA'))}`" class="btn-ghost !py-2">
+                  <Icon name="lucide:reply" /> Reply by email
+                </a>
+                <span class="text-xs text-ink-faint">Received {{ formatDay(m.createdAt, { dateStyle: 'medium' }) }}</span>
+              </div>
+            </div>
+          </Transition>
+        </li>
+
+        <li v-if="!visible.length">
+          <AdminEmptyState
+            icon="lucide:inbox"
+            :title="messages?.length ? 'Nothing matches this view' : 'No messages yet'"
+            :body="messages?.length ? 'Try another filter or search term.' : 'Enquiries from the public contact form land here.'"
+          />
+        </li>
+      </ul>
+    </section>
   </div>
 </template>

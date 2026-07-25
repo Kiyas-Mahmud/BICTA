@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const me = await requireParticipant(event)
   const db = useDb()
 
-  const account = db.select().from(schema.participantAccounts).where(eq(schema.participantAccounts.id, me.id)).get()
+  const account = await db.select().from(schema.participantAccounts).where(eq(schema.participantAccounts.id, me.id)).get()
   if (!account) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
 
   // Teams I belong to.
@@ -18,15 +18,15 @@ export default defineEventHandler(async (event) => {
 
   const teams = []
   for (const membership of memberships) {
-    const registration = db
+    const registration = await db
       .select()
       .from(schema.registrations)
       .where(eq(schema.registrations.id, membership.registrationId))
       .get()
     if (!registration) continue
 
-    const comp = db.select().from(schema.competitions).where(eq(schema.competitions.id, registration.competitionId)).get()
-    const ev = comp ? db.select().from(schema.events).where(eq(schema.events.id, comp.eventId)).get() : null
+    const comp = await db.select().from(schema.competitions).where(eq(schema.competitions.id, registration.competitionId)).get()
+    const ev = comp ? await db.select().from(schema.events).where(eq(schema.events.id, comp.eventId)).get() : null
 
     const roster = await db
       .select({
@@ -67,7 +67,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Collection checklist for the current event.
-  const currentEvent = db.select().from(schema.events).where(eq(schema.events.isCurrent, true)).get()
+  const currentEvent = await db.select().from(schema.events).where(eq(schema.events.isCurrent, true)).get()
   const activeCheckpoints = currentEvent
     ? await db
         .select()

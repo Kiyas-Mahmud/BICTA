@@ -7,14 +7,15 @@ export default defineEventHandler(async (event) => {
   const id = idParam.parse(getRouterParam(event, 'id'))
   const db = useDb()
 
-  const existing = db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.id, id)).get()
+  const existing = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.id, id)).get()
   if (!existing) throw createError({ statusCode: 404, statusMessage: 'Event not found' })
 
-  // Single transaction guarantees exactly one current event.
-  db.transaction((tx) => {
-    tx.update(schema.events).set({ isCurrent: false }).run()
-    tx.update(schema.events).set({ isCurrent: true }).where(eq(schema.events.id, id)).run()
-  })
+  // A D1 batch runs as a single transaction, so exactly one event ends up
+  // current even if the request dies between the two statements.
+  await db.batch([
+    db.update(schema.events).set({ isCurrent: false }),
+    db.update(schema.events).set({ isCurrent: true }).where(eq(schema.events.id, id)),
+  ])
 
   return { ok: true }
 })

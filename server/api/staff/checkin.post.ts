@@ -9,14 +9,14 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, checkinSchema.parse)
   const db = useDb()
 
-  const account = db
+  const account = await db
     .select({ id: schema.participantAccounts.id })
     .from(schema.participantAccounts)
     .where(eq(schema.participantAccounts.id, body.accountId))
     .get()
   if (!account) throw createError({ statusCode: 404, statusMessage: 'Participant not found' })
 
-  const checkpoint = db.select().from(schema.checkpoints).where(eq(schema.checkpoints.id, body.checkpointId)).get()
+  const checkpoint = await db.select().from(schema.checkpoints).where(eq(schema.checkpoints.id, body.checkpointId)).get()
   if (!checkpoint || !checkpoint.active) {
     throw createError({ statusCode: 404, statusMessage: 'Checkpoint not found or inactive' })
   }

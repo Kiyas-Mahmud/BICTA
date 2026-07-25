@@ -10,12 +10,12 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, eventSchema.parse)
   const db = useDb()
 
-  const existing = db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.id, id)).get()
+  const existing = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.id, id)).get()
   if (!existing) throw createError({ statusCode: 404, statusMessage: 'Event not found' })
 
   const base = slugify(body.slug || body.title)
-  const slug = uniqueSlug(base, (s) =>
-    !!db.select({ id: schema.events.id }).from(schema.events).where(and(eq(schema.events.slug, s), ne(schema.events.id, id))).get(),
+  const slug = await uniqueSlug(base, async (s) =>
+    !!(await db.select({ id: schema.events.id }).from(schema.events).where(and(eq(schema.events.slug, s), ne(schema.events.id, id))).get()),
   )
 
   const [row] = await db

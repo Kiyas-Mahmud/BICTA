@@ -1,3 +1,3 @@
-import { getPastEvents } from '../../../utils/queries'
+import { getPublicEvents } from '../../../utils/hackathon'
 
-export default defineEventHandler(() => getPastEvents())
+export default defineEventHandler(() => getPublicEvents())

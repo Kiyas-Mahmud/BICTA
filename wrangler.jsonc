@@ -1,0 +1,35 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "bicta",
+  // Nitro's cloudflare_module preset emits the Worker entry + static assets here.
+  "main": ".output/server/index.mjs",
+  "compatibility_date": "2026-07-20",
+  // bcryptjs, qrcode and sanitize-html reach for node builtins (crypto, stream, zlib).
+  "compatibility_flags": ["nodejs_compat"],
+
+  "assets": {
+    "directory": ".output/public",
+    "binding": "ASSETS"
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bicta",
+      "database_id": "78b3f77f-f4de-4ebc-b0c5-2a620f32c24e",
+      // Drizzle Kit writes numbered .sql files here; wrangler applies them in order.
+      "migrations_dir": "./server/database/migrations"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "UPLOADS",
+      "bucket_name": "bicta-uploads"
+    }
+  ],
+
+  "observability": {
+    "enabled": true
+  }
+}

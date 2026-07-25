@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { writeFile, mkdir } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { useUploads, contentTypeFor, UPLOAD_PREFIX } from '../../utils/storage'
 
 const MAX_SIZE = 5 * 1024 * 1024 // 5 MB
 
@@ -33,8 +32,6 @@ function sanitizeSvg(svg: string): string {
     .replace(/javascript:/gi, '')
 }
 
-const UPLOAD_DIR = resolve('public/uploads')
-
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
   assertRateLimit(event, { bucket: 'upload', max: 30, windowMs: 60 * 60 * 1000 })
@@ -57,13 +54,15 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 415, statusMessage: 'Only JPEG, PNG, WebP or SVG images are allowed' })
   }
 
-  // Server-generated name; client filename never touches the filesystem path.
+  // Server-generated name; the client filename is never used as a key.
   const filename = `${randomUUID()}.${ext}`
-  const target = resolve(join(UPLOAD_DIR, filename))
-  if (!target.startsWith(UPLOAD_DIR)) throw createError({ statusCode: 400, statusMessage: 'Invalid path' })
 
-  await mkdir(UPLOAD_DIR, { recursive: true })
-  await writeFile(target, data)
+  await useUploads(event).put(`${UPLOAD_PREFIX}${filename}`, data, {
+    httpMetadata: {
+      contentType: contentTypeFor(filename),
+      cacheControl: 'public, max-age=31536000, immutable',
+    },
+  })
 
   return { url: `/uploads/${filename}` }
 })

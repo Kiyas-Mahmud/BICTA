@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   const q = await getValidatedQuery(event, querySchema.parse)
   const db = useDb()
 
-  const account = db
+  const account = await db
     .select()
     .from(schema.participantAccounts)
     .where(eq(schema.participantAccounts.checkinToken, q.token))

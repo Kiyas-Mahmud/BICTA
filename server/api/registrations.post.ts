@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDb()
-  const comp = db.select().from(schema.competitions).where(eq(schema.competitions.id, body.competitionId)).get()
+  const comp = await db.select().from(schema.competitions).where(eq(schema.competitions.id, body.competitionId)).get()
   if (!comp) throw createError({ statusCode: 404, statusMessage: 'Competition not found' })
 
   if (!comp.registrationOpen) {
@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Each team member needs a different email address.' })
   }
 
-  const duplicate = db
+  const duplicate = await db
     .select({ id: schema.registrations.id })
     .from(schema.registrations)
     .where(and(eq(schema.registrations.competitionId, comp.id), eq(schema.registrations.email, body.email)))
@@ -77,12 +77,13 @@ export default defineEventHandler(async (event) => {
 
   // ---- Provision participant accounts (leader active, members invited) ----
 
+  // Returns a promise; call sites await it.
   const findAccount = (email: string) =>
     db.select().from(schema.participantAccounts).where(eq(schema.participantAccounts.email, email)).get()
 
   // Leader: create active account with the chosen password; if the email
   // already has an account (from another competition), keep its password.
-  let leader = findAccount(body.email)
+  let leader = await findAccount(body.email)
   if (!leader) {
     const passwordHash = await bcrypt.hash(body.password, 12)
     ;[leader] = await db
@@ -104,7 +105,7 @@ export default defineEventHandler(async (event) => {
 
   const invites: { account: typeof leader; name: string }[] = []
   for (const m of teamMembers) {
-    let account = findAccount(m.email.toLowerCase())
+    let account = await findAccount(m.email.toLowerCase())
     if (!account) {
       ;[account] = await db
         .insert(schema.participantAccounts)

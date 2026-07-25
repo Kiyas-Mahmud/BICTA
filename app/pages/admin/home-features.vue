@@ -4,9 +4,9 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const fields: Field[] = [
   { key: 'title', label: 'Title' },
-  { key: 'icon', label: 'Icon (Lucide name)', placeholder: 'trophy, rocket, banknote…' },
+  { key: 'icon', label: 'Icon', placeholder: 'trophy, rocket, banknote…', hint: 'Any Lucide icon name.' },
   { key: 'body', label: 'Description', type: 'textarea', colSpan: 2 },
-  { key: 'sortOrder', label: 'Sort order', type: 'number' },
+  { key: 'sortOrder', label: 'Sort order', type: 'number', hint: 'Lower numbers appear first.' },
 ]
 const columns = [
   { key: 'title', label: 'Title' },
@@ -17,10 +17,13 @@ const columns = [
 
 <template>
   <AdminCollection
-    title="Why Join (features)"
+    title="Why Join"
+    subtitle="Reason cards in the Why Join section on the home page."
+    icon="lucide:sparkles"
+    new-label="New reason"
     endpoint="/api/admin/home-features"
     :fields="fields"
     :columns="columns"
-    empty-text="No features yet."
+    empty-text="No reasons yet. Three to six short cards read best."
   />
 </template>

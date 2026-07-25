@@ -7,6 +7,7 @@ const { data: comp, refresh } = await useFetch(`/api/admin/competitions/${id}`)
 
 const saving = ref(false)
 const savedAt = ref('')
+const toast = useToast()
 
 async function save(data: any) {
   saving.value = true
@@ -14,6 +15,9 @@ async function save(data: any) {
     await $fetch(`/api/admin/competitions/${id}`, { method: 'PUT', body: data })
     savedAt.value = new Date().toLocaleTimeString()
     await refresh()
+    toast.success('Competition saved')
+  } catch (e: any) {
+    toast.error('Could not save the competition', e?.data?.statusMessage ?? 'Check the fields and try again.')
   } finally {
     saving.value = false
   }
@@ -21,18 +25,29 @@ async function save(data: any) {
 </script>
 
 <template>
-  <div v-if="comp">
-    <NuxtLink :to="`/admin/events/${comp.eventId}`" class="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-ink-faint transition-colors hover:text-ink">
-      <Icon name="lucide:arrow-left" /> Back to event
-    </NuxtLink>
-    <div class="admin-head">
-      <h1 class="admin-h1">{{ comp.name }}</h1>
-      <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0">
-        <span v-if="savedAt" class="inline-flex items-center gap-1 text-sm text-green-700"><Icon name="lucide:check-circle" /> Saved {{ savedAt }}</span>
-      </Transition>
-    </div>
+  <div v-if="comp" class="space-y-6">
+    <AdminPageHeader
+      :title="comp.name"
+      :subtitle="comp.type || 'Competition settings, rules and prizes'"
+      icon="lucide:trophy"
+      :back-to="`/admin/events/${comp.eventId}`"
+      back-label="Back to event"
+    >
+      <template #badge>
+        <span class="status" :class="comp.registrationOpen ? 'status-ok' : 'status-neutral'">
+          {{ comp.registrationOpen ? 'Registration open' : 'Registration closed' }}
+        </span>
+      </template>
+      <template #actions>
+        <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0">
+          <span v-if="savedAt" class="inline-flex items-center gap-1.5 text-sm font-semibold text-green-700">
+            <Icon name="lucide:circle-check-big" /> Saved {{ savedAt }}
+          </span>
+        </Transition>
+      </template>
+    </AdminPageHeader>
 
-    <div class="admin-panel mt-6">
+    <div class="surface fade-up stagger-1 p-5 sm:p-6">
       <AdminCompetitionForm :key="String(comp.id)" :initial="comp" :event-id="comp.eventId" :saving="saving" @submit="save" />
     </div>
   </div>

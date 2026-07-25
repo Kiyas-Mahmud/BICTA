@@ -2,93 +2,145 @@
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const { data: events, refresh } = await useFetch('/api/admin/events')
+const toast = useToast()
+const { confirm } = useConfirm()
+const busy = ref<number | null>(null)
 
-async function setCurrent(id: number) {
-  await $fetch(`/api/admin/events/${id}/set-current`, { method: 'POST' })
-  await refresh()
+async function setCurrent(id: number, title: string) {
+  busy.value = id
+  try {
+    await $fetch(`/api/admin/events/${id}/set-current`, { method: 'POST' })
+    await refresh()
+    toast.success(`${title} is now the current event`)
+  } catch {
+    toast.error('Could not switch the current event')
+  } finally {
+    busy.value = null
+  }
 }
 
 async function remove(id: number, title: string) {
-  if (!window.confirm(`Delete "${title}"? This removes all its competitions, prizes, registrations and gallery photos.`)) return
+  const ok = await confirm({
+    title: `Delete "${title}"?`,
+    body: 'This also removes every competition, prize, registration and gallery photo attached to it. It cannot be undone.',
+    confirmLabel: 'Delete event',
+  })
+  if (!ok) return
   await $fetch(`/api/admin/events/${id}`, { method: 'DELETE' })
   await refresh()
+  toast.success(`${title} deleted`)
 }
 
-const statusPill: Record<string, string> = {
-  upcoming: 'bg-brand-50 text-brand-700',
-  ongoing: 'bg-green-50 text-green-700',
-  past: 'bg-mist-2 text-ink-soft',
+function dateRange(ev: any) {
+  if (!ev.startDate && !ev.endDate) return '—'
+  return `${ev.startDate ?? '—'} → ${ev.endDate ?? '—'}`
 }
 </script>
 
 <template>
-  <div>
-    <div class="admin-head">
-      <div>
-        <h1 class="admin-h1">Events</h1>
-        <p class="admin-sub">Each yearly edition and its competitions, prizes and gallery.</p>
-      </div>
-      <NuxtLink to="/admin/events/new" class="btn-primary"><Icon name="lucide:plus" /> New event</NuxtLink>
-    </div>
+  <div class="space-y-6">
+    <AdminPageHeader title="Events" subtitle="Each yearly edition and its competitions, prizes and gallery." icon="lucide:calendar-days">
+      <template #actions>
+        <NuxtLink to="/admin/events/new" class="btn-primary !py-2.5"><Icon name="lucide:plus" /> New event</NuxtLink>
+      </template>
+    </AdminPageHeader>
 
-    <div class="mt-6 overflow-hidden rounded-2xl border border-line bg-white shadow-soft">
-      <div class="overflow-x-auto">
-        <table class="admin-table min-w-[720px]">
+    <section class="surface fade-up stagger-1 overflow-hidden">
+      <!-- mobile: cards -->
+      <ul class="divide-y divide-line lg:hidden">
+        <li v-for="ev in events" :key="ev.id" class="p-4">
+          <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-100">
+              <Icon name="lucide:calendar-days" />
+            </span>
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <NuxtLink :to="`/admin/events/${ev.id}`" class="truncate font-bold text-ink hover:text-brand-700">{{ ev.title }}</NuxtLink>
+                <AdminStatusBadge :status="ev.status" />
+                <span v-if="ev.isCurrent" class="status status-brand">Current</span>
+              </div>
+              <p class="mt-0.5 text-xs text-ink-faint">{{ ev.year }} · {{ ev.competitionCount }} competitions</p>
+              <p class="mt-0.5 text-xs text-ink-soft">{{ dateRange(ev) }}</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <NuxtLink :to="`/admin/events/${ev.id}`" class="btn-ghost !py-2 !text-xs"><Icon name="lucide:pencil" /> Edit</NuxtLink>
+                <button v-if="!ev.isCurrent" class="btn-ghost !py-2 !text-xs" :disabled="busy === ev.id" @click="setCurrent(ev.id, ev.title)">
+                  <Icon name="lucide:star" /> Make current
+                </button>
+                <button class="btn-ghost !py-2 !text-xs !text-red-600" @click="remove(ev.id, ev.title)">
+                  <Icon name="lucide:trash-2" /> Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li v-if="!events?.length">
+          <AdminEmptyState icon="lucide:calendar-plus" title="No events yet" body="Create the first yearly edition to start adding competitions.">
+            <template #action><NuxtLink to="/admin/events/new" class="btn-primary !py-2.5">Create event</NuxtLink></template>
+          </AdminEmptyState>
+        </li>
+      </ul>
+
+      <!-- desktop: table -->
+      <div class="table-wrap hidden lg:block">
+        <table class="console-table">
           <thead>
             <tr>
-              <th>Event</th>
-              <th>Status</th>
-              <th>Dates</th>
-              <th>Competitions</th>
-              <th>Current</th>
-              <th class="text-right">Actions</th>
+              <th scope="col">Event</th>
+              <th scope="col">Status</th>
+              <th scope="col">Dates</th>
+              <th scope="col">Competitions</th>
+              <th scope="col">Current</th>
+              <th scope="col" class="text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="ev in events" :key="ev.id">
               <td>
-                <NuxtLink :to="`/admin/events/${ev.id}`" class="flex items-center gap-3">
-                  <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-700">
+                <NuxtLink :to="`/admin/events/${ev.id}`" class="group flex items-center gap-3">
+                  <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-100">
                     <Icon name="lucide:calendar-days" />
                   </span>
-                  <div>
-                    <p class="font-semibold text-ink hover:text-brand-700">{{ ev.title }}</p>
-                    <p class="text-xs text-ink-faint">{{ ev.year }}</p>
-                  </div>
+                  <span class="min-w-0">
+                    <span class="block truncate font-semibold text-ink group-hover:text-brand-700">{{ ev.title }}</span>
+                    <span class="block text-xs text-ink-faint">{{ ev.year }}</span>
+                  </span>
                 </NuxtLink>
               </td>
+              <td><AdminStatusBadge :status="ev.status" /></td>
+              <td class="whitespace-nowrap text-ink-soft">{{ dateRange(ev) }}</td>
+              <td class="font-semibold tabular-nums text-ink">{{ ev.competitionCount }}</td>
               <td>
-                <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize" :class="statusPill[ev.status]">{{ ev.status }}</span>
-              </td>
-              <td class="text-ink-soft">{{ ev.startDate ?? '—' }} <span class="text-ink-faint">→</span> {{ ev.endDate ?? '—' }}</td>
-              <td class="font-semibold text-ink">{{ ev.competitionCount }}</td>
-              <td>
-                <span v-if="ev.isCurrent" class="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-bold text-brand-700">
-                  <span class="h-1.5 w-1.5 rounded-full bg-brand-600" /> Current
-                </span>
-                <button v-else class="text-xs font-semibold text-ink-faint transition-colors hover:text-brand-700" @click="setCurrent(ev.id)">
-                  Make current
+                <span v-if="ev.isCurrent" class="status status-brand">Current</span>
+                <button
+                  v-else
+                  class="text-xs font-bold text-ink-faint transition-colors hover:text-brand-700"
+                  :disabled="busy === ev.id"
+                  @click="setCurrent(ev.id, ev.title)"
+                >
+                  {{ busy === ev.id ? 'Switching…' : 'Make current' }}
                 </button>
               </td>
               <td>
-                <div class="flex items-center justify-end gap-1">
-                  <NuxtLink :to="`/admin/events/${ev.id}`" class="icon-btn hover:bg-brand-50 hover:text-brand-700" aria-label="Edit"><Icon name="lucide:pencil" /></NuxtLink>
-                  <button class="icon-btn hover:bg-red-50 hover:text-red-600" aria-label="Delete" @click="remove(ev.id, ev.title)"><Icon name="lucide:trash-2" /></button>
+                <div class="row-actions">
+                  <NuxtLink :to="`/admin/events/${ev.id}`" class="icon-btn-sm icon-btn-brand" :aria-label="`Edit ${ev.title}`" title="Edit">
+                    <Icon name="lucide:pencil" />
+                  </NuxtLink>
+                  <button class="icon-btn-sm icon-btn-danger" :aria-label="`Delete ${ev.title}`" title="Delete" @click="remove(ev.id, ev.title)">
+                    <Icon name="lucide:trash-2" />
+                  </button>
                 </div>
               </td>
             </tr>
             <tr v-if="!events?.length">
-              <td colspan="6" class="px-5 py-12 text-center">
-                <div class="flex flex-col items-center gap-2 text-ink-faint">
-                  <Icon name="lucide:calendar-plus" class="text-3xl" />
-                  <p class="text-sm">No events yet.</p>
-                  <NuxtLink to="/admin/events/new" class="text-sm font-bold text-brand-700 hover:text-brand-800">+ Create the first event</NuxtLink>
-                </div>
+              <td colspan="6" class="!p-0">
+                <AdminEmptyState icon="lucide:calendar-plus" title="No events yet" body="Create the first yearly edition to start adding competitions, prizes and registrations.">
+                  <template #action><NuxtLink to="/admin/events/new" class="btn-primary !py-2.5">Create event</NuxtLink></template>
+                </AdminEmptyState>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   </div>
 </template>

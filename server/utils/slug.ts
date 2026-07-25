@@ -9,10 +9,11 @@ export function slugify(input: string): string {
 }
 
 // Appends -2, -3, … until `taken` no longer reports a collision.
-export function uniqueSlug(base: string, taken: (slug: string) => boolean): string {
+// `taken` is awaited: collision checks hit D1, which is async-only.
+export async function uniqueSlug(base: string, taken: (slug: string) => boolean | Promise<boolean>): Promise<string> {
   let slug = base
   let n = 2
-  while (taken(slug)) {
+  while (await taken(slug)) {
     slug = `${base}-${n}`
     n++
   }

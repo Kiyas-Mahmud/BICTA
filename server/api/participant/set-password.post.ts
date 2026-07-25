@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, setPasswordSchema.parse)
   const db = useDb()
 
-  const account = db
+  const account = await db
     .select()
     .from(schema.participantAccounts)
     .where(eq(schema.participantAccounts.inviteToken, body.token))

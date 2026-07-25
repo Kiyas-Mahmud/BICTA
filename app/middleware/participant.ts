@@ -7,6 +7,6 @@ export default defineNuxtRouteMiddleware((to) => {
 
   const { session } = useUserSession()
   if (!(session.value as any)?.participant) {
-    return navigateTo('/portal/login')
+    return navigateTo('/login')
   }
 })

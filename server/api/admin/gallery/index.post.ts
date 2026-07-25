@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, gallerySchema.parse)
   const db = useDb()
 
-  const parent = db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.id, body.eventId)).get()
+  const parent = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.id, body.eventId)).get()
   if (!parent) throw createError({ statusCode: 400, statusMessage: 'Event does not exist' })
 
   const [row] = await db

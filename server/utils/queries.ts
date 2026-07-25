@@ -1,9 +1,9 @@
-import { eq, desc, asc, and, ne, inArray } from 'drizzle-orm'
+import { eq, desc, asc, and, inArray } from 'drizzle-orm'
 import { useDb, schema } from '../database/client'
 
 export async function getCurrentEventFull() {
   const db = useDb()
-  const event = db.select().from(schema.events).where(eq(schema.events.isCurrent, true)).get()
+  const event = await db.select().from(schema.events).where(eq(schema.events.isCurrent, true)).get()
   if (!event) return null
 
   const competitions = await db
@@ -29,17 +29,16 @@ export async function getCurrentEventFull() {
   }
 }
 
-export function getCompetitionBySlug(slug: string) {
+export async function getCompetitionBySlug(slug: string) {
   const db = useDb()
-  const comp = db.select().from(schema.competitions).where(eq(schema.competitions.slug, slug)).get()
+  const comp = await db.select().from(schema.competitions).where(eq(schema.competitions.slug, slug)).get()
   if (!comp) return null
-  const event = db.select().from(schema.events).where(eq(schema.events.id, comp.eventId)).get()
-  const prizes = db
+  const event = await db.select().from(schema.events).where(eq(schema.events.id, comp.eventId)).get()
+  const prizes = await db
     .select()
     .from(schema.prizes)
     .where(eq(schema.prizes.competitionId, comp.id))
     .orderBy(asc(schema.prizes.sortOrder))
-    .all()
   return { ...comp, event, prizes }
 }
 
@@ -60,51 +59,13 @@ export async function getPublishedNews(limit?: number) {
   return limit ? q.limit(limit) : q
 }
 
-export function getPublishedNewsBySlug(slug: string) {
-  return (
-    useDb()
-      .select()
-      .from(schema.news)
-      .where(and(eq(schema.news.slug, slug), eq(schema.news.status, 'published')))
-      .get() ?? null
-  )
-}
-
-export async function getPastEvents() {
-  return useDb()
-    .select({
-      id: schema.events.id,
-      title: schema.events.title,
-      year: schema.events.year,
-      slug: schema.events.slug,
-      heroImage: schema.events.heroImage,
-      startDate: schema.events.startDate,
-      endDate: schema.events.endDate,
-      venue: schema.events.venue,
-    })
-    .from(schema.events)
-    .where(and(eq(schema.events.status, 'past'), ne(schema.events.isCurrent, true)))
-    .orderBy(desc(schema.events.year))
-}
-
-export async function getEventBySlug(slug: string) {
-  const db = useDb()
-  const event = db.select().from(schema.events).where(eq(schema.events.slug, slug)).get()
-  if (!event) return null
-
-  const competitions = await db
+export async function getPublishedNewsBySlug(slug: string) {
+  const row = await useDb()
     .select()
-    .from(schema.competitions)
-    .where(eq(schema.competitions.eventId, event.id))
-    .orderBy(asc(schema.competitions.sortOrder))
-
-  const gallery = await db
-    .select()
-    .from(schema.galleryImages)
-    .where(eq(schema.galleryImages.eventId, event.id))
-    .orderBy(asc(schema.galleryImages.sortOrder))
-
-  return { ...event, competitions, gallery }
+    .from(schema.news)
+    .where(and(eq(schema.news.slug, slug), eq(schema.news.status, 'published')))
+    .get()
+  return row ?? null
 }
 
 export async function getSettings(): Promise<Record<string, string>> {

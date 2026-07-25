@@ -2,12 +2,16 @@
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const saving = ref(false)
+const toast = useToast()
 
 async function create(data: any) {
   saving.value = true
   try {
     const row = await $fetch<{ id: number }>('/api/admin/news', { method: 'POST', body: data })
+    toast.success('Article created')
     await navigateTo(`/admin/news/${row.id}`)
+  } catch (e: any) {
+    toast.error('Could not create the article', e?.data?.statusMessage ?? 'Check the fields and try again.')
   } finally {
     saving.value = false
   }
@@ -15,13 +19,16 @@ async function create(data: any) {
 </script>
 
 <template>
-  <div>
-    <NuxtLink to="/admin/news" class="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-ink-faint transition-colors hover:text-ink">
-      <Icon name="lucide:arrow-left" /> News
-    </NuxtLink>
-    <h1 class="admin-h1">New article</h1>
-    <p class="admin-sub">Draft it, then publish when ready.</p>
-    <div class="admin-panel mt-6">
+  <div class="space-y-6">
+    <AdminPageHeader
+      title="New article"
+      subtitle="Draft it now, publish when it is ready."
+      icon="lucide:pen-line"
+      back-to="/admin/news"
+      back-label="News"
+    />
+
+    <div class="surface fade-up stagger-1 p-5 sm:p-6">
       <AdminNewsForm :saving="saving" @submit="create" />
     </div>
   </div>

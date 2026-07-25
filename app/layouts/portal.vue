@@ -10,7 +10,7 @@ async function logout() {
   // Hard navigation: the server has dropped the participant session, so a full
   // reload lands on the login page with fresh state. Avoids the client
   // session-ref race that could bounce a soft navigateTo() redirect.
-  window.location.href = '/portal/login'
+  window.location.href = '/login'
 }
 </script>
 

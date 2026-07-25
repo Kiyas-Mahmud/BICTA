@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
+const { user } = useUserSession()
 const { data: stats } = await useFetch('/api/admin/stats', { key: 'admin-stats' })
 
 const money = (n: number) => new Intl.NumberFormat('en-US').format(n || 0)
@@ -28,157 +29,211 @@ const collectionPct = computed(() =>
   collectionMax.value ? Math.round(((stats.value?.checkins ?? 0) / collectionMax.value) * 100) : 0,
 )
 
-function initials(name: string) {
-  return (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('')
+const greeting = computed(() => {
+  const h = new Date().getHours()
+  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
+})
+const firstName = computed(() => ((user.value as any)?.name || 'there').split(' ')[0])
+
+// Work waiting on the admin — only rendered when there is something to do.
+const attention = computed(() => {
+  const items: { icon: string; label: string; count: number; to: string; tone: string }[] = []
+  if (stats.value?.pendingRegistrations)
+    items.push({ icon: 'lucide:clipboard-check', label: 'registrations awaiting review', count: stats.value.pendingRegistrations, to: '/admin/registrations', tone: 'amber' })
+  if (stats.value?.unreadMessages)
+    items.push({ icon: 'lucide:inbox', label: 'unread contact messages', count: stats.value.unreadMessages, to: '/admin/messages', tone: 'brand' })
+  if (!stats.value?.currentEvent)
+    items.push({ icon: 'lucide:calendar-x', label: 'no current event is set', count: 0, to: '/admin/events', tone: 'red' })
+  return items
+})
+const attentionTone: Record<string, string> = {
+  amber: 'bg-amber-50 text-amber-700 ring-amber-100',
+  brand: 'bg-brand-50 text-brand-800 ring-brand-100',
+  red: 'bg-red-50 text-red-600 ring-red-100',
 }
-function ago(iso: string) {
-  const d = new Date(iso + 'Z').getTime()
-  const s = Math.floor((Date.now() - d) / 1000)
-  if (s < 60) return 'just now'
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`
-  return `${Math.floor(s / 86400)}d ago`
-}
-const statusPill: Record<string, string> = {
-  pending: 'bg-amber-50 text-amber-700',
-  confirmed: 'bg-green-50 text-green-700',
-  rejected: 'bg-red-50 text-red-600',
-}
+
+const shortcuts = [
+  { to: '/admin/events/new', icon: 'lucide:calendar-plus', label: 'New event' },
+  { to: '/admin/news/new', icon: 'lucide:pen-line', label: 'Write article' },
+  { to: '/admin/checkpoints', icon: 'lucide:map-pin', label: 'Check-in points' },
+  { to: '/admin/settings', icon: 'lucide:sliders-horizontal', label: 'Site settings' },
+]
 </script>
 
 <template>
   <div class="space-y-6">
-    <!-- current event banner -->
-    <div
-      class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-gradient-brand p-5 text-white shadow-soft"
-    >
-      <div class="flex items-center gap-3">
-        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
-          <Icon name="lucide:calendar-check" class="text-xl" />
-        </span>
-        <div>
-          <p class="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-white/70">Current event</p>
-          <p v-if="stats?.currentEvent" class="text-lg font-bold">
-            {{ stats.currentEvent.title }} <span class="font-medium text-white/70">· {{ stats.currentEvent.year }}</span>
-          </p>
-          <p v-else class="text-lg font-bold">No current event set</p>
+    <!-- greeting + current event -->
+    <section class="fade-up relative overflow-hidden rounded-2xl bg-gradient-brand p-6 text-white shadow-soft sm:p-7">
+      <span class="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
+      <div class="relative flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
+        <div class="min-w-0">
+          <p class="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-white/70">{{ greeting }}, {{ firstName }}</p>
+          <h1 class="mt-2 truncate text-2xl font-extrabold tracking-[-0.02em] sm:text-3xl">
+            {{ stats?.currentEvent?.title ?? 'No current event set' }}
+          </h1>
+          <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
+            <span v-if="stats?.currentEvent" class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 font-bold">
+              <Icon name="lucide:calendar-check" class="text-sm" /> {{ stats.currentEvent.year }} edition
+            </span>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 font-semibold text-white/90">
+              <Icon name="lucide:trophy" class="text-sm" /> {{ stats?.competitions ?? 0 }} competitions
+            </span>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 font-semibold text-white/90">
+              <Icon name="lucide:users" class="text-sm" /> {{ stats?.participants ?? 0 }} participants
+            </span>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2.5">
+          <NuxtLink
+            to="/admin/events"
+            class="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-brand-800 transition-transform duration-200 hover:-translate-y-0.5"
+          >
+            <Icon name="lucide:settings-2" /> Manage event
+          </NuxtLink>
+          <NuxtLink
+            to="/admin/registrations"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-bold text-white transition-colors duration-200 hover:bg-white/20"
+          >
+            <Icon name="lucide:clipboard-list" /> Registrations
+          </NuxtLink>
         </div>
       </div>
-      <NuxtLink to="/admin/events" class="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-bold text-brand-800 transition-transform hover:-translate-y-0.5">
-        <Icon name="lucide:settings-2" /> Manage event
+    </section>
+
+    <!-- needs attention -->
+    <section v-if="attention.length" class="fade-up stagger-1 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <NuxtLink
+        v-for="a in attention"
+        :key="a.to"
+        :to="a.to"
+        class="surface group flex items-center gap-3.5 px-4 py-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lift"
+      >
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset" :class="attentionTone[a.tone]">
+          <Icon :name="a.icon" class="text-lg" />
+        </span>
+        <p class="min-w-0 flex-1 text-sm text-ink-soft">
+          <span v-if="a.count" class="font-extrabold text-ink">{{ a.count }}</span>
+          {{ a.label }}
+        </p>
+        <Icon name="lucide:arrow-right" class="shrink-0 text-ink-faint transition-transform duration-200 group-hover:translate-x-0.5" />
       </NuxtLink>
-    </div>
+    </section>
 
     <!-- primary metrics -->
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <section class="fade-up stagger-2 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <AdminStatCard label="Prize pool" :value="money(stats?.prizePool ?? 0)" icon="lucide:banknote" tone="brand" caption="across all prizes" />
       <AdminStatCard label="Participants" :value="stats?.participants ?? 0" icon="lucide:users" tone="violet" :caption="`${stats?.activeParticipants ?? 0} active accounts`" />
       <AdminStatCard label="Competitions" :value="stats?.competitions ?? 0" icon="lucide:trophy" tone="green" :caption="`${stats?.events ?? 0} events`" to="/admin/events" />
       <AdminStatCard label="Registrations" :value="stats?.registrations ?? 0" icon="lucide:clipboard-list" tone="amber" :caption="`${stats?.pendingRegistrations ?? 0} pending review`" :delta="regDelta" to="/admin/registrations" />
-    </div>
+    </section>
 
     <!-- trend + status -->
-    <div class="grid gap-4 lg:grid-cols-3">
-      <div class="rounded-2xl border border-line bg-white p-5 shadow-soft lg:col-span-2">
-        <div class="mb-4 flex items-center justify-between">
-          <div>
-            <h2 class="text-sm font-bold text-ink">Registration trend</h2>
-            <p class="text-xs text-ink-faint">Daily sign-ups, last 14 days</p>
-          </div>
-          <span class="rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">Live</span>
-        </div>
+    <section class="fade-up stagger-3 grid gap-4 xl:grid-cols-3">
+      <AdminPanel title="Registration trend" subtitle="Daily sign-ups, last 14 days" icon="lucide:chart-column" class="xl:col-span-2">
+        <template #actions>
+          <span class="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-800">
+            <span class="dot-live" /> Live
+          </span>
+        </template>
         <AdminMiniBarChart :data="stats?.series ?? []" />
-      </div>
+      </AdminPanel>
 
-      <div class="rounded-2xl border border-line bg-white p-5 shadow-soft">
-        <h2 class="mb-4 text-sm font-bold text-ink">Registration status</h2>
+      <AdminPanel title="Registration status" subtitle="Share of every sign-up" icon="lucide:pie-chart">
         <AdminDonutStat :segments="statusSegments" :center-value="stats?.registrations ?? 0" center-label="total" />
-      </div>
-    </div>
+      </AdminPanel>
+    </section>
 
     <!-- top competitions + collection -->
-    <div class="grid gap-4 lg:grid-cols-3">
-      <div class="rounded-2xl border border-line bg-white p-5 shadow-soft lg:col-span-2">
-        <h2 class="mb-4 text-sm font-bold text-ink">Top competitions</h2>
-        <div v-if="stats?.topComps?.length" class="space-y-3.5">
+    <section class="fade-up stagger-4 grid gap-4 xl:grid-cols-3">
+      <AdminPanel title="Top competitions" subtitle="By registration volume" icon="lucide:list-ordered" class="xl:col-span-2">
+        <div v-if="stats?.topComps?.length" class="space-y-4">
           <div v-for="(c, i) in stats.topComps" :key="i">
-            <div class="mb-1 flex items-center justify-between text-sm">
-              <span class="truncate font-medium text-ink">{{ c.name }}</span>
-              <span class="ml-3 shrink-0 font-bold text-ink-soft">{{ c.n }}</span>
+            <div class="mb-1.5 flex items-center justify-between gap-3 text-sm">
+              <span class="flex min-w-0 items-center gap-2.5">
+                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-mist-1 text-[0.65rem] font-bold text-ink-faint">{{ i + 1 }}</span>
+                <span class="truncate font-semibold text-ink">{{ c.name }}</span>
+              </span>
+              <span class="shrink-0 font-bold tabular-nums text-ink-soft">{{ c.n }}</span>
             </div>
-            <div class="h-2.5 w-full overflow-hidden rounded-full bg-mist-1">
-              <div class="h-full rounded-full bg-gradient-brand transition-all duration-700" :style="{ width: `${Math.max(4, (c.n / topMax) * 100)}%` }" />
+            <div class="h-2 w-full overflow-hidden rounded-full bg-mist-1">
+              <div class="meter-fill h-full rounded-full bg-gradient-brand" :style="{ width: `${Math.max(4, (c.n / topMax) * 100)}%` }" />
             </div>
           </div>
         </div>
-        <p v-else class="py-8 text-center text-sm text-ink-faint">No competitions yet.</p>
-      </div>
+        <AdminEmptyState v-else icon="lucide:trophy" title="No competitions yet" body="Add competitions to an event and their sign-ups will rank here.">
+          <template #action>
+            <NuxtLink to="/admin/events" class="btn-ghost">Go to events</NuxtLink>
+          </template>
+        </AdminEmptyState>
+      </AdminPanel>
 
-      <div class="flex flex-col rounded-2xl border border-line bg-white p-5 shadow-soft">
-        <h2 class="text-sm font-bold text-ink">Event-day collection</h2>
-        <p class="text-xs text-ink-faint">Items handed out at booths</p>
-        <div class="flex flex-1 flex-col items-center justify-center py-4">
+      <AdminPanel title="Event-day collection" subtitle="Items handed out at booths" icon="lucide:package-check">
+        <div class="flex flex-col items-center justify-center py-2">
           <div class="relative h-28 w-28">
-            <svg viewBox="0 0 36 36" class="h-full w-full -rotate-90">
-              <circle cx="18" cy="18" r="15.915" fill="none" stroke="#eef1f3" stroke-width="3.6" />
-              <circle cx="18" cy="18" r="15.915" fill="none" stroke="#5e6f54" stroke-width="3.6" stroke-linecap="round" :stroke-dasharray="`${collectionPct} ${100 - collectionPct}`" stroke-dashoffset="25" />
+            <svg viewBox="0 0 36 36" class="h-full w-full -rotate-90" role="img" :aria-label="`${collectionPct}% collected`">
+              <circle cx="18" cy="18" r="15.915" fill="none" stroke="#eef1f3" stroke-width="3.4" />
+              <circle
+                cx="18" cy="18" r="15.915" fill="none" stroke="#5e6f54" stroke-width="3.4" stroke-linecap="round"
+                :stroke-dasharray="`${collectionPct} ${100 - collectionPct}`" stroke-dashoffset="25"
+                style="transition: stroke-dasharray 800ms cubic-bezier(0.22, 1, 0.36, 1)"
+              />
             </svg>
             <div class="absolute inset-0 flex flex-col items-center justify-center">
-              <span class="text-2xl font-extrabold text-ink">{{ collectionPct }}%</span>
+              <span class="text-2xl font-extrabold tabular-nums text-ink">{{ collectionPct }}%</span>
             </div>
           </div>
-          <p class="mt-3 text-center text-sm text-ink-soft">
-            <span class="font-bold text-ink">{{ stats?.checkins ?? 0 }}</span> collected
-            <span class="text-ink-faint">· {{ stats?.checkpoints ?? 0 }} checkpoints</span>
+          <p class="mt-4 text-center text-sm text-ink-soft">
+            <span class="font-bold text-ink">{{ stats?.checkins ?? 0 }}</span> collected across
+            <span class="font-bold text-ink">{{ stats?.checkpoints ?? 0 }}</span> checkpoints
           </p>
+          <NuxtLink to="/admin/checkins" class="mt-3 inline-flex items-center gap-1 text-xs font-bold text-brand-700 transition-colors hover:text-brand-800">
+            Open collection report <Icon name="lucide:arrow-right" />
+          </NuxtLink>
         </div>
-      </div>
-    </div>
+      </AdminPanel>
+    </section>
 
     <!-- recent registrations -->
-    <div class="overflow-hidden rounded-2xl border border-line bg-white shadow-soft">
-      <div class="flex items-center justify-between px-5 py-4">
-        <div>
-          <h2 class="text-sm font-bold text-ink">Recent registrations</h2>
-          <p class="text-xs text-ink-faint">Latest people to sign up</p>
-        </div>
-        <NuxtLink to="/admin/registrations" class="inline-flex items-center gap-1 text-xs font-bold text-brand-700 hover:text-brand-800">
+    <AdminPanel title="Recent registrations" subtitle="Latest people to sign up" icon="lucide:user-plus" flush class="fade-up stagger-4">
+      <template #actions>
+        <NuxtLink to="/admin/registrations" class="inline-flex items-center gap-1 text-xs font-bold text-brand-700 transition-colors hover:text-brand-800">
           View all <Icon name="lucide:arrow-right" />
         </NuxtLink>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[540px] text-left text-sm">
+      </template>
+
+      <div class="table-wrap">
+        <table class="console-table min-w-[36rem]">
           <thead>
-            <tr class="border-y border-line bg-mist-1 text-[0.68rem] uppercase tracking-wider text-ink-faint">
-              <th class="px-5 py-2.5 font-bold">Participant</th>
-              <th class="px-5 py-2.5 font-bold">Competition</th>
-              <th class="px-5 py-2.5 font-bold">Status</th>
-              <th class="px-5 py-2.5 text-right font-bold">When</th>
+            <tr>
+              <th scope="col">Participant</th>
+              <th scope="col">Competition</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="text-right">When</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="r in stats?.recent ?? []" :key="r.id" class="border-b border-line transition-colors last:border-0 hover:bg-mist-1">
-              <td class="px-5 py-3">
+            <tr v-for="r in stats?.recent ?? []" :key="r.id">
+              <td>
                 <div class="flex items-center gap-3">
-                  <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-800">{{ initials(r.fullName) }}</span>
+                  <AdminAvatar :name="r.fullName" />
                   <div class="min-w-0">
                     <p class="truncate font-semibold text-ink">{{ r.fullName }}</p>
                     <p class="truncate text-xs text-ink-faint">{{ r.email }}</p>
                   </div>
                 </div>
               </td>
-              <td class="px-5 py-3 text-ink-soft">{{ r.competitionName ?? '—' }}</td>
-              <td class="px-5 py-3">
-                <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize" :class="statusPill[r.status]">{{ r.status }}</span>
-              </td>
-              <td class="px-5 py-3 text-right text-ink-faint">{{ ago(r.createdAt) }}</td>
+              <td class="text-ink-soft">{{ r.competitionName ?? '—' }}</td>
+              <td><AdminStatusBadge :status="r.status" /></td>
+              <td class="whitespace-nowrap text-right text-ink-faint">{{ timeAgo(r.createdAt) }}</td>
             </tr>
             <tr v-if="!stats?.recent?.length">
-              <td colspan="4" class="px-5 py-10 text-center text-ink-faint">No registrations yet.</td>
+              <td colspan="4" class="!p-0">
+                <AdminEmptyState icon="lucide:clipboard-list" title="No registrations yet" body="Sign-ups from the public form land here as soon as they arrive." />
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
-    </div>
+    </AdminPanel>
   </div>
 </template>

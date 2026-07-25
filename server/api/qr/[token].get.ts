@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   assertRateLimit(event, { bucket: 'qr-image', max: 60, windowMs: 60 * 1000 })
 
   const token = paramSchema.parse(getRouterParam(event, 'token'))
-  const account = useDb()
+  const account = await useDb()
     .select({ id: schema.participantAccounts.id })
     .from(schema.participantAccounts)
     .where(eq(schema.participantAccounts.checkinToken, token))

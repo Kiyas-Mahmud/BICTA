@@ -52,7 +52,7 @@ const year = new Date().getFullYear()
             <li><NuxtLink to="/events" class="transition-colors hover:text-white">Events</NuxtLink></li>
             <li><NuxtLink to="/gallery" class="transition-colors hover:text-white">Gallery</NuxtLink></li>
             <li><NuxtLink to="/news" class="transition-colors hover:text-white">News</NuxtLink></li>
-            <li><NuxtLink to="/portal/login" class="transition-colors hover:text-white">Participant login</NuxtLink></li>
+            <li><NuxtLink to="/login" class="transition-colors hover:text-white">Participant login</NuxtLink></li>
             <li><NuxtLink to="/contact" class="transition-colors hover:text-white">Contact</NuxtLink></li>
           </ul>
         </div>

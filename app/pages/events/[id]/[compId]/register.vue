@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import type { HackathonEvent } from '~/composables/useEvents'
+import type { Competition } from '~/composables/useCompetitions'
 
 const route = useRoute()
 const eventId = route.params.id as string
-const { event } = useEventById(eventId)
+const compId = route.params.compId as string
+const { competition } = useCompetitionById(compId)
 
-if (!event.value) {
-  throw createError({ statusCode: 404, statusMessage: 'Event not found', fatal: true })
+if (!competition.value || competition.value.eventId !== eventId) {
+  throw createError({ statusCode: 404, statusMessage: 'Competition not found', fatal: true })
 }
 
-const ev = event.value as HackathonEvent
+const ev = competition.value as Competition
 
 const maxMembers = computed(() => ev.teamSizeMax - 1)
 
@@ -92,7 +93,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
   <div class="relative min-h-screen">
     <section class="container-site section relative z-10">
     <div class="mx-auto max-w-5xl">
-      <SiteBackButton :to="`/events/${ev.id}`" label="Back to event" />
+      <SiteBackButton :to="`/events/${eventId}/${ev.id}`" label="Back to competition" />
 
       <!-- Success state -->
       <template v-if="submitted">
@@ -106,8 +107,8 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
             and each teammate has been emailed an invite with their personal QR code.
           </p>
           <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <NuxtLink to="/portal/login" class="btn-primary">Open my dashboard</NuxtLink>
-            <NuxtLink :to="`/events/${ev.id}`" class="btn-secondary">Back to event</NuxtLink>
+            <NuxtLink to="/login" class="btn-primary">Open my dashboard</NuxtLink>
+            <NuxtLink :to="`/events/${eventId}/${ev.id}`" class="btn-secondary">Back to competition</NuxtLink>
           </div>
         </div>
       </template>
@@ -118,7 +119,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
           <Icon name="lucide:clock" class="mx-auto text-4xl text-ink-faint" />
           <h1 class="mt-6 text-2xl font-extrabold tracking-tight">Registration Closed</h1>
           <p class="mx-auto mt-3 max-w-sm text-ink-soft">
-            This event is no longer accepting registrations. Check out other <NuxtLink to="/events" class="font-bold text-brand-600 hover:underline">upcoming events</NuxtLink>.
+            This competition is no longer accepting registrations. Check out other <NuxtLink to="/events" class="font-bold text-brand-600 hover:underline">upcoming events</NuxtLink>.
           </p>
         </div>
       </template>
@@ -126,7 +127,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
       <!-- Registration form -->
       <template v-else>
         <div class="mt-8 flex flex-col lg:flex-row lg:items-start lg:justify-between lg:gap-12">
-          
+
           <!-- Left Column -->
           <div class="lg:w-1/3 lg:sticky lg:top-24 space-y-8">
             <!-- Countdown -->
@@ -160,7 +161,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
           <div class="lg:w-2/3 mt-8 lg:mt-0">
             <form @submit.prevent="submit" class="card relative z-10 p-6 shadow-soft sm:p-8">
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-6">
-              
+
               <div class="col-span-full border-b border-line pb-2 mb-2">
                 <p class="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">Team Leader</p>
               </div>
@@ -331,14 +332,14 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
             <p v-if="error" class="form-error mt-4">{{ error }}</p>
 
             <hr class="my-6 border-line" />
-            
+
             <div class="flex items-center justify-end space-x-4">
               <UiButton
                 type="button"
                 variant="outline"
                 class="whitespace-nowrap"
                 as="NuxtLink"
-                :to="`/events/${ev.id}`"
+                :to="`/events/${eventId}/${ev.id}`"
               >
                 Go back
               </UiButton>
@@ -359,7 +360,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
                 </li>
               </ul>
             </div>
-            
+
             <p class="mt-6 text-center text-xs text-ink-faint">
               We collect only what's needed to run the competition. Your details are visible to organizers only.
             </p>

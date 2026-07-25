@@ -4,6 +4,9 @@ node_modules
 .data
 dist
 .env
+# Local Worker secrets + miniflare state (local D1 / R2 emulation)
+.dev.vars
+.wrangler
 public/uploads/*
 !public/uploads/.gitkeep
 *.log

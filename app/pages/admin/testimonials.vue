@@ -7,7 +7,7 @@ const fields: Field[] = [
   { key: 'role', label: 'Role / achievement', placeholder: 'Team Quantum, Datathon Champion 2025' },
   { key: 'quote', label: 'Quote', type: 'textarea', colSpan: 2 },
   { key: 'photoUrl', label: 'Photo', type: 'image' },
-  { key: 'sortOrder', label: 'Sort order', type: 'number' },
+  { key: 'sortOrder', label: 'Sort order', type: 'number', hint: 'Lower numbers appear first.' },
 ]
 const columns = [
   { key: 'name', label: 'Name' },
@@ -20,9 +20,12 @@ const columns = [
 <template>
   <AdminCollection
     title="Testimonials"
+    subtitle="Quotes from past participants shown on the home page."
+    icon="lucide:quote"
+    new-label="New testimonial"
     endpoint="/api/admin/testimonials"
     :fields="fields"
     :columns="columns"
-    empty-text="No testimonials yet."
+    empty-text="No testimonials yet. Short, specific quotes work best."
   />
 </template>

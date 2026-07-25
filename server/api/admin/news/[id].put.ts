@@ -10,13 +10,13 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, newsSchema.parse)
   const db = useDb()
 
-  const existing = db.select().from(schema.news).where(eq(schema.news.id, id)).get()
+  const existing = await db.select().from(schema.news).where(eq(schema.news.id, id)).get()
   if (!existing) throw createError({ statusCode: 404, statusMessage: 'Article not found' })
 
   const base = slugify(body.slug || body.title)
-  const slug = uniqueSlug(
+  const slug = await uniqueSlug(
     base,
-    (s) => !!db.select({ id: schema.news.id }).from(schema.news).where(and(eq(schema.news.slug, s), ne(schema.news.id, id))).get(),
+    async (s) => !!(await db.select({ id: schema.news.id }).from(schema.news).where(and(eq(schema.news.slug, s), ne(schema.news.id, id))).get()),
   )
 
   // First transition to published stamps publishedAt; unpublishing keeps it.

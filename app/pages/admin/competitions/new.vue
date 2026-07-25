@@ -8,12 +8,16 @@ if (!Number.isInteger(eventId) || eventId <= 0) {
 }
 
 const saving = ref(false)
+const toast = useToast()
 
 async function create(data: any) {
   saving.value = true
   try {
     await $fetch('/api/admin/competitions', { method: 'POST', body: data })
+    toast.success('Competition created')
     await navigateTo(`/admin/events/${eventId}`)
+  } catch (e: any) {
+    toast.error('Could not create the competition', e?.data?.statusMessage ?? 'Check the fields and try again.')
   } finally {
     saving.value = false
   }
@@ -21,13 +25,16 @@ async function create(data: any) {
 </script>
 
 <template>
-  <div>
-    <NuxtLink :to="`/admin/events/${eventId}`" class="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-ink-faint transition-colors hover:text-ink">
-      <Icon name="lucide:arrow-left" /> Back to event
-    </NuxtLink>
-    <h1 class="admin-h1">New competition</h1>
-    <p class="admin-sub">Add a contest, its rules, registration window and prizes.</p>
-    <div class="admin-panel mt-6">
+  <div class="space-y-6">
+    <AdminPageHeader
+      title="New competition"
+      subtitle="Add a contest with its rules, registration window and prizes."
+      icon="lucide:trophy"
+      :back-to="`/admin/events/${eventId}`"
+      back-label="Back to event"
+    />
+
+    <div class="surface fade-up stagger-1 p-5 sm:p-6">
       <AdminCompetitionForm :event-id="eventId" :saving="saving" @submit="create" />
     </div>
   </div>

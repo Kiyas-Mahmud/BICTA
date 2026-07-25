@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { HackathonEvent } from '~/composables/useEvents'
+import type { EventListing } from '~/composables/useEvents'
 
 const { events } = useEvents()
 
@@ -17,7 +17,7 @@ const filters: { key: typeof activeFilter.value; label: string }[] = [
   { key: 'past', label: 'Past' },
 ]
 
-function statusBadgeClass(status: HackathonEvent['status']) {
+function statusBadgeClass(status: EventListing['status']) {
   switch (status) {
     case 'ongoing':
       return 'badge badge-green'
@@ -28,7 +28,7 @@ function statusBadgeClass(status: HackathonEvent['status']) {
   }
 }
 
-function statusLabel(status: HackathonEvent['status']) {
+function statusLabel(status: EventListing['status']) {
   return status.charAt(0).toUpperCase() + status.slice(1)
 }
 
@@ -39,7 +39,7 @@ const counts = computed(() => ({
   past: events.value.filter((e) => e.status === 'past').length,
 }))
 
-useSeoMeta({ title: 'Events', description: 'Browse hackathons, competitions, and tech events by BICTA.' })
+useSeoMeta({ title: 'Events', description: "Browse BICTA's yearly editions and their competitions." })
 </script>
 
 <template>
@@ -53,7 +53,7 @@ useSeoMeta({ title: 'Events', description: 'Browse hackathons, competitions, and
       <div class="container-site pb-8 pt-10">
         <h1 class="text-display rise rise-1">Events</h1>
         <p class="rise rise-2 mt-3 max-w-lg text-lg text-ink-soft">
-          Discover hackathons, competitions, and innovation challenges. Find your next opportunity to build, learn, and win.
+          Each yearly edition of BICTA, and every competition running inside it.
         </p>
       </div>
     </section>
@@ -114,7 +114,7 @@ useSeoMeta({ title: 'Events', description: 'Browse hackathons, competitions, and
           <div class="flex flex-1 flex-col justify-between p-4 sm:p-5">
             <div>
               <div class="flex flex-wrap items-center gap-2">
-                <p class="text-xs font-semibold text-ink-faint">{{ event.organizer }}</p>
+                <p class="text-xs font-semibold text-ink-faint">BICTA · {{ event.year }}</p>
               </div>
               <h2 class="mt-1.5 text-lg font-extrabold leading-tight tracking-tight transition-colors group-hover:text-brand-600">
                 {{ event.title }}
@@ -133,23 +133,13 @@ useSeoMeta({ title: 'Events', description: 'Browse hackathons, competitions, and
               <!-- Location -->
               <span class="flex items-center gap-1.5 text-xs font-semibold text-ink-faint">
                 <Icon name="lucide:map-pin" class="text-sm" />
-                {{ event.location }}
+                {{ event.venue }}
               </span>
-              <!-- Prize -->
+              <!-- Competition count -->
               <span class="flex items-center gap-1.5 text-xs font-bold text-brand-600">
                 <Icon name="lucide:trophy" class="text-sm" />
-                {{ event.prize }}
+                {{ event.competitions.length }} competition{{ event.competitions.length === 1 ? '' : 's' }}
               </span>
-              <!-- Tags -->
-              <div class="hidden flex-wrap gap-1.5 lg:flex">
-                <span
-                  v-for="tag in event.tags.slice(0, 3)"
-                  :key="tag"
-                  class="rounded-full bg-mist-2 px-2 py-0.5 text-[11px] font-semibold text-ink-faint"
-                >
-                  {{ tag }}
-                </span>
-              </div>
             </div>
           </div>
 

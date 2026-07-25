@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   await requireAdmin(event)
   const db = useDb()
 
-  const current = db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.isCurrent, true)).get()
+  const current = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.isCurrent, true)).get()
   if (!current) return ''
 
   const checkpoints = await db

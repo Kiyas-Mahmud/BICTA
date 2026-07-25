@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, passwordChangeSchema.parse)
   const db = useDb()
 
-  const admin = db.select().from(schema.admins).where(eq(schema.admins.id, user.id)).get()
+  const admin = await db.select().from(schema.admins).where(eq(schema.admins.id, user.id)).get()
   if (!admin) throw createError({ statusCode: 404, statusMessage: 'Account not found' })
 
   const valid = await bcrypt.compare(body.currentPassword, admin.passwordHash)

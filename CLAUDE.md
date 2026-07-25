@@ -13,11 +13,13 @@ Yearly competition event website. Public site with **built-in participant regist
 ## Stack (decided — do not substitute)
 
 - **Nuxt 4 + TypeScript (strict)**, Tailwind CSS
-- **Drizzle ORM**; SQLite dev (`.data/bicta.db`), Postgres when `DATABASE_URL` set — driver switch only in `server/database/client.ts`
+- **Runs on Cloudflare Workers** (`nitro.preset: 'cloudflare_module'`). `nitro-cloudflare-dev` gives `nuxt dev` the same bindings via miniflare. Config + bindings live in `wrangler.jsonc`.
+- **Drizzle ORM on Cloudflare D1** (database `bicta`, binding `DB`) — driver switch only in `server/database/client.ts`. D1 is **async-only**: every query is awaited, and `db.batch([...])` replaces `db.transaction()` (D1 has no interactive transactions).
 - **nuxt-auth-utils** sealed session cookies, admin-only auth (participants register via form, no accounts)
 - **Zod** validation on every admin API payload
 - **@vueuse/motion** for subtle animations; **sanitize-html** for rich text; **bcryptjs** for passwords
-- Image uploads → `/public/uploads`, random UUID filenames (S3 swap only if serverless hosting chosen)
+- Image uploads → **R2 bucket `bicta-uploads`** (binding `UPLOADS`, keys `uploads/<uuid>.<ext>`), served back through `server/routes/uploads/[key].get.ts` so the strict CSP/cache route rules still apply. The bucket stays private.
+- **Workers-safe deps only:** mail goes out via Resend's REST API with plain `fetch` (the `resend` SDK pulls `@react-email/render`, unbundlable); QR PNGs come from `uqr` + a hand-rolled 1-bit PNG encoder in `server/utils/qr.ts` (`qrcode`/`pngjs` call `util.inherits` on Node stream prototypes and crash workerd at startup). Do not reintroduce either package.
 
 ## Conventions
 
@@ -49,25 +51,36 @@ Yearly competition event website. Public site with **built-in participant regist
 - Motion: hovers ~200ms, reveals ~500ms (`SiteSectionReveal`, supports `:delay`), hero `.rise` entrance, `.floating` + `.float-blob` ambient float, `.img-zoom` on card images, top `NuxtLoadingIndicator`. All disabled under `prefers-reduced-motion`.
 - Home section order (fixed, in `app/pages/index.vue`): hero → countdown+stats → why → competitions → timeline → partners → judges → gallery → news → winners → faq+venue → newsletter. Sub-page nav: `/gallery`, `/contact` are standalone pages.
 
-## Commands (once scaffolded)
+## Commands
 
 ```bash
-npm run dev          # dev server
-npm run seed         # admin user (from env) + sample data
-npx drizzle-kit generate && npx drizzle-kit migrate   # schema changes
-npm run build && node .output/server/index.mjs        # prod smoke test
+npm run dev              # nuxt dev, with local D1 + R2 via miniflare
+npm run build            # build for the Workers runtime
+npm run preview          # wrangler dev on the built output (real workerd)
+npm run deploy           # build + wrangler deploy
+
+npm run db:generate      # drizzle-kit generate (schema.ts -> .sql migration)
+npm run db:migrate       # apply migrations to local D1
+npm run db:migrate:remote# apply migrations to the real D1
+
+npm run seed             # seed local D1 (skips if it already has events; --force overrides)
+npm run seed:remote      # same, against the real D1
 ```
 
 ## Environment
 
-- `.env` (gitignored): `NUXT_SESSION_PASSWORD` (≥32 chars), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, optional `DATABASE_URL`
-- Hosting: deploying to **Render** (free tier) via `render.yaml` Blueprint. No persistent disk on free tier — SQLite DB + uploads reset on every restart/redeploy; fine for a demo, not for real data. Upgrading to Starter + a disk is the recommended path if/when real registrations need to persist (see Implementation_Plan.md §6).
+- **Local:** `.env` (tsx scripts) + `.dev.vars` (Worker runtime) — both gitignored, same keys: `NUXT_SESSION_PASSWORD` (≥32 chars), `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `RESEND_API_KEY`, `MAIL_FROM`, `PUBLIC_SITE_URL`.
+- **Production:** the same keys are Worker secrets — `wrangler secret put <NAME>`. Never put them in `wrangler.jsonc`.
+- **Cloudflare account** `84b7bedd8060dc229ccd7f1e9ccb8347`. D1 `bicta` = `78b3f77f-f4de-4ebc-b0c5-2a620f32c24e` (APAC). R2 `bicta-uploads`. S3 API endpoint (only if something outside the Worker needs it): `https://84b7bedd8060dc229ccd7f1e9ccb8347.r2.cloudflarestorage.com`.
+- Data survives deploys now — D1 and R2 are durable, unlike the old Render free-tier filesystem.
 
 ## Status
 
 - 2026-06-11: planning complete (4 plan docs). Requirement change same day: built-in registration form (no Google Forms), docs updated.
 - 2026-06-11: **Phases 1–3 implemented and verified.**
 - 2026-06 to 2026-07: major expansion beyond original scope — home page grew to 15 DB-driven sections (sponsors, judges, timeline, testimonials, how-it-works, etc.), design system rebuilt twice (achromatic glass → light blue-accent), merged a second contributor's parallel UI work and consolidated the resulting duplication (`ui-polish` branch → `main`), canonical event route moved to `/events/[id]`, added `POST /api/contact` as a third hardened public endpoint.
-- 2026-07-02/03: first Render deployment attempt — hit and fixed three real build failures in sequence (missing `.data` dir before migrate, `NODE_ENV=production` skipping devDependencies, `@nuxt/fonts` provider crash). Deploy verification in progress.
-- See `docs/Implementation_Plan.md` §6 for the current prioritized backlog (persistent storage decision is the top open item).
-- Gotchas: dev server must be stopped before `npm run build` (.nuxt contention). If build fails with "Cannot find native binding" (rolldown), run `npm install --no-save @rolldown/binding-win32-x64-msvc@<rolldown version>` — npm optional-deps bug. Session cookie is `Secure`; curl-style testing over http needs manual Cookie header replay.
+- 2026-07-02/03: first Render deployment attempt — hit and fixed three real build failures in sequence (missing `.data` dir before migrate, `NODE_ENV=production` skipping devDependencies, `@nuxt/fonts` provider crash).
+- 2026-07-26: **admin + volunteer consoles redesigned** (shared console design system in `main.css`, `Admin*` primitives, toast/confirm composables, staff scanner shell).
+- 2026-07-26: **migrated off Render/SQLite to Cloudflare Workers + D1 + R2.** `render.yaml` deleted. Every Drizzle call awaited, 4 transactions became `db.batch()`, uploads moved to R2 behind a Worker route, `resend`/`qrcode` swapped for fetch + `uqr`. Verified end to end on `wrangler dev`: public pages, admin login/pages, R2 upload round-trip (byte-identical, CSP headers intact), batch writes, registration flow with account provisioning, QR PNG.
+- See `docs/Implementation_Plan.md` §6 for the current prioritized backlog.
+- Gotchas: dev server must be stopped before `npm run build` (.nuxt contention) — on Windows a running `wrangler dev` also locks `.output/public`, kill it first. If build fails with "Cannot find native binding" (rolldown), run `npm install --no-save @rolldown/binding-win32-x64-msvc@<rolldown version>` — npm optional-deps bug, and **every `npm install`/`uninstall` drops it again**. Session cookie is `Secure`; curl-style testing over http needs manual Cookie header replay. D1 has no `db.transaction()` — use `db.batch()`, and remember batches cannot depend on ids generated inside the same batch.

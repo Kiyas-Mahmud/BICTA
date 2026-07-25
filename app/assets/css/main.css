@@ -243,46 +243,255 @@
   .btn-danger {
     @apply btn bg-red-600 text-white hover:bg-red-700;
   }
-  /* small square icon action button used across admin tables/cards */
-  .icon-btn {
-    @apply flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors hover:bg-mist-1 hover:text-ink;
+  /* =========================================================================
+     Console design system (admin + volunteer scanner)
+     Sage palette only — hierarchy comes from weight, spacing and elevation.
+     ========================================================================= */
+
+  /* ---------- typography scale ---------- */
+  .console-title {
+    @apply text-[1.65rem] font-extrabold leading-tight tracking-[-0.02em] text-ink sm:text-[1.85rem];
   }
-  .admin-card {
-    @apply rounded-2xl border border-line bg-white shadow-soft transition-shadow duration-200;
+  .console-sub {
+    @apply mt-1 max-w-2xl text-sm leading-relaxed text-ink-soft;
   }
-  /* section panel: rounded card with padding, the default admin surface */
-  .admin-panel {
-    @apply rounded-2xl border border-line bg-white p-5 shadow-soft sm:p-6;
+  .console-h2 {
+    @apply text-base font-bold tracking-[-0.01em] text-ink;
   }
-  /* page header block (title + subtitle + actions) */
-  .admin-head {
-    @apply flex flex-wrap items-end justify-between gap-4;
+  .console-label {
+    @apply text-[0.65rem] font-bold uppercase tracking-[0.14em] text-ink-faint;
   }
-  .admin-h1 {
-    @apply text-2xl font-bold tracking-tight text-ink;
+  .console-eyebrow {
+    @apply inline-flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-brand-700;
   }
-  .admin-sub {
-    @apply mt-0.5 text-sm text-ink-soft;
+
+  /* ---------- surfaces ---------- */
+  /* the one card primitive every console panel is built from */
+  .surface {
+    @apply rounded-2xl border border-line bg-white;
+    box-shadow: 0 1px 2px rgba(38, 48, 42, 0.04);
   }
-  /* modern table shells */
-  .admin-table {
-    @apply w-full text-left text-sm;
+  .surface-raised {
+    @apply surface;
+    box-shadow: 0 1px 2px rgba(38, 48, 42, 0.05), 0 10px 28px -18px rgba(38, 48, 42, 0.35);
   }
-  .admin-table thead tr {
-    @apply border-b border-line bg-mist-1 text-[0.68rem] uppercase tracking-wider text-ink-faint;
+  .surface-quiet {
+    @apply rounded-2xl border border-line;
+    background: theme('colors.mist.1');
   }
-  .admin-table thead th {
-    @apply px-5 py-3 font-bold;
+  /* section header row inside a panel */
+  .panel-head {
+    @apply flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4;
   }
-  .admin-table tbody tr {
-    @apply border-b border-line transition-colors last:border-0 hover:bg-mist-1;
+  .panel-body {
+    @apply p-5;
   }
-  .admin-table tbody td {
-    @apply px-5 py-3;
+  /* small square glyph that fronts a panel title */
+  .panel-glyph {
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-base text-brand-700 ring-1 ring-inset ring-brand-100;
   }
-  /* avatar chip with initials */
-  .avatar-chip {
-    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-800;
+
+  /* ---------- toolbar / filters ---------- */
+  .toolbar {
+    @apply flex flex-wrap items-center gap-2.5 rounded-2xl border border-line bg-white px-3 py-2.5;
+    box-shadow: 0 1px 2px rgba(38, 48, 42, 0.04);
+  }
+  .select-wrap {
+    @apply relative;
+  }
+  .select-wrap > .bicta-icon:first-child {
+    @apply pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint;
+  }
+  .select-wrap select {
+    @apply pl-9;
+  }
+
+  /* ---------- segmented control ---------- */
+  .segmented {
+    @apply inline-flex gap-1 rounded-xl border border-line bg-white p-1;
+    box-shadow: 0 1px 2px rgba(38, 48, 42, 0.04);
+  }
+  .segmented-btn {
+    @apply rounded-lg px-3.5 py-1.5 text-sm font-semibold capitalize text-ink-soft;
+    transition: background-color 160ms ease, color 160ms ease;
+  }
+  .segmented-btn:hover {
+    @apply bg-mist-1 text-ink;
+  }
+  .segmented-btn[aria-pressed='true'] {
+    @apply bg-brand-700 text-white;
+  }
+  .segmented-btn[aria-pressed='true']:hover {
+    @apply bg-brand-800 text-white;
+  }
+
+  /* ---------- switch ---------- */
+  .switch-track {
+    @apply block h-5 w-9 rounded-full bg-line;
+    transition: background-color 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .switch-knob {
+    @apply absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow;
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .peer:checked ~ .switch-track {
+    @apply bg-brand-700;
+  }
+  .peer:checked ~ .switch-knob {
+    transform: translateX(1rem);
+  }
+  .peer:focus-visible ~ .switch-track {
+    box-shadow: 0 0 0 3px rgba(94, 111, 84, 0.28);
+  }
+
+  /* ---------- tables ---------- */
+  /* horizontal scroll container: rounded, keeps the header pinned */
+  .table-wrap {
+    @apply overflow-x-auto;
+    scrollbar-width: thin;
+  }
+  .console-table {
+    @apply w-full border-collapse text-left text-sm;
+  }
+  .console-table thead th {
+    @apply sticky top-0 z-10 whitespace-nowrap border-b border-line px-5 py-3 text-[0.66rem] font-bold uppercase tracking-[0.1em] text-ink-faint;
+    background: theme('colors.mist.1');
+  }
+  .console-table tbody td {
+    @apply border-b border-line px-5 py-3 align-middle;
+  }
+  .console-table tbody tr:last-child > td {
+    @apply border-b-0;
+  }
+  .console-table tbody tr {
+    transition: background-color 140ms ease;
+  }
+  .console-table tbody tr:hover {
+    background: theme('colors.brand.50');
+  }
+  /* row-level action cluster: revealed on hover, always visible on touch */
+  .row-actions {
+    @apply flex items-center justify-end gap-1;
+  }
+  @media (hover: hover) {
+    .row-actions {
+      opacity: 0.55;
+      transition: opacity 160ms ease;
+    }
+    tr:hover .row-actions,
+    .row-actions:focus-within {
+      opacity: 1;
+    }
+  }
+
+  /* ---------- icon action buttons ---------- */
+  .icon-btn-sm {
+    @apply flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint;
+    transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
+  }
+  .icon-btn-sm:hover {
+    @apply bg-mist-1 text-ink;
+  }
+  .icon-btn-sm:active {
+    transform: scale(0.92);
+  }
+  .icon-btn-brand:hover {
+    @apply bg-brand-50 text-brand-700;
+  }
+  .icon-btn-danger:hover {
+    @apply bg-red-50 text-red-600;
+  }
+  .icon-btn-ok:hover {
+    background: #ecfdf5;
+    color: #047857;
+  }
+
+  /* ---------- status pills (semantic, sage-first) ---------- */
+  .status {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.7rem] font-bold capitalize leading-none;
+  }
+  .status::before {
+    content: '';
+    @apply h-1.5 w-1.5 rounded-full bg-current opacity-70;
+  }
+  .status-neutral { background: theme('colors.mist.2'); color: theme('colors.ink.soft'); }
+  .status-brand { background: theme('colors.brand.50'); color: theme('colors.brand.800'); }
+  .status-ok { background: #ecfdf5; color: #047857; }
+  .status-warn { background: #fffbeb; color: #b45309; }
+  .status-bad { background: #fef2f2; color: #b91c1c; }
+
+  /* ---------- empty state ---------- */
+  .empty-state {
+    @apply flex flex-col items-center justify-center gap-3 px-6 py-14 text-center;
+  }
+  .empty-glyph {
+    @apply flex h-14 w-14 items-center justify-center rounded-2xl bg-mist-1 text-2xl text-ink-faint ring-1 ring-inset ring-line;
+  }
+
+  /* ---------- skeletons ---------- */
+  .skel {
+    @apply block rounded-lg;
+    background: linear-gradient(90deg, theme('colors.mist.1') 25%, theme('colors.mist.2') 37%, theme('colors.mist.1') 63%);
+    background-size: 400% 100%;
+    animation: skel-shift 1.4s ease-in-out infinite;
+  }
+
+  /* ---------- toast ---------- */
+  .toast {
+    @apply pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border border-line bg-white p-3.5 pr-4;
+    box-shadow: 0 16px 40px -16px rgba(38, 48, 42, 0.45);
+  }
+  .toast-glyph {
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-base;
+  }
+
+  /* ---------- dialog ---------- */
+  .dialog-panel {
+    @apply w-full max-w-md rounded-2xl border border-line bg-white p-6;
+    box-shadow: 0 30px 70px -24px rgba(38, 48, 42, 0.55);
+  }
+
+  /* ---------- scanner (volunteer console, dark sage) ---------- */
+  .scan-shell {
+    background:
+      radial-gradient(90rem 40rem at 50% -20%, rgba(119, 137, 107, 0.28), transparent 60%),
+      linear-gradient(180deg, #1d241f 0%, #171d19 100%);
+  }
+  .scan-card {
+    @apply rounded-2xl border border-white/10 bg-white/[0.05];
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .scan-chip {
+    @apply inline-flex min-h-[2.75rem] items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-white/70;
+    transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, transform 180ms ease;
+  }
+  .scan-chip:hover { @apply bg-white/[0.12] text-white; }
+  .scan-chip:active { transform: scale(0.97); }
+  .scan-chip[aria-pressed='true'] {
+    @apply border-transparent bg-brand-500 text-white;
+    box-shadow: 0 10px 26px -12px rgba(147, 164, 134, 0.9);
+  }
+  .scan-btn {
+    @apply inline-flex min-h-[3.25rem] w-full select-none items-center justify-center gap-2 rounded-2xl text-base font-bold text-white;
+    background-image: linear-gradient(135deg, #5b6d50 0%, #77896b 100%);
+    transition: filter 180ms ease, transform 180ms ease;
+  }
+  .scan-btn:hover { filter: brightness(1.08); }
+  .scan-btn:active { transform: scale(0.98); }
+  .scan-btn-quiet {
+    @apply inline-flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.07] text-base font-bold text-white/80;
+    transition: background-color 180ms ease, transform 180ms ease;
+  }
+  .scan-btn-quiet:hover { @apply bg-white/[0.14] text-white; }
+  .scan-btn-quiet:active { transform: scale(0.98); }
+  .scan-input {
+    @apply min-h-[3rem] w-full rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm text-white placeholder:text-white/35;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+  .scan-input:focus {
+    @apply border-brand-400 outline-none;
+    box-shadow: 0 0 0 3px rgba(171, 185, 166, 0.28);
   }
 }
 
@@ -434,8 +643,95 @@
   transition: transform 400ms ease;
 }
 
+/* ---------- console motion ---------- */
+@keyframes skel-shift {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+/* soft entrance for panels/rows — paired with .stagger-* delays */
+.fade-up {
+  opacity: 0;
+  animation: fade-up 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.stagger-1 { animation-delay: 40ms; }
+.stagger-2 { animation-delay: 90ms; }
+.stagger-3 { animation-delay: 140ms; }
+.stagger-4 { animation-delay: 190ms; }
+
+/* result confirmation pop (scanner banner, saved chips) */
+.pop-in {
+  animation: pop-in 320ms cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+
+/* live scanning halo around the camera frame */
+.scan-halo::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid rgba(171, 185, 166, 0.55);
+  animation: scan-halo 2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes scan-halo {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.008); }
+}
+
+/* animated count-up ring / bar fills share this easing */
+.meter-fill {
+  transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* toast + dialog transitions (Vue <Transition> hooks) */
+.toast-enter-active { transition: all 280ms cubic-bezier(0.22, 1, 0.36, 1); }
+.toast-leave-active { transition: all 180ms ease-in; position: absolute; }
+.toast-enter-from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+.toast-leave-to { opacity: 0; transform: translateX(12px); }
+.toast-move { transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1); }
+
+.dlg-enter-active { transition: opacity 200ms ease; }
+.dlg-leave-active { transition: opacity 150ms ease; }
+.dlg-enter-from, .dlg-leave-to { opacity: 0; }
+.dlg-enter-active .dialog-panel { transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 260ms ease; }
+.dlg-leave-active .dialog-panel { transition: transform 150ms ease-in, opacity 150ms ease-in; }
+.dlg-enter-from .dialog-panel, .dlg-leave-to .dialog-panel { opacity: 0; transform: translateY(10px) scale(0.97); }
+
+/* expandable table row */
+.row-enter-active, .row-leave-active { transition: opacity 200ms ease, transform 200ms ease; }
+.row-enter-from, .row-leave-to { opacity: 0; transform: translateY(-4px); }
+
+/* dark-surface focus ring (scanner) */
+.scan-shell a:focus-visible,
+.scan-shell button:focus-visible,
+.scan-shell input:focus-visible,
+.scan-shell [tabindex]:focus-visible {
+  outline: 2px solid #bbc8af;
+  outline-offset: 3px;
+}
+
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
+  .fade-up, .pop-in, .skel, .scan-halo::after {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .meter-fill, .switch-track, .switch-knob,
+  .toast-enter-active, .toast-leave-active, .toast-move,
+  .dlg-enter-active, .dlg-leave-active,
+  .row-enter-active, .row-leave-active {
+    transition: none !important;
+  }
+  .icon-btn-sm:active, .scan-chip:active, .scan-btn:active, .scan-btn-quiet:active { transform: none; }
   .float-blob-1, .float-blob-2, .floating, .floating-slow,
   .page-enter-active, .page-leave-active, .btn-primary::after,
   .img-zoom img, .skeleton::after {

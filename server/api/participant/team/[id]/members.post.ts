@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: `Teams may have at most ${comp.maxTeamSize} members including the leader.` })
   }
 
-  let account = db.select().from(schema.participantAccounts).where(eq(schema.participantAccounts.email, body.email)).get()
+  let account = await db.select().from(schema.participantAccounts).where(eq(schema.participantAccounts.email, body.email)).get()
   if (!account) {
     ;[account] = await db
       .insert(schema.participantAccounts)

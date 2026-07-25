@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
 
   const base = slugify(body.slug || body.title)
-  const slug = uniqueSlug(base, (s) => !!db.select({ id: schema.news.id }).from(schema.news).where(eq(schema.news.slug, s)).get())
+  const slug = await uniqueSlug(base, async (s) => !!(await db.select({ id: schema.news.id }).from(schema.news).where(eq(schema.news.slug, s)).get()))
 
   const [row] = await db
     .insert(schema.news)

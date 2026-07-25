@@ -9,7 +9,7 @@ export async function requireTeamLeader(event: H3Event, registrationId: number) 
   const me = await requireParticipant(event)
   const db = useDb()
 
-  const membership = db
+  const membership = await db
     .select()
     .from(schema.teamMembers)
     .where(and(eq(schema.teamMembers.registrationId, registrationId), eq(schema.teamMembers.accountId, me.id)))
@@ -18,10 +18,10 @@ export async function requireTeamLeader(event: H3Event, registrationId: number) 
     throw createError({ statusCode: 403, statusMessage: 'Only the team leader can manage the team.' })
   }
 
-  const registration = db.select().from(schema.registrations).where(eq(schema.registrations.id, registrationId)).get()
+  const registration = await db.select().from(schema.registrations).where(eq(schema.registrations.id, registrationId)).get()
   if (!registration) throw createError({ statusCode: 404, statusMessage: 'Team not found' })
 
-  const comp = db.select().from(schema.competitions).where(eq(schema.competitions.id, registration.competitionId)).get()
+  const comp = await db.select().from(schema.competitions).where(eq(schema.competitions.id, registration.competitionId)).get()
   if (!comp) throw createError({ statusCode: 404, statusMessage: 'Competition not found' })
 
   if (comp.registrationDeadline && new Date(`${comp.registrationDeadline}T23:59:59Z`) < new Date()) {

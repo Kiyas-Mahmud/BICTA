@@ -1,17 +1,21 @@
 import { asc, count, desc, eq, inArray } from 'drizzle-orm'
 import { useDb, schema } from '../database/client'
 
-// Maps the real admin database onto the shape Zubayer's front-end expects
-// (HackathonEvent / NewsItem). One HackathonEvent == one competition, joined
-// with its parent event for dates/venue/status, plus the global judges,
-// sponsors and FAQs. This is the single translation layer between the two
-// data models; the Vue pages consume it unchanged.
+// Maps the real admin database onto the shapes the public site expects. Two
+// distinct concepts, kept deliberately separate (they used to be flattened
+// into one "HackathonEvent" per competition, which hid the real event ->
+// competitions hierarchy from the public site):
+//   - EventListingDTO: one row per real event/edition (the `events` table).
+//   - CompetitionDTO: one row per competition, always carrying its eventId so
+//     pages can build the nested /events/[eventId]/[competitionId] URL.
 
 const FALLBACK_EVENT_IMG = '/gallery-images/hackathons.jpg'
 const FALLBACK_NEWS_IMG = '/gallery-images/images.jpg'
 
-export interface HackathonEventDTO {
+export interface CompetitionDTO {
   id: string
+  eventId: string
+  eventTitle: string
   title: string
   status: 'ongoing' | 'upcoming' | 'past'
   startDate: string
@@ -34,6 +38,27 @@ export interface HackathonEventDTO {
   sponsors: Array<{ name: string; logo: string }>
   rules: string[]
   faqs: Array<{ id: number; question: string; answer: string }>
+}
+
+export interface EventListingDTO {
+  id: string
+  title: string
+  slug: string
+  year: number
+  status: 'ongoing' | 'upcoming' | 'past'
+  startDate: string
+  endDate: string
+  venue: string
+  imageUrl: string
+  description: string
+  competitions: Array<{
+    id: string
+    name: string
+    type: string
+    imageUrl: string
+    registrationOpen: boolean
+    prize: string
+  }>
 }
 
 export interface NewsItemDTO {
@@ -77,27 +102,38 @@ function initialsImage(name: string): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
 }
 
-export async function getHackathonEvents(): Promise<HackathonEventDTO[]> {
+// Shared base query: every competition, its parent event, prizes and
+// registration counts. Both getCompetitions() and getPublicEvents() build on
+// this so the two DTOs never drift apart.
+async function loadCompetitionRows() {
   const db = useDb()
 
   const events = await db.select().from(schema.events)
   const eventById = new Map(events.map((e) => [e.id, e]))
 
   const competitions = await db.select().from(schema.competitions).orderBy(asc(schema.competitions.sortOrder))
-  if (!competitions.length) return []
 
-  const prizes = await db
-    .select()
-    .from(schema.prizes)
-    .where(inArray(schema.prizes.competitionId, competitions.map((c) => c.id)))
-    .orderBy(asc(schema.prizes.sortOrder))
+  const prizes = competitions.length
+    ? await db
+        .select()
+        .from(schema.prizes)
+        .where(inArray(schema.prizes.competitionId, competitions.map((c) => c.id)))
+        .orderBy(asc(schema.prizes.sortOrder))
+    : []
 
-  // Real registration counts per competition (public shows only the number).
   const regCounts = await db
     .select({ competitionId: schema.registrations.competitionId, n: count() })
     .from(schema.registrations)
     .groupBy(schema.registrations.competitionId)
   const countByComp = new Map(regCounts.map((r) => [r.competitionId, r.n]))
+
+  return { events, eventById, competitions, prizes, countByComp }
+}
+
+export async function getCompetitions(): Promise<CompetitionDTO[]> {
+  const db = useDb()
+  const { eventById, competitions, prizes, countByComp } = await loadCompetitionRows()
+  if (!competitions.length) return []
 
   const judgeRows = await db
     .select()
@@ -121,8 +157,10 @@ export async function getHackathonEvents(): Promise<HackathonEventDTO[]> {
     const topPrize = compPrizes[0]
     return {
       id: String(c.id),
+      eventId: String(c.eventId),
+      eventTitle: e?.title ?? '',
       title: c.name,
-      status: (e?.status ?? 'upcoming') as HackathonEventDTO['status'],
+      status: (e?.status ?? 'upcoming') as CompetitionDTO['status'],
       startDate: e?.startDate ?? '',
       endDate: e?.endDate ?? '',
       location: e?.venue || 'Online',
@@ -145,6 +183,40 @@ export async function getHackathonEvents(): Promise<HackathonEventDTO[]> {
       faqs,
     }
   })
+}
+
+export async function getPublicEvents(): Promise<EventListingDTO[]> {
+  const { events, competitions, prizes } = await loadCompetitionRows()
+  if (!events.length) return []
+
+  return events
+    .map((e) => {
+      const own = competitions.filter((c) => c.eventId === e.id)
+      return {
+        id: String(e.id),
+        title: e.title,
+        slug: e.slug,
+        year: e.year,
+        status: e.status,
+        startDate: e.startDate ?? '',
+        endDate: e.endDate ?? '',
+        venue: e.venue || 'Online',
+        imageUrl: e.heroImage || FALLBACK_EVENT_IMG,
+        description: htmlToText(e.description),
+        competitions: own.map((c) => {
+          const topPrize = prizes.find((p) => p.competitionId === c.id)
+          return {
+            id: String(c.id),
+            name: c.name,
+            type: c.type,
+            imageUrl: c.coverImage || e.heroImage || FALLBACK_EVENT_IMG,
+            registrationOpen: !!c.registrationOpen,
+            prize: topPrize?.amount || 'TBD',
+          }
+        }),
+      }
+    })
+    .sort((a, b) => b.year - a.year)
 }
 
 export async function getNewsItems(): Promise<NewsItemDTO[]> {

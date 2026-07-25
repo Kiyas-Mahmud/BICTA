@@ -8,12 +8,12 @@ const fields: Field[] = [
     { value: 'judge', label: 'Judge' },
     { value: 'speaker', label: 'Speaker' },
   ] },
-  { key: 'title', label: 'Title' },
+  { key: 'title', label: 'Title', placeholder: 'Head of Engineering' },
   { key: 'organization', label: 'Organization' },
-  { key: 'socialUrl', label: 'Profile URL', placeholder: 'https://…' },
+  { key: 'socialUrl', label: 'Profile URL', placeholder: 'https://…', hint: 'LinkedIn or personal site.' },
   { key: 'photoUrl', label: 'Photo', type: 'image' },
   { key: 'bio', label: 'Bio', type: 'rich' },
-  { key: 'sortOrder', label: 'Sort order', type: 'number' },
+  { key: 'sortOrder', label: 'Sort order', type: 'number', hint: 'Lower numbers appear first.' },
 ]
 const columns = [
   { key: 'name', label: 'Name' },
@@ -26,9 +26,12 @@ const columns = [
 <template>
   <AdminCollection
     title="Judges & Speakers"
+    subtitle="People featured in the judges and speakers section."
+    icon="lucide:users"
+    new-label="New person"
     endpoint="/api/admin/people"
     :fields="fields"
     :columns="columns"
-    empty-text="No judges or speakers yet."
+    empty-text="No judges or speakers yet. Add them with a photo and short bio."
   />
 </template>

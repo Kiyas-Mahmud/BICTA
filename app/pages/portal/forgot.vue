@@ -37,7 +37,7 @@ useSeoMeta({ title: 'Reset password', robots: 'noindex' })
       </span>
       <p class="mt-4 font-bold">Check your email</p>
       <p class="mt-1 text-sm text-ink-soft">If that address is registered, a reset link is on its way.</p>
-      <NuxtLink to="/portal/login" class="btn-secondary mt-6">Back to login</NuxtLink>
+      <NuxtLink to="/login" class="btn-secondary mt-6">Back to login</NuxtLink>
     </div>
 
     <form v-else class="space-y-4" @submit.prevent="submit">
@@ -53,7 +53,7 @@ useSeoMeta({ title: 'Reset password', robots: 'noindex' })
       <button type="submit" class="btn-primary w-full !py-3" :disabled="loading">
         {{ loading ? 'Sending…' : 'Send reset link' }}
       </button>
-      <NuxtLink to="/portal/login" class="block text-center text-xs font-semibold text-ink-soft hover:text-ink">Back to login</NuxtLink>
+      <NuxtLink to="/login" class="block text-center text-xs font-semibold text-ink-soft hover:text-ink">Back to login</NuxtLink>
     </form>
   </PortalAuthCard>
 </template>

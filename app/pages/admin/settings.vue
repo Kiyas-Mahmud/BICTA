@@ -3,20 +3,31 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const { data } = await useFetch('/api/admin/settings')
 
+interface SettingField {
+  key: string
+  label: string
+  type?: 'text' | 'textarea'
+  hint?: string
+}
+
 // Text settings grouped for the form.
-const groups: { title: string; icon: string; fields: { key: string; label: string }[] }[] = [
+const groups: { id: string; title: string; icon: string; description: string; fields: SettingField[] }[] = [
   {
+    id: 'hero',
     title: 'Hero',
     icon: 'lucide:megaphone',
+    description: 'The first thing visitors read on the home page.',
     fields: [
       { key: 'hero_eyebrow', label: 'Hero eyebrow (small label)' },
       { key: 'hero_tagline', label: 'Hero tagline' },
-      { key: 'hero_blurb', label: 'Hero blurb (description)' },
+      { key: 'hero_blurb', label: 'Hero blurb (description)', type: 'textarea' },
     ],
   },
   {
+    id: 'stats',
     title: 'Hero stats',
     icon: 'lucide:bar-chart-3',
+    description: 'Three numbers shown under the hero.',
     fields: [
       { key: 'stat_participants', label: 'Participants' },
       { key: 'stat_teams', label: 'Teams' },
@@ -24,18 +35,22 @@ const groups: { title: string; icon: string; fields: { key: string; label: strin
     ],
   },
   {
+    id: 'general',
     title: 'General',
     icon: 'lucide:settings-2',
+    description: 'Contact details and footer.',
     fields: [
       { key: 'contact_email', label: 'Contact email' },
       { key: 'facebook_url', label: 'Facebook URL' },
       { key: 'linkedin_url', label: 'LinkedIn URL' },
-      { key: 'footer_text', label: 'Footer text' },
+      { key: 'footer_text', label: 'Footer text', type: 'textarea' },
     ],
   },
   {
+    id: 'headings',
     title: 'Section headings',
     icon: 'lucide:heading',
+    description: 'Titles above each home-page section.',
     fields: [
       { key: 'why_heading', label: 'Why Join heading' },
       { key: 'why_subtext', label: 'Why Join subtext' },
@@ -50,22 +65,26 @@ const groups: { title: string; icon: string; fields: { key: string; label: strin
     ],
   },
   {
+    id: 'legal',
     title: 'Legal pages',
     icon: 'lucide:scale',
+    description: 'Content of /privacy and /terms.',
     fields: [
-      { key: 'privacy_policy', label: 'Privacy policy text' },
-      { key: 'terms_conditions', label: 'Terms & conditions text' },
+      { key: 'privacy_policy', label: 'Privacy policy text', type: 'textarea' },
+      { key: 'terms_conditions', label: 'Terms & conditions text', type: 'textarea' },
     ],
   },
   {
+    id: 'venue',
     title: 'Venue & location',
     icon: 'lucide:map-pin',
+    description: 'Where the event happens, plus the embedded map.',
     fields: [
       { key: 'venue_heading', label: 'Venue heading' },
       { key: 'venue_name', label: 'Venue name' },
-      { key: 'venue_address', label: 'Venue address' },
-      { key: 'venue_directions', label: 'Directions' },
-      { key: 'venue_map_embed', label: 'Google Maps embed URL' },
+      { key: 'venue_address', label: 'Venue address', type: 'textarea' },
+      { key: 'venue_directions', label: 'Directions', type: 'textarea' },
+      { key: 'venue_map_embed', label: 'Google Maps embed URL', hint: 'The src of the iframe Google gives you.' },
     ],
   },
 ]
@@ -90,8 +109,13 @@ const form = reactive<Record<string, string>>(Object.fromEntries(allTextKeys.map
 // Toggle defaults to ON unless explicitly '0'.
 const vis = reactive<Record<string, boolean>>(Object.fromEntries(toggles.map((t) => [t.key, src[t.key] !== '0'])))
 
+// Snapshot for the unsaved-changes indicator.
+const clean = ref(JSON.stringify({ ...form, ...vis }))
+const dirty = computed(() => JSON.stringify({ ...form, ...vis }) !== clean.value)
+
 const saving = ref(false)
 const savedAt = ref('')
+const toast = useToast()
 
 async function save() {
   saving.value = true
@@ -100,63 +124,95 @@ async function save() {
     for (const t of toggles) payload[t.key] = vis[t.key] ? '1' : '0'
     await $fetch('/api/admin/settings', { method: 'PUT', body: payload })
     savedAt.value = new Date().toLocaleTimeString()
+    clean.value = JSON.stringify({ ...form, ...vis })
+    toast.success('Settings saved', 'The public site is updated already.')
+  } catch (e: any) {
+    toast.error('Could not save settings', e?.data?.statusMessage ?? 'Try again in a moment.')
   } finally {
     saving.value = false
   }
 }
+
+const hiddenCount = computed(() => toggles.filter((t) => !vis[t.key]).length)
 </script>
 
 <template>
-  <div>
-    <div class="admin-head">
-      <div>
-        <h1 class="admin-h1">Site settings</h1>
-        <p class="admin-sub">Text, headings, legal copy and which home-page sections show.</p>
-      </div>
-      <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0">
-        <span v-if="savedAt" class="inline-flex items-center gap-1 text-sm text-green-700"><Icon name="lucide:check-circle" /> Saved {{ savedAt }}</span>
-      </Transition>
-    </div>
+  <div class="space-y-6">
+    <AdminPageHeader title="Site settings" subtitle="Text, headings, legal copy and which home-page sections show." icon="lucide:settings">
+      <template #badge>
+        <span v-if="dirty" class="status status-warn">Unsaved changes</span>
+      </template>
+      <template #actions>
+        <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0">
+          <span v-if="savedAt && !dirty" class="inline-flex items-center gap-1.5 text-sm font-semibold text-green-700">
+            <Icon name="lucide:circle-check-big" /> Saved {{ savedAt }}
+          </span>
+        </Transition>
+      </template>
+    </AdminPageHeader>
 
-    <form class="mt-6 max-w-2xl space-y-5" @submit.prevent="save">
-      <div v-for="g in groups" :key="g.title" class="admin-panel">
-        <div class="mb-4 flex items-center gap-2.5">
-          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-100 text-brand-700"><Icon :name="g.icon" /></span>
-          <h2 class="text-sm font-bold text-ink">{{ g.title }}</h2>
-        </div>
-        <div class="space-y-4">
-          <div v-for="f in g.fields" :key="f.key">
-            <label class="label">{{ f.label }}</label>
-            <input v-model="form[f.key]" class="input" maxlength="2000" />
+    <div class="grid gap-6 xl:grid-cols-[13rem_1fr] xl:items-start">
+      <!-- section jump list -->
+      <nav class="hidden xl:sticky xl:top-24 xl:block" aria-label="Settings sections">
+        <ul class="space-y-0.5">
+          <li v-for="g in groups" :key="g.id">
+            <a
+              :href="`#set-${g.id}`"
+              class="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-mist-1 hover:text-ink"
+            >
+              <Icon :name="g.icon" class="text-ink-faint" /> {{ g.title }}
+            </a>
+          </li>
+          <li>
+            <a href="#set-visibility" class="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-mist-1 hover:text-ink">
+              <Icon name="lucide:eye" class="text-ink-faint" /> Show / hide
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <form class="min-w-0 space-y-5" @submit.prevent="save">
+        <AdminPanel
+          v-for="(g, gi) in groups"
+          :id="`set-${g.id}`"
+          :key="g.id"
+          :title="g.title"
+          :subtitle="g.description"
+          :icon="g.icon"
+          class="fade-up scroll-mt-24"
+          :class="`stagger-${Math.min(gi + 1, 4)}`"
+        >
+          <div class="grid max-w-3xl gap-4" :class="g.fields.length > 4 ? 'sm:grid-cols-2' : ''">
+            <div v-for="f in g.fields" :key="f.key" :class="f.type === 'textarea' ? 'sm:col-span-2' : ''">
+              <label class="label" :for="`s-${f.key}`">{{ f.label }}</label>
+              <textarea v-if="f.type === 'textarea'" :id="`s-${f.key}`" v-model="form[f.key]" class="input" rows="4" maxlength="2000" />
+              <input v-else :id="`s-${f.key}`" v-model="form[f.key]" class="input" maxlength="2000" />
+              <p v-if="f.hint" class="mt-1.5 text-xs text-ink-faint">{{ f.hint }}</p>
+            </div>
           </div>
-        </div>
-      </div>
+        </AdminPanel>
 
-      <div class="admin-panel">
-        <div class="mb-4 flex items-center gap-2.5">
-          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-100 text-brand-700"><Icon name="lucide:eye" /></span>
-          <h2 class="text-sm font-bold text-ink">Show / hide sections</h2>
-        </div>
-        <div class="grid gap-2.5 sm:grid-cols-2">
-          <label v-for="t in toggles" :key="t.key" class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-line bg-mist-1 px-3.5 py-2.5">
-            <span class="text-sm font-medium text-ink">{{ t.label }}</span>
-            <span class="relative inline-flex shrink-0">
-              <input v-model="vis[t.key]" type="checkbox" class="peer sr-only" />
-              <span class="block h-5 w-9 rounded-full bg-line transition-colors peer-checked:bg-brand-600" />
-              <span class="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />
-            </span>
-          </label>
-        </div>
-        <p class="mt-3 text-xs text-ink-faint">Sections also hide automatically when they have no content.</p>
-      </div>
+        <AdminPanel
+          id="set-visibility"
+          title="Show / hide sections"
+          subtitle="Sections also hide automatically when they have no content."
+          icon="lucide:eye"
+          class="fade-up scroll-mt-24"
+        >
+          <template #actions>
+            <span v-if="hiddenCount" class="status status-neutral">{{ hiddenCount }} hidden</span>
+          </template>
+          <div class="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+            <AdminSwitch v-for="t in toggles" :key="t.key" v-model="vis[t.key]" :label="t.label" />
+          </div>
+        </AdminPanel>
 
-      <div class="sticky bottom-4 flex items-center gap-3 rounded-2xl border border-line bg-white/90 p-3 shadow-lift backdrop-blur">
-        <button type="submit" class="btn-primary" :disabled="saving">
-          <Icon v-if="saving" name="lucide:loader-2" class="animate-spin" />
-          {{ saving ? 'Saving…' : 'Save settings' }}
-        </button>
-        <span class="text-xs text-ink-faint">Changes go live on the public site immediately.</span>
-      </div>
-    </form>
+        <AdminFormActions
+          :saving="saving"
+          label="Save settings"
+          :hint="dirty ? 'You have unsaved changes.' : 'Changes go live on the public site immediately.'"
+        />
+      </form>
+    </div>
   </div>
 </template>

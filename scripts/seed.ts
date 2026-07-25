@@ -1,9 +1,14 @@
 import bcrypt from 'bcryptjs'
-import { useDb, schema } from '../server/database/client'
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import * as schema from '../server/database/schema'
+
+// Seed content lives here; scripts/seed-d1.ts runs it against a throwaway local
+// SQLite file, dumps the resulting rows as SQL, and pushes that to D1 (which is
+// only reachable through a Worker binding, never from a plain node script).
 
 const WEAK_PASSWORDS = new Set(['admin', 'password', 'change-me-min-12-chars', 'changeme'])
 
-async function main() {
+export async function seed(db: BetterSQLite3Database<typeof schema>) {
   const name = process.env.ADMIN_NAME ?? 'Admin'
   const email = process.env.ADMIN_EMAIL?.trim().toLowerCase()
   const password = process.env.ADMIN_PASSWORD
@@ -17,8 +22,6 @@ async function main() {
   if (process.env.NODE_ENV === 'production' && email.endsWith('@example.com')) {
     throw new Error('Refusing to seed example.com admin email in production')
   }
-
-  const db = useDb()
 
   // Admin (upsert by email)
   const passwordHash = await bcrypt.hash(password, 12)
@@ -301,9 +304,3 @@ async function main() {
   )
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((err) => {
-    console.error(err.message ?? err)
-    process.exit(1)
-  })
