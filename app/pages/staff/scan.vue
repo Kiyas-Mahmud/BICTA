@@ -8,6 +8,8 @@ const { session } = useUserSession()
 const staff = computed(() => (session.value as any)?.user as { name: string; role?: string } | undefined)
 
 const { data: checkpoints } = await useFetch('/api/staff/checkpoints')
+// What this volunteer is assigned to; admins come back unscoped.
+const { data: scope } = await useFetch('/api/staff/me')
 const activeCheckpoint = ref<number | null>(null)
 watchEffect(() => {
   if (activeCheckpoint.value == null && checkpoints.value?.length) activeCheckpoint.value = checkpoints.value[0].id
@@ -129,23 +131,27 @@ useSeoMeta({ title: 'Scanner', robots: 'noindex' })
   <div class="space-y-5">
     <!-- shift summary -->
     <section class="scan-card p-4">
-      <div class="flex items-center justify-between gap-3">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div class="min-w-0">
           <p class="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-white/45">This shift</p>
-          <p class="mt-1 truncate text-lg font-extrabold">Hi {{ (staff?.name || 'there').split(' ')[0] }}</p>
+          <p class="mt-0.5 truncate text-lg sm:text-xl font-extrabold">Hi {{ (staff?.name || 'there').split(' ')[0] }}</p>
+          <p v-if="scope?.scoped" class="mt-1 truncate text-xs text-white/50">
+            {{ scope.event?.title }} · {{ scope.competitions.map((c) => c.name).join(', ') || 'no competitions assigned' }}
+          </p>
+          <p v-else class="mt-1 text-xs text-white/50">All competitions</p>
         </div>
-        <div class="flex shrink-0 gap-2 text-center">
-          <div class="rounded-xl bg-emerald-500/15 px-3 py-2">
-            <p class="text-lg font-extrabold tabular-nums text-emerald-300">{{ stats.collected }}</p>
-            <p class="text-[0.6rem] font-bold uppercase tracking-wider text-white/45">Handed out</p>
+        <div class="grid grid-cols-3 gap-2 text-center w-full sm:w-auto sm:flex sm:shrink-0">
+          <div class="rounded-xl bg-emerald-500/15 p-2 sm:px-3 sm:py-2">
+            <p class="text-base sm:text-lg font-extrabold tabular-nums text-emerald-300">{{ stats.collected }}</p>
+            <p class="text-[0.55rem] sm:text-[0.6rem] font-bold uppercase tracking-wider text-white/45 truncate">Handed out</p>
           </div>
-          <div class="rounded-xl bg-amber-500/15 px-3 py-2">
-            <p class="text-lg font-extrabold tabular-nums text-amber-300">{{ stats.repeat }}</p>
-            <p class="text-[0.6rem] font-bold uppercase tracking-wider text-white/45">Repeat</p>
+          <div class="rounded-xl bg-amber-500/15 p-2 sm:px-3 sm:py-2">
+            <p class="text-base sm:text-lg font-extrabold tabular-nums text-amber-300">{{ stats.repeat }}</p>
+            <p class="text-[0.55rem] sm:text-[0.6rem] font-bold uppercase tracking-wider text-white/45 truncate">Repeat</p>
           </div>
-          <div class="rounded-xl bg-white/[0.06] px-3 py-2">
-            <p class="text-lg font-extrabold tabular-nums text-white/70">{{ stats.failed }}</p>
-            <p class="text-[0.6rem] font-bold uppercase tracking-wider text-white/45">Failed</p>
+          <div class="rounded-xl bg-white/[0.06] p-2 sm:px-3 sm:py-2">
+            <p class="text-base sm:text-lg font-extrabold tabular-nums text-white/70">{{ stats.failed }}</p>
+            <p class="text-[0.55rem] sm:text-[0.6rem] font-bold uppercase tracking-wider text-white/45 truncate">Failed</p>
           </div>
         </div>
       </div>

@@ -28,6 +28,14 @@ export default defineEventHandler(async (event) => {
     .from(schema.registrations)
     .where(sql`${schema.registrations.teamName} is not null and ${schema.registrations.teamName} <> ''`)
 
+  // Roles and partners — previously missing from this payload entirely, which
+  // is why the dashboard showed nothing for them.
+  const [volunteersN] = await db.select({ n: count() }).from(schema.admins).where(eq(schema.admins.role, 'volunteer'))
+  const [adminsN] = await db.select({ n: count() }).from(schema.admins).where(eq(schema.admins.role, 'admin'))
+  const [judgesN] = await db.select({ n: count() }).from(schema.people).where(eq(schema.people.role, 'judge'))
+  const [speakersN] = await db.select({ n: count() }).from(schema.people).where(eq(schema.people.role, 'speaker'))
+  const [sponsorsN] = await db.select({ n: count() }).from(schema.sponsors)
+
   // Registration status breakdown.
   const statusRows = await db
     .select({ status: schema.registrations.status, n: count() })
@@ -104,7 +112,14 @@ export default defineEventHandler(async (event) => {
     checkpoints: checkpointN?.n ?? 0,
     subscribers: subN?.n ?? 0,
     unreadMessages: unreadN?.n ?? 0,
+    volunteers: volunteersN?.n ?? 0,
+    admins: adminsN?.n ?? 0,
+    judges: judgesN?.n ?? 0,
+    speakers: speakersN?.n ?? 0,
+    sponsors: sponsorsN?.n ?? 0,
     pendingRegistrations: byStatus.pending,
+    confirmedRegistrations: byStatus.confirmed,
+    rejectedRegistrations: byStatus.rejected,
     byStatus,
     prizePool,
     series,

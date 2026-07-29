@@ -5,7 +5,7 @@ import { setPasswordSchema } from '../../utils/validation'
 
 // Password reset: single-use, expiring token from the reset email.
 export default defineEventHandler(async (event) => {
-  assertRateLimit(event, { bucket: 'participant-reset', max: 10, windowMs: 60 * 60 * 1000 })
+  assertRateLimit(event, { bucket: 'participant-reset', max: 30, windowMs: 60 * 60 * 1000 })
 
   const body = await readValidatedBody(event, setPasswordSchema.parse)
   const db = useDb()

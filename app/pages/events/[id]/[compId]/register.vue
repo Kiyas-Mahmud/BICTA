@@ -14,6 +14,16 @@ const ev = competition.value as Competition
 
 const maxMembers = computed(() => ev.teamSizeMax - 1)
 
+// An already-signed-in participant registers as themselves: identity comes
+// from the session (the server enforces this too) and they keep the password
+// they already have.
+const { session } = useUserSession()
+const isParticipant = computed(() => Boolean((session.value as any)?.participant))
+const { data: me } = await useFetch('/api/participant/me', {
+  immediate: isParticipant.value,
+  default: () => null,
+})
+
 // Form state
 const form = reactive({
   fullName: '',
@@ -24,6 +34,13 @@ const form = reactive({
   notes: '',
   password: '', // leader's portal password (min 8 chars)
   website: '', // honeypot
+})
+
+watchEffect(() => {
+  if (!isParticipant.value || !me.value?.account) return
+  form.fullName = me.value.account.fullName ?? ''
+  form.email = me.value.account.email ?? ''
+  form.phone = me.value.account.phone ?? ''
 })
 
 interface TeamMember {
@@ -56,6 +73,20 @@ const error = ref('')
 
 async function submit() {
   error.value = ''
+
+  // New participants must choose a password; signed-in ones already have one.
+  if (!isParticipant.value) {
+    const pw = form.password.trim()
+    if (!pw) {
+      error.value = 'Choose a dashboard password so you can log in later.'
+      return
+    }
+    if (pw.length < 8) {
+      error.value = 'Your dashboard password needs at least 8 characters.'
+      return
+    }
+  }
+
   submitting.value = true
   try {
     await $fetch('/api/registrations', {
@@ -66,7 +97,10 @@ async function submit() {
         email: form.email,
         phone: form.phone,
         institution: form.institution,
-        password: form.password,
+        // Signed-in participants keep their existing password; the server
+        // ignores this field when a participant session is present.
+        // .value matters: refs auto-unwrap in the template but not in script.
+        password: isParticipant.value ? undefined : form.password,
         teamName: form.teamName || null,
         teamMembers: teamMembers.value
           .filter((m) => m.name && m.email)
@@ -107,7 +141,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
             and each teammate has been emailed an invite with their personal QR code.
           </p>
           <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <NuxtLink to="/login" class="btn-primary">Open my dashboard</NuxtLink>
+            <NuxtLink :to="isParticipant ? '/portal' : '/login'" class="btn-primary">Open my dashboard</NuxtLink>
             <NuxtLink :to="`/events/${eventId}/${ev.id}`" class="btn-secondary">Back to competition</NuxtLink>
           </div>
         </div>
@@ -166,6 +200,11 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
                 <p class="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">Team Leader</p>
               </div>
 
+              <div v-if="isParticipant" class="col-span-full -mt-1 mb-1 flex items-start gap-2 rounded-xl bg-brand-50 px-3.5 py-2.5 text-xs text-brand-800">
+                <Icon name="lucide:circle-check-big" class="mt-0.5 shrink-0" />
+                <span>Signed in as <strong>{{ form.email }}</strong>. This entry is added to your existing account, so there's no new password to set.</span>
+              </div>
+
               <div class="col-span-full sm:col-span-3">
                 <UiLabel for="r-fullName" class="font-medium">
                   Full name<span class="text-red-500">*</span>
@@ -175,8 +214,10 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
                   id="r-fullName"
                   v-model="form.fullName"
                   required
+                  :readonly="isParticipant"
                   placeholder="e.g. Emma Crown"
                   class="mt-2"
+                  :class="isParticipant ? 'bg-mist-1 text-ink-soft' : ''"
                 />
               </div>
 
@@ -202,8 +243,10 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
                   id="r-email"
                   v-model="form.email"
                   required
+                  :readonly="isParticipant"
                   placeholder="you@email.com"
                   class="mt-2"
+                  :class="isParticipant ? 'bg-mist-1 text-ink-soft' : ''"
                 />
               </div>
 
@@ -234,7 +277,8 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
                 />
               </div>
 
-              <div class="col-span-full">
+              <!-- Only new participants pick a password; a signed-in one keeps theirs. -->
+              <div v-if="!isParticipant" class="col-span-full">
                 <UiLabel for="r-password" class="font-medium">
                   Dashboard password<span class="text-red-500">*</span>
                 </UiLabel>

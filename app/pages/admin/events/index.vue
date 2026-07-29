@@ -10,7 +10,7 @@ async function setCurrent(id: number, title: string) {
   busy.value = id
   try {
     await $fetch(`/api/admin/events/${id}/set-current`, { method: 'POST' })
-    await refresh()
+    await Promise.all([refresh(), refreshAdminStats()])
     toast.success(`${title} is now the current event`)
   } catch {
     toast.error('Could not switch the current event')
@@ -27,7 +27,7 @@ async function remove(id: number, title: string) {
   })
   if (!ok) return
   await $fetch(`/api/admin/events/${id}`, { method: 'DELETE' })
-  await refresh()
+  await Promise.all([refresh(), refreshAdminStats()])
   toast.success(`${title} deleted`)
 }
 

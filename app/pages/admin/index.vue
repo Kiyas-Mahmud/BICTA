@@ -52,6 +52,16 @@ const attentionTone: Record<string, string> = {
   red: 'bg-red-50 text-red-600 ring-red-100',
 }
 
+// Secondary counts: people and partners behind the event.
+const roster = computed(() => [
+  { label: 'Volunteers', value: stats.value?.volunteers ?? 0, icon: 'lucide:scan-line', to: '/admin/volunteers' },
+  { label: 'Judges', value: stats.value?.judges ?? 0, icon: 'lucide:gavel', to: '/admin/people' },
+  { label: 'Speakers', value: stats.value?.speakers ?? 0, icon: 'lucide:mic', to: '/admin/people' },
+  { label: 'Sponsors', value: stats.value?.sponsors ?? 0, icon: 'lucide:handshake', to: '/admin/sponsors' },
+  { label: 'Subscribers', value: stats.value?.subscribers ?? 0, icon: 'lucide:mail', to: '/admin/newsletter' },
+  { label: 'Admins', value: stats.value?.admins ?? 0, icon: 'lucide:shield-check', to: '/admin/account' },
+])
+
 const shortcuts = [
   { to: '/admin/events/new', icon: 'lucide:calendar-plus', label: 'New event' },
   { to: '/admin/news/new', icon: 'lucide:pen-line', label: 'Write article' },
@@ -125,6 +135,24 @@ const shortcuts = [
       <AdminStatCard label="Participants" :value="stats?.participants ?? 0" icon="lucide:users" tone="violet" :caption="`${stats?.activeParticipants ?? 0} active accounts`" />
       <AdminStatCard label="Competitions" :value="stats?.competitions ?? 0" icon="lucide:trophy" tone="green" :caption="`${stats?.events ?? 0} events`" to="/admin/events" />
       <AdminStatCard label="Registrations" :value="stats?.registrations ?? 0" icon="lucide:clipboard-list" tone="amber" :caption="`${stats?.pendingRegistrations ?? 0} pending review`" :delta="regDelta" to="/admin/registrations" />
+    </section>
+
+    <!-- roster: people and partners -->
+    <section class="fade-up stagger-2 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+      <NuxtLink
+        v-for="r in roster"
+        :key="r.label"
+        :to="r.to"
+        class="surface group flex items-center gap-3 p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lift"
+      >
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-mist-1 text-ink-soft ring-1 ring-inset ring-line transition-colors group-hover:bg-brand-50 group-hover:text-brand-700">
+          <Icon :name="r.icon" />
+        </span>
+        <span class="min-w-0">
+          <span class="block text-lg font-extrabold leading-none tabular-nums text-ink">{{ r.value }}</span>
+          <span class="mt-1 block truncate text-[0.7rem] font-semibold text-ink-faint">{{ r.label }}</span>
+        </span>
+      </NuxtLink>
     </section>
 
     <!-- trend + status -->

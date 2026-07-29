@@ -14,7 +14,7 @@ async function save(data: any) {
   try {
     await $fetch(`/api/admin/competitions/${id}`, { method: 'PUT', body: data })
     savedAt.value = new Date().toLocaleTimeString()
-    await refresh()
+    await Promise.all([refresh(), refreshAdminStats()])
     toast.success('Competition saved')
   } catch (e: any) {
     toast.error('Could not save the competition', e?.data?.statusMessage ?? 'Check the fields and try again.')

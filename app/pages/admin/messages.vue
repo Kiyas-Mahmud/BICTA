@@ -18,7 +18,7 @@ const { confirm } = useConfirm()
 
 async function toggleRead(m: Message) {
   await $fetch(`/api/admin/contact-messages/${m.id}`, { method: 'PUT', body: { isRead: !m.isRead } })
-  await refresh()
+  await Promise.all([refresh(), refreshAdminStats()])
 }
 
 async function remove(m: Message) {
@@ -28,7 +28,7 @@ async function remove(m: Message) {
   })
   if (!ok) return
   await $fetch(`/api/admin/contact-messages/${m.id}`, { method: 'DELETE' })
-  await refresh()
+  await Promise.all([refresh(), refreshAdminStats()])
   toast.success('Message deleted')
 }
 

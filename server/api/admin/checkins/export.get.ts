@@ -1,5 +1,4 @@
-import { eq, asc } from 'drizzle-orm'
-import { useDb, schema } from '../../../database/client'
+import { collectionQuerySchema, collectionRows } from './index.get'
 
 // CSV formula-injection guard (Excel executes =, +, -, @ leading cells).
 function csvCell(value: unknown): string {
@@ -8,48 +7,25 @@ function csvCell(value: unknown): string {
   return `"${s.replace(/"/g, '""')}"`
 }
 
+// Same filters as the report, so "Export" means "export what I am looking at".
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
-  const db = useDb()
+  const q = await getValidatedQuery(event, collectionQuerySchema.parse)
+  const rows = await collectionRows(q)
 
-  const current = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.isCurrent, true)).get()
-  if (!current) return ''
-
-  const checkpoints = await db
-    .select()
-    .from(schema.checkpoints)
-    .where(eq(schema.checkpoints.eventId, current.id))
-    .orderBy(asc(schema.checkpoints.sortOrder))
-
-  const rows = await db
-    .select({
-      accountId: schema.participantAccounts.id,
-      fullName: schema.participantAccounts.fullName,
-      email: schema.participantAccounts.email,
-      role: schema.teamMembers.role,
-      teamName: schema.registrations.teamName,
-      competition: schema.competitions.name,
-    })
-    .from(schema.teamMembers)
-    .innerJoin(schema.participantAccounts, eq(schema.participantAccounts.id, schema.teamMembers.accountId))
-    .innerJoin(schema.registrations, eq(schema.registrations.id, schema.teamMembers.registrationId))
-    .innerJoin(schema.competitions, eq(schema.competitions.id, schema.registrations.competitionId))
-    .where(eq(schema.competitions.eventId, current.id))
-
-  const allCheckins = await db.select().from(schema.checkins)
-  const collectedSet = new Set(allCheckins.map((ci) => `${ci.accountId}:${ci.checkpointId}`))
-
-  const header = ['Name', 'Email', 'Role', 'Team', 'Competition', ...checkpoints.map((c) => c.name)]
+  const header = ['Participant', 'Email', 'Event', 'Competition', 'Check-in point', 'Location', 'Collected by', 'Collected at']
   const lines = [
     header.map(csvCell).join(','),
     ...rows.map((r) =>
       [
-        r.fullName,
+        r.participant,
         r.email,
-        r.role,
-        r.teamName ?? '',
-        r.competition,
-        ...checkpoints.map((c) => (collectedSet.has(`${r.accountId}:${c.id}`) ? 'Yes' : 'No')),
+        r.event,
+        r.competition ?? 'Event-wide',
+        r.checkpoint,
+        r.checkpointLocation,
+        r.collectedBy ?? '',
+        r.collectedAt,
       ]
         .map(csvCell)
         .join(','),

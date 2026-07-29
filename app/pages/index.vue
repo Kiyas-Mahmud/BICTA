@@ -1,9 +1,4 @@
 <script setup lang="ts">
-import { Swiper, SwiperSlide } from 'swiper/vue'
-import { EffectCoverflow, Pagination, Autoplay } from 'swiper/modules'
-import 'swiper/css'
-import 'swiper/css/effect-coverflow'
-import 'swiper/css/pagination'
 import type { Competition } from '~/composables/useCompetitions'
 import type { TimelineItem } from '~/components/site/Timeline.vue'
 
@@ -30,8 +25,11 @@ const stats = computed(() => [
   { icon: 'lucide:trophy', value: String(current.value?.competitions.length ?? 0), label: 'Competitions', tile: 'tile-orange' },
 ])
 
-// Competitions carousel — DB-backed via the content plugin.
+// Competitions — DB-backed via the content plugin. The first one leads the
+// section; the rest sit beside it as compact rows.
 const featuredEvents = useFeaturedCompetitions()
+const leadCompetition = computed(() => featuredEvents.value[0])
+const otherCompetitions = computed(() => featuredEvents.value.slice(1))
 
 function statusBadge(status: Competition['status']) {
   if (status === 'ongoing') return { class: 'pill-open', label: 'Live', dot: true }
@@ -80,20 +78,33 @@ useSeoMeta({
         <div class="float-blob float-blob-2" />
       </div>
 
-      <div class="container-site grid items-center gap-10 pb-12 pt-28 lg:grid-cols-2 lg:pb-20 lg:pt-32">
+      <div class="container-site pt-header-safe pt-header-safe--hero grid items-center gap-8 pb-10 sm:gap-10 sm:pb-12 lg:grid-cols-2 lg:pb-20">
         <div>
           <span class="eyebrow rise rise-1">{{ s('hero_eyebrow', 'National ICT Programming Festival') }}</span>
-          <h1 class="text-display rise rise-2 mt-5">
+          <h1 class="text-display rise rise-2 mt-3.5 sm:mt-5">
             {{ titleParts.main }}
-            <span v-if="titleParts.year" class="gradient-text">{{ titleParts.year }}</span>
+            <span v-if="titleParts.year" class="text-brand-600">{{ titleParts.year }}</span>
           </h1>
-          <p class="rise rise-2 mt-4 text-xl font-bold text-ink">{{ tagline }}</p>
-          <p class="rise rise-3 mt-3 max-w-md text-ink-soft">
+          <p class="rise rise-2 mt-3 text-base font-bold text-ink-soft sm:mt-4 sm:text-xl sm:text-ink">{{ tagline }}</p>
+          <p class="rise rise-3 mt-2.5 max-w-md text-sm text-ink-soft sm:mt-3 sm:text-base">
             {{ s('hero_blurb', 'The biggest national ICT programming festival with three tracks, a bigger prize pool, and a national stage for innovators.') }}
           </p>
-          <div class="rise rise-4 mt-8 flex flex-wrap items-center gap-3">
-            <NuxtLink to="/events" class="btn-primary">Explore Competitions <Icon name="lucide:arrow-right" /></NuxtLink>
-            <a href="#why" class="btn-secondary">Learn More</a>
+
+          <!-- mobile-only proof strip: the desktop collage carries these signals on large screens -->
+          <div class="rise rise-3 mt-5 flex flex-wrap items-center gap-2 lg:hidden">
+            <span v-if="registrationLive" class="pill-open">
+              <span class="dot-live" /> Registration open
+            </span>
+            <span v-if="topPrize" class="inline-flex items-center gap-1.5 rounded-full bg-mist-1 px-3 py-1 text-xs font-bold text-ink-soft">
+              <Icon name="lucide:trophy" class="text-brand-600" /> {{ topPrize }} top prize
+            </span>
+          </div>
+
+          <div class="rise rise-4 mt-7 flex w-full flex-col items-stretch gap-2.5 sm:mt-8 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+            <NuxtLink to="/events" class="btn-primary hero-cta w-full justify-center text-center sm:w-auto">
+              Explore Competitions <Icon name="lucide:arrow-right" />
+            </NuxtLink>
+            <a href="#why" class="btn-quiet w-full justify-center text-center sm:w-auto">Learn More</a>
           </div>
         </div>
 
@@ -160,19 +171,30 @@ useSeoMeta({
     </section>
 
     <!-- 2. COUNTDOWN + STATS -->
-    <section class="container-site relative z-10 -mt-2 pb-4">
-      <div class="card flex flex-col items-center gap-8 p-6 shadow-soft lg:flex-row lg:justify-between lg:p-8">
-        <div v-if="current?.startDate" class="text-center lg:text-left">
-          <p class="mb-3 text-sm font-bold uppercase tracking-wide text-ink-soft">Event starts in</p>
+    <section class="container-site relative z-10 pb-8 sm:pb-10">
+      <div class="card flex flex-col gap-6 p-4 shadow-soft sm:gap-8 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+        <div v-if="current?.startDate" class="w-full lg:w-auto">
+          <p class="mb-3 text-center text-[0.7rem] font-bold uppercase tracking-[0.16em] text-ink-faint sm:text-xs lg:text-left">
+            Event starts in
+          </p>
           <UiAnimatedNumberCountdown :end-date="current.startDate" />
         </div>
-        <div class="h-px w-full bg-line lg:h-16 lg:w-px" />
-        <div class="grid grid-cols-2 gap-x-8 gap-y-5 sm:grid-cols-4">
-          <div v-for="st in stats" :key="st.label" class="flex items-center gap-3">
-            <span class="tile h-10 w-10 text-lg" :class="st.tile"><Icon :name="st.icon" /></span>
-            <div>
-              <p class="text-xl font-extrabold tracking-tight">{{ st.value }}</p>
-              <p class="text-xs font-semibold text-ink-faint">{{ st.label }}</p>
+
+        <div class="h-px w-full bg-line/70 lg:h-20 lg:w-px" />
+
+        <!-- stats: icon column aligned, value dominant, label quiet -->
+        <div class="grid w-full grid-cols-2 gap-2 sm:grid-cols-4 lg:w-auto lg:gap-3">
+          <div
+            v-for="st in stats"
+            :key="st.label"
+            class="flex items-center gap-3 rounded-xl px-1 py-1.5 sm:px-2"
+          >
+            <span class="tile h-9 w-9 shrink-0 text-base sm:h-10 sm:w-10 sm:text-lg" :class="st.tile">
+              <Icon :name="st.icon" />
+            </span>
+            <div class="min-w-0">
+              <p class="truncate text-lg font-extrabold leading-none tracking-tight tabular-nums sm:text-xl">{{ st.value }}</p>
+              <p class="mt-1 truncate text-[0.7rem] font-semibold text-ink-faint sm:text-xs">{{ st.label }}</p>
             </div>
           </div>
         </div>
@@ -192,63 +214,124 @@ useSeoMeta({
       </section>
     </SiteSectionReveal>
 
-    <!-- 4. COMPETITIONS (coverflow carousel, DB-backed) -->
+    <!-- 4. COMPETITIONS (DB-backed, server-rendered) -->
     <SiteSectionReveal v-if="featuredEvents.length">
       <section id="competitions" class="section !pt-0">
         <div class="container-site">
-          <div class="flex flex-wrap items-end justify-between gap-3">
+          <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
             <div>
-              <h2 class="text-title">Competitions</h2>
-              <p class="mt-2 text-ink-soft">Pick your arena. Each track has its own rules and prizes.</p>
+              <div class="flex items-center gap-2.5">
+                <h2 class="text-title">Competitions</h2>
+                <span class="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">
+                  {{ featuredEvents.length }} {{ featuredEvents.length === 1 ? 'track' : 'tracks' }}
+                </span>
+              </div>
+              <p class="mt-2 max-w-md text-ink-soft">Pick your arena. Each track has its own rules and prizes.</p>
             </div>
-            <NuxtLink to="/events" class="link-underline text-sm text-brand-600">View all events</NuxtLink>
+            <NuxtLink to="/events" class="group inline-flex items-center gap-1.5 text-sm font-bold text-brand-700">
+              View all events
+              <Icon name="lucide:arrow-right" class="transition-transform duration-200 group-hover:translate-x-0.5" />
+            </NuxtLink>
           </div>
-          <div class="mt-8">
-            <ClientOnly>
-              <Swiper
-                effect="coverflow"
-                :grab-cursor="true"
-                :centered-slides="true"
-                :slides-per-view="'auto'"
-                :coverflow-effect="{ rotate: 50, stretch: 0, depth: 100, modifier: 1, slideShadows: true }"
-                :pagination="{ clickable: true }"
-                :autoplay="{ delay: 3000, disableOnInteraction: false }"
-                :modules="[EffectCoverflow, Pagination, Autoplay]"
-                class="featured-swiper !pb-12"
-              >
-                <SwiperSlide
-                  v-for="event in featuredEvents"
-                  :key="event.id"
-                  class="!w-[320px] sm:!w-[380px] md:!w-[420px]"
-                >
-                  <UiTiltCard :max="8">
-                    <NuxtLink :to="`/events/${event.eventId}/${event.id}`" class="group block">
-                      <div class="relative aspect-[16/10] overflow-hidden rounded-2xl">
-                        <img
-                          :src="event.imageUrl"
-                          :alt="event.title"
-                          class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div class="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/30 to-transparent" />
-                        <span class="absolute left-3 top-3" :class="statusBadge(event.status).class">
-                          <span v-if="statusBadge(event.status).dot" class="dot-live" />
-                          {{ statusBadge(event.status).label }}
-                        </span>
-                        <span class="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-brand-600 backdrop-blur-sm">
-                          <Icon name="lucide:trophy" class="text-xs" /> {{ event.prize }}
-                        </span>
-                        <div class="absolute inset-x-0 bottom-0 p-4">
-                          <p class="text-xs font-semibold text-white/70">
-                            {{ formatDateRange(event.startDate, event.endDate) }}
-                          </p>
-                          <h3 class="mt-1 text-lg font-extrabold leading-tight text-white">{{ event.title }}</h3>
-                        </div>
-                      </div>
-                    </NuxtLink>
-                  </UiTiltCard>
-                </SwiperSlide>
-              </Swiper>
-            </ClientOnly>
+
+          <!-- Lead competition: the one visitors should read first -->
+          <NuxtLink
+            v-if="leadCompetition"
+            :to="`/events/${leadCompetition.eventId}/${leadCompetition.id}`"
+            class="group card card-hover mt-8 grid overflow-hidden lg:grid-cols-[1.15fr_1fr]"
+          >
+            <div class="img-zoom relative aspect-[16/10] lg:aspect-auto lg:min-h-[22rem]">
+              <img
+                :src="leadCompetition.imageUrl"
+                :alt="leadCompetition.title"
+                class="h-full w-full object-cover"
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-ink/55 via-ink/10 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-transparent lg:to-white/10" />
+              <span class="absolute left-4 top-4" :class="statusBadge(leadCompetition.status).class">
+                <span v-if="statusBadge(leadCompetition.status).dot" class="dot-live" />
+                {{ statusBadge(leadCompetition.status).label }}
+              </span>
+            </div>
+
+            <div class="flex flex-col justify-center gap-4 p-6 sm:p-8">
+              <div class="flex flex-wrap items-center gap-2">
+                <span v-if="leadCompetition.tags[0]" class="badge badge-blue">{{ leadCompetition.tags[0] }}</span>
+                <span v-if="leadCompetition.registrationOpen" class="pill-open">
+                  <span class="dot-live" /> Registration open
+                </span>
+              </div>
+
+              <div>
+                <h3 class="text-2xl font-extrabold leading-tight tracking-tight transition-colors group-hover:text-brand-700 sm:text-3xl">
+                  {{ leadCompetition.title }}
+                </h3>
+                <p v-if="leadCompetition.description" class="mt-2.5 line-clamp-2 text-sm leading-relaxed text-ink-soft">
+                  {{ leadCompetition.description }}
+                </p>
+              </div>
+
+              <!-- prize gets its own line: it is the strongest pull -->
+              <div class="flex items-baseline gap-2 border-t border-line pt-4">
+                <Icon name="lucide:trophy" class="text-brand-600" />
+                <span class="text-xl font-extrabold tracking-tight text-brand-700">{{ leadCompetition.prize }}</span>
+                <span class="text-xs font-semibold text-ink-faint">top prize</span>
+              </div>
+
+              <dl class="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
+                <div>
+                  <dt class="font-semibold text-ink-faint">Dates</dt>
+                  <dd class="mt-0.5 font-bold text-ink">{{ formatDateRange(leadCompetition.startDate, leadCompetition.endDate) }}</dd>
+                </div>
+                <div>
+                  <dt class="font-semibold text-ink-faint">Team size</dt>
+                  <dd class="mt-0.5 font-bold text-ink">
+                    {{ leadCompetition.teamSizeMax > 1 ? `${leadCompetition.teamSizeMin}–${leadCompetition.teamSizeMax} members` : 'Individual' }}
+                  </dd>
+                </div>
+              </dl>
+
+              <span class="inline-flex items-center gap-1.5 text-sm font-bold text-brand-700">
+                View details
+                <Icon name="lucide:arrow-right" class="transition-transform duration-200 group-hover:translate-x-1" />
+              </span>
+            </div>
+          </NuxtLink>
+
+          <!-- Remaining tracks: compact rows, scannable side by side -->
+          <div v-if="otherCompetitions.length" class="mt-4 grid gap-4 sm:grid-cols-2">
+            <NuxtLink
+              v-for="comp in otherCompetitions"
+              :key="comp.id"
+              :to="`/events/${comp.eventId}/${comp.id}`"
+              class="group card card-hover flex items-stretch gap-4 overflow-hidden p-3"
+            >
+              <div class="img-zoom relative h-24 w-24 shrink-0 overflow-hidden rounded-xl sm:h-28 sm:w-28">
+                <img :src="comp.imageUrl" :alt="comp.title" class="h-full w-full object-cover" />
+              </div>
+
+              <div class="flex min-w-0 flex-1 flex-col justify-center gap-1.5 py-1 pr-1">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span v-if="comp.tags[0]" class="text-[0.7rem] font-bold uppercase tracking-wider text-ink-faint">{{ comp.tags[0] }}</span>
+                  <span v-if="comp.registrationOpen" class="dot-live" />
+                </div>
+                <h3 class="truncate text-base font-extrabold leading-tight tracking-tight transition-colors group-hover:text-brand-700">
+                  {{ comp.title }}
+                </h3>
+                <p class="flex items-center gap-1.5 text-sm font-bold text-brand-700">
+                  <Icon name="lucide:trophy" class="text-xs" /> {{ comp.prize }}
+                </p>
+                <p class="truncate text-xs text-ink-faint">
+                  {{ comp.teamSizeMax > 1 ? `Teams of ${comp.teamSizeMax}` : 'Individual' }}
+                </p>
+              </div>
+
+              <div class="flex items-center pr-2">
+                <Icon
+                  name="lucide:arrow-right"
+                  class="text-ink-faint transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-brand-700"
+                />
+              </div>
+            </NuxtLink>
           </div>
         </div>
       </section>
@@ -404,20 +487,7 @@ useSeoMeta({
       </section>
     </SiteSectionReveal>
 
-    <!-- 12. TESTIMONIALS -->
-    <SiteSectionReveal v-if="data?.testimonials?.length">
-      <section class="section !pt-0">
-        <div class="container-site">
-          <div class="mx-auto mb-10 max-w-2xl text-center">
-            <h2 class="text-title">Don't just take our word for it</h2>
-            <p class="mt-3 text-ink-soft">Hear from past participants who experienced BICTA firsthand.</p>
-          </div>
-          <SiteTestimonials :items="data!.testimonials" />
-        </div>
-      </section>
-    </SiteSectionReveal>
-
-    <!-- 13. FAQ + VENUE -->
+    <!-- 12. FAQ + VENUE -->
     <SiteSectionReveal v-if="(visible('faq') && data?.faqs?.length) || (visible('venue') && (s('venue_name') || s('venue_map_embed')))">
       <section class="section !pt-0">
         <div class="container-site grid gap-10 lg:grid-cols-2">

@@ -50,8 +50,9 @@ useSeoMeta({ title: 'Events', description: "Browse BICTA's yearly editions and t
         <div class="float-blob float-blob-1" />
         <div class="float-blob float-blob-2" />
       </div>
-      <div class="container-site pb-8 pt-10">
-        <h1 class="text-display rise rise-1">Events</h1>
+      <div class="container-site pb-8 pt-header-safe">
+        <SiteBackButton to="/" label="Back to home" class="mb-4" />
+        <h1 class="text-display rise rise-1 mt-2">Events</h1>
         <p class="rise rise-2 mt-3 max-w-lg text-lg text-ink-soft">
           Each yearly edition of BICTA, and every competition running inside it.
         </p>

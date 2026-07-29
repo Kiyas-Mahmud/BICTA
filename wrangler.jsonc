@@ -12,6 +12,11 @@
     "binding": "ASSETS"
   },
 
+  "vars": {
+    "PUBLIC_SITE_URL": "https://bicta.23-51134-1.workers.dev",
+    "MAIL_FROM": "BICTA <onboarding@resend.dev>"
+  },
+
   "d1_databases": [
     {
       "binding": "DB",

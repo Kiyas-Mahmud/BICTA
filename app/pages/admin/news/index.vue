@@ -35,7 +35,7 @@ async function remove(id: number, title: string) {
   })
   if (!ok) return
   await $fetch(`/api/admin/news/${id}`, { method: 'DELETE' })
-  await refresh()
+  await Promise.all([refresh(), refreshAdminStats()])
   toast.success('Article deleted')
 }
 </script>

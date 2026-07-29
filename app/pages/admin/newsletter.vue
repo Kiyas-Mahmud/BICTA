@@ -25,7 +25,7 @@ async function remove(id: number, email: string) {
   })
   if (!ok) return
   await $fetch(`/api/admin/newsletter/${id}`, { method: 'DELETE' })
-  await refresh()
+  await Promise.all([refresh(), refreshAdminStats()])
   toast.success('Subscriber removed')
 }
 

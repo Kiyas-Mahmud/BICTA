@@ -6,7 +6,7 @@ useSeoMeta({ title: 'Contact', description: 'Get in touch with the BICTA team.' 
 </script>
 
 <template>
-  <section class="container-site section pb-24">
+  <section class="container-site section pt-header-safe pb-24">
     <SiteBackButton to="/" label="Back to home" />
 
     <div class="mx-auto mt-6 max-w-5xl">

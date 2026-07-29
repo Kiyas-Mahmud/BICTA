@@ -67,7 +67,10 @@ export const registrationSchema = z.object({
   fullName: z.string().trim().min(2).max(150),
   email: z.string().trim().toLowerCase().email().max(254),
   // Leader's portal password, set at registration time (min 8 chars).
-  password: z.string().min(8).max(200),
+  // Optional only because a signed-in participant entering an additional
+  // competition already has one; the handler requires it when there is no
+  // participant session.
+  password: z.string().min(8).max(200).optional(),
   phone: z.string().trim().min(5).max(30).regex(/^[+\d][\d\s-]+$/, 'Invalid phone number'),
   institution: z.string().trim().max(200).default(''),
   teamName: z.string().trim().max(150).nullable().optional(),
@@ -108,9 +111,14 @@ export const teamMemberAddSchema = z.object({
 })
 
 export const checkpointSchema = z.object({
+  // null = an event-wide desk any participant may use.
+  competitionId: z.coerce.number().int().positive().nullable().optional(),
   name: z.string().trim().min(1).max(100),
+  location: z.string().trim().max(200).default(''),
+  description: z.string().trim().max(500).default(''),
   icon: z.string().trim().max(64).nullable().optional(),
-  active: z.boolean().default(true),
+  qrEnabled: z.coerce.boolean().default(true),
+  active: z.coerce.boolean().default(true),
   sortOrder: z.number().int().min(0).max(1000).default(0),
 })
 
@@ -150,10 +158,16 @@ export const timelineSchema = z.object({
 })
 
 export const sponsorSchema = z.object({
+  // null = shown on every event; set = that event only.
+  eventId: z.coerce.number().int().positive().nullable().optional(),
   name: z.string().trim().min(1).max(150),
   logoUrl: imagePath.nullable().optional(),
   websiteUrl: optUrl,
   tier: z.string().trim().max(50).default(''),
+  contactPerson: z.string().trim().max(150).default(''),
+  contactEmail: z.union([z.string().trim().email().max(254), z.literal('')]).default(''),
+  phone: z.string().trim().max(30).default(''),
+  active: z.coerce.boolean().default(true),
   sortOrder: z.number().int().min(0).max(1000).default(0),
 })
 
@@ -165,7 +179,20 @@ export const personSchema = z.object({
   bio: z.string().max(5000).default(''),
   role: z.enum(['judge', 'speaker']).default('judge'),
   socialUrl: optUrl,
+  email: z.union([z.string().trim().email().max(254), z.literal('')]).default(''),
+  phone: z.string().trim().max(30).default(''),
+  expertise: z.string().trim().max(300).default(''),
   sortOrder: z.number().int().min(0).max(1000).default(0),
+})
+
+// Which competitions a judge is assigned to score.
+export const judgeAssignmentSchema = z.object({
+  competitionIds: z.array(z.coerce.number().int().positive()).max(50).default([]),
+})
+
+// Which competitions (and therefore which event) a volunteer works.
+export const volunteerAssignmentSchema = z.object({
+  competitionIds: z.array(z.coerce.number().int().positive()).max(50).default([]),
 })
 
 export const winnerSchema = z.object({
@@ -181,14 +208,6 @@ export const winnerSchema = z.object({
 export const faqSchema = z.object({
   question: z.string().trim().min(1).max(300),
   answer: z.string().max(10_000).default(''),
-  sortOrder: z.number().int().min(0).max(1000).default(0),
-})
-
-export const testimonialSchema = z.object({
-  name: z.string().trim().min(1).max(150),
-  role: z.string().trim().max(150).default(''),
-  quote: z.string().trim().min(1).max(1000),
-  photoUrl: imagePath.nullable().optional(),
   sortOrder: z.number().int().min(0).max(1000).default(0),
 })
 

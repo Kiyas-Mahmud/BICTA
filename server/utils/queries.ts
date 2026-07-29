@@ -1,4 +1,4 @@
-import { eq, desc, asc, and, inArray } from 'drizzle-orm'
+import { eq, desc, asc, and, or, isNull, inArray } from 'drizzle-orm'
 import { useDb, schema } from '../database/client'
 
 export async function getCurrentEventFull() {
@@ -88,8 +88,22 @@ export function getTimeline(eventId: number) {
     .all()
 }
 
-export function getSponsors() {
-  return useDb().select().from(schema.sponsors).orderBy(asc(schema.sponsors.sortOrder)).all()
+/**
+ * Active sponsors for one event, plus the house sponsors (null eventId) that
+ * appear on every edition.
+ */
+export function getSponsors(eventId?: number) {
+  return useDb()
+    .select()
+    .from(schema.sponsors)
+    .where(
+      and(
+        eq(schema.sponsors.active, true),
+        eventId ? or(isNull(schema.sponsors.eventId), eq(schema.sponsors.eventId, eventId)) : undefined,
+      ),
+    )
+    .orderBy(asc(schema.sponsors.sortOrder))
+    .all()
 }
 
 export function getPeople() {
@@ -102,10 +116,6 @@ export function getWinners() {
 
 export function getFaqs() {
   return useDb().select().from(schema.faqs).orderBy(asc(schema.faqs.sortOrder)).all()
-}
-
-export function getTestimonials() {
-  return useDb().select().from(schema.testimonials).orderBy(asc(schema.testimonials.sortOrder)).all()
 }
 
 export function getHowItWorksSteps() {

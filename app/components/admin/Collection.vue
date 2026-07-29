@@ -1,15 +1,22 @@
 <script setup lang="ts">
+import type { Ref } from 'vue'
+
 // Generic admin CRUD screen for the simple home-page list tables.
 // Driven by a field config; reuses ImageUploader and RichText.
 
 export interface Field {
   key: string
   label: string
-  type?: 'text' | 'textarea' | 'rich' | 'image' | 'number' | 'date' | 'select'
-  options?: { value: string; label: string }[]
+  type?: 'text' | 'textarea' | 'rich' | 'image' | 'number' | 'date' | 'select' | 'toggle'
+  /** static options, or a ref/computed of them for data-driven pickers */
+  options?: { value: string | number | null; label: string }[] | Ref<{ value: string | number | null; label: string }[]>
   placeholder?: string
   hint?: string
   colSpan?: 1 | 2
+}
+
+function optionsOf(f: Field) {
+  return (unref(f.options) ?? []) as { value: string | number | null; label: string }[]
 }
 
 const props = defineProps<{
@@ -71,7 +78,7 @@ async function save() {
     await $fetch(url, { method: isNew.value ? 'POST' : 'PUT', body: editing.value })
     toast.success(isNew.value ? 'Item added' : 'Changes saved')
     editing.value = null
-    await refresh()
+    await Promise.all([refresh(), refreshAdminStats()])
   } catch (e: any) {
     error.value = e?.data?.statusMessage ?? 'Save failed. Check the fields.'
   } finally {
@@ -88,7 +95,7 @@ async function remove(row: any) {
   if (!ok) return
   await $fetch(`${props.endpoint}/${row.id}`, { method: 'DELETE' })
   if (editing.value?.id === row.id) editing.value = null
-  await refresh()
+  await Promise.all([refresh(), refreshAdminStats()])
   toast.success('Item deleted')
 }
 
@@ -152,13 +159,21 @@ function wide(f: Field) {
         <form class="panel-body space-y-5" @submit.prevent="save">
           <div class="grid max-w-3xl gap-4 sm:grid-cols-2">
             <div v-for="f in fields" :key="f.key" :class="wide(f) ? 'sm:col-span-2' : ''">
-              <label class="label" :for="`f-${f.key}`">{{ f.label }}</label>
+              <!-- the toggle renders its own label -->
+              <label v-if="f.type !== 'toggle'" class="label" :for="`f-${f.key}`">{{ f.label }}</label>
               <AdminRichText v-if="f.type === 'rich'" v-model="editing[f.key]" />
               <AdminImageUploader v-else-if="f.type === 'image'" v-model="editing[f.key]" />
               <textarea v-else-if="f.type === 'textarea'" :id="`f-${f.key}`" v-model="editing[f.key]" class="input" rows="3" :placeholder="f.placeholder" />
               <select v-else-if="f.type === 'select'" :id="`f-${f.key}`" v-model="editing[f.key]" class="input">
-                <option v-for="o in f.options" :key="o.value" :value="o.value">{{ o.label }}</option>
+                <option v-for="o in optionsOf(f)" :key="String(o.value)" :value="o.value">{{ o.label }}</option>
               </select>
+              <AdminSwitch
+                v-else-if="f.type === 'toggle'"
+                :id="`f-${f.key}`"
+                v-model="editing[f.key]"
+                :label="f.label"
+                :hint="f.hint"
+              />
               <input v-else-if="f.type === 'number'" :id="`f-${f.key}`" v-model.number="editing[f.key]" type="number" class="input" :placeholder="f.placeholder" />
               <input v-else-if="f.type === 'date'" :id="`f-${f.key}`" v-model="editing[f.key]" type="date" class="input" />
               <input v-else :id="`f-${f.key}`" v-model="editing[f.key]" class="input" :placeholder="f.placeholder" />

@@ -2,12 +2,99 @@
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const { data: volunteers, refresh } = await useFetch<{ id: number; name: string; email: string }[]>('/api/admin/volunteers')
+const { data: tree } = await useFetch('/api/admin/event-tree', { key: 'admin-event-tree' })
 
 const form = reactive({ name: '', email: '', password: '' })
 const adding = ref(false)
 const error = ref('')
 const toast = useToast()
 const { confirm } = useConfirm()
+
+// --- assignment editor -------------------------------------------------
+// A volunteer works one event and any number of its competitions; the server
+// rejects a mixed-event list and scopes the scanner to whatever is saved here.
+const assigning = ref<{ id: number; name: string } | null>(null)
+const assigned = ref<number[]>([])
+const staffedPoints = ref<number[]>([])
+const savingAssign = ref(false)
+
+// Check-in points of the current event, for the staffing picker.
+const { data: allCheckpoints } = await useFetch<{ id: number; name: string; location: string; competitionId: number | null }[]>(
+  '/api/admin/checkpoints',
+)
+// Only offer desks that match the competitions being assigned (plus the
+// event-wide ones), so staffing can never contradict the scope.
+const staffableCheckpoints = computed(() =>
+  (allCheckpoints.value ?? []).filter(
+    (cp) => cp.competitionId === null || assigned.value.includes(cp.competitionId),
+  ),
+)
+function togglePoint(id: number) {
+  staffedPoints.value = staffedPoints.value.includes(id)
+    ? staffedPoints.value.filter((x) => x !== id)
+    : [...staffedPoints.value, id]
+}
+
+const compName = computed(() => {
+  const map = new Map<number, string>()
+  for (const e of tree.value ?? []) for (const c of e.competitions) map.set(c.id, c.name)
+  return map
+})
+// Assignment summary per volunteer, loaded once for the table.
+const summary = ref<Record<number, number[]>>({})
+async function loadSummary() {
+  const rows = await Promise.all(
+    (volunteers.value ?? []).map(async (v) => {
+      try {
+        const r = await $fetch<{ competitionIds: number[] }>(`/api/admin/volunteers/${v.id}/assignments`)
+        return [v.id, r.competitionIds] as const
+      } catch {
+        return [v.id, []] as const
+      }
+    }),
+  )
+  summary.value = Object.fromEntries(rows)
+}
+await loadSummary()
+
+async function startAssign(v: { id: number; name: string }) {
+  assigning.value = v
+  assigned.value = summary.value[v.id] ?? []
+  staffedPoints.value = []
+  try {
+    const r = await $fetch<{ checkpointIds: number[] }>(`/api/admin/volunteers/${v.id}/checkpoints`)
+    staffedPoints.value = r.checkpointIds
+  } catch {
+    // Staffing is additive; a failure here must not block editing the scope.
+  }
+}
+
+async function saveAssignments() {
+  if (!assigning.value) return
+  savingAssign.value = true
+  try {
+    const id = assigning.value.id
+    await $fetch(`/api/admin/volunteers/${id}/assignments`, {
+      method: 'PUT',
+      body: { competitionIds: assigned.value },
+    })
+    // Drop any staffed desk that the (possibly narrowed) scope no longer covers.
+    const valid = staffedPoints.value.filter((cid) =>
+      staffableCheckpoints.value.some((cp) => cp.id === cid),
+    )
+    await $fetch(`/api/admin/volunteers/${id}/checkpoints`, {
+      method: 'PUT',
+      body: { checkpointIds: valid },
+    })
+    toast.success(`${assigning.value.name}'s assignment saved`)
+    assigning.value = null
+    await loadSummary()
+  } catch (e: any) {
+    toast.error('Could not save the assignment', e?.data?.statusMessage ?? 'Try again.')
+  } finally {
+    savingAssign.value = false
+  }
+}
 
 async function add() {
   error.value = ''
@@ -18,7 +105,7 @@ async function add() {
     form.name = ''
     form.email = ''
     form.password = ''
-    await refresh()
+    await Promise.all([refresh(), refreshAdminStats()])
   } catch (e: any) {
     error.value = e?.data?.statusMessage ?? 'Could not create volunteer.'
   } finally {
@@ -34,7 +121,8 @@ async function remove(id: number, name: string) {
   })
   if (!ok) return
   await $fetch(`/api/admin/volunteers/${id}`, { method: 'DELETE' })
-  await refresh()
+  await Promise.all([refresh(), refreshAdminStats()])
+  await loadSummary()
   toast.success(`${name} removed`)
 }
 
@@ -80,6 +168,7 @@ async function copyEmail(email: string) {
               <tr>
                 <th scope="col">Volunteer</th>
                 <th scope="col">Email</th>
+                <th scope="col">Assigned competitions</th>
                 <th scope="col" class="text-right">Actions</th>
               </tr>
             </thead>
@@ -93,7 +182,18 @@ async function copyEmail(email: string) {
                 </td>
                 <td class="text-ink-soft">{{ v.email }}</td>
                 <td>
+                  <div v-if="summary[v.id]?.length" class="flex flex-wrap gap-1.5">
+                    <span v-for="cid in summary[v.id]" :key="cid" class="status status-brand">{{ compName.get(cid) ?? `#${cid}` }}</span>
+                  </div>
+                  <span v-else class="status status-neutral" title="Unassigned volunteers can use every check-in point">
+                    All (unassigned)
+                  </span>
+                </td>
+                <td>
                   <div class="row-actions">
+                    <button class="icon-btn-sm icon-btn-brand" :aria-label="`Assign ${v.name}`" title="Assign competitions" @click="startAssign(v)">
+                      <Icon name="lucide:list-checks" />
+                    </button>
                     <button class="icon-btn-sm icon-btn-brand" :aria-label="`Copy ${v.name}'s email`" title="Copy email" @click="copyEmail(v.email)">
                       <Icon name="lucide:copy" />
                     </button>
@@ -104,7 +204,7 @@ async function copyEmail(email: string) {
                 </td>
               </tr>
               <tr v-if="!volunteers?.length">
-                <td colspan="3" class="!p-0">
+                <td colspan="4" class="!p-0">
                   <AdminEmptyState
                     icon="lucide:scan-line"
                     title="No volunteers yet"
@@ -153,5 +253,65 @@ async function copyEmail(email: string) {
         </p>
       </AdminPanel>
     </div>
+
+    <!-- assignment editor -->
+    <Transition name="dlg">
+      <div
+        v-if="assigning"
+        class="fixed inset-0 z-[110] flex items-end justify-center bg-ink/45 p-4 backdrop-blur-sm sm:items-center"
+        @click.self="assigning = null"
+      >
+        <div class="dialog-panel !max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="assign-title">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 id="assign-title" class="text-base font-bold text-ink">Assign {{ assigning.name }}</h2>
+              <p class="mt-1 text-sm text-ink-soft">
+                They will only see check-in points for these competitions, plus any event-wide desks.
+              </p>
+            </div>
+            <button class="icon-btn-sm" aria-label="Close" @click="assigning = null"><Icon name="lucide:x" /></button>
+          </div>
+
+          <div class="mt-5 max-h-[55vh] space-y-5 overflow-y-auto">
+            <AdminCompetitionAssigner v-model="assigned" :tree="tree ?? []" single-event />
+
+            <div>
+              <p class="console-label mb-2">Check-in points they staff</p>
+              <div v-if="staffableCheckpoints.length" class="grid gap-1.5 sm:grid-cols-2">
+                <label
+                  v-for="cp in staffableCheckpoints"
+                  :key="cp.id"
+                  class="flex min-h-[2.5rem] cursor-pointer items-center gap-2.5 rounded-xl border border-line px-3 py-2 text-sm transition-colors"
+                  :class="staffedPoints.includes(cp.id) ? 'border-brand-300 bg-brand-50 font-semibold text-brand-800' : 'text-ink-soft hover:bg-mist-1'"
+                >
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 shrink-0 accent-brand-700"
+                    :checked="staffedPoints.includes(cp.id)"
+                    @change="togglePoint(cp.id)"
+                  />
+                  <span class="min-w-0 truncate">
+                    {{ cp.name }}
+                    <span v-if="cp.location" class="font-normal text-ink-faint">· {{ cp.location }}</span>
+                    <span v-if="cp.competitionId === null" class="font-normal text-ink-faint">· event-wide</span>
+                  </span>
+                </label>
+              </div>
+              <p v-else class="rounded-xl border border-dashed border-line px-4 py-4 text-center text-xs text-ink-faint">
+                Pick competitions first — only their desks and event-wide desks can be staffed.
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-6 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
+            <button type="button" class="btn-ghost sm:min-w-[7rem]" @click="assigning = null">Cancel</button>
+            <button type="button" class="btn-primary !py-2.5 sm:min-w-[9rem]" :disabled="savingAssign" @click="saveAssignments">
+              <Icon :name="savingAssign ? 'lucide:loader-2' : 'lucide:check'" :class="{ 'animate-spin': savingAssign }" />
+              {{ savingAssign ? 'Saving…' : 'Save assignment' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>

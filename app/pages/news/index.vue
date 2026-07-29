@@ -4,7 +4,7 @@ useSeoMeta({ title: 'News', description: 'Announcements and updates from BICTA.'
 </script>
 
 <template>
-  <section class="container-site section">
+  <section class="container-site section pt-header-safe">
     <SiteBackButton to="/" label="Back to home" />
     <h1 class="text-display mt-6">News</h1>
     <p class="mt-3 text-lg text-ink-soft">Announcements and updates.</p>

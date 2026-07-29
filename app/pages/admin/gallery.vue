@@ -26,7 +26,7 @@ async function add() {
     })
     pendingUrl.value = null
     caption.value = ''
-    await refresh()
+    await Promise.all([refresh(), refreshAdminStats()])
     toast.success('Photo added to the gallery')
   } catch (e: any) {
     toast.error('Could not add that photo', e?.data?.statusMessage ?? 'Try uploading it again.')
@@ -43,7 +43,7 @@ async function remove(id: number) {
   })
   if (!ok) return
   await $fetch(`/api/admin/gallery/${id}`, { method: 'DELETE' })
-  await refresh()
+  await Promise.all([refresh(), refreshAdminStats()])
   toast.success('Photo removed')
 }
 

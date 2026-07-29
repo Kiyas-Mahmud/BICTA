@@ -2,11 +2,24 @@
 definePageMeta({ layout: 'portal', middleware: 'participant' })
 
 const { data, refresh, pending } = await useFetch('/api/participant/me')
+// Competitions still open to this participant (one team per competition).
+const { data: available, refresh: refreshAvailable } = await useFetch('/api/participant/available-competitions')
 
 function statusBadge(status: string) {
   if (status === 'confirmed') return 'badge badge-green'
   if (status === 'rejected') return 'badge badge-gray'
   return 'badge badge-amber'
+}
+
+const copiedFor = ref<number | null>(null)
+async function copyInvite(memberId: number, link: string) {
+  try {
+    await navigator.clipboard.writeText(link)
+    copiedFor.value = memberId
+    setTimeout(() => (copiedFor.value === memberId) && (copiedFor.value = null), 2000)
+  } catch {
+    err.value = 'Could not copy the link. Long-press it to copy manually.'
+  }
 }
 
 // Add / remove teammate (leader only). Per-team form state keyed by registrationId.
@@ -42,7 +55,7 @@ async function removeMember(regId: number, memberId: number, name: string) {
   busy.value = true
   try {
     await $fetch(`/api/participant/team/${regId}/members/${memberId}`, { method: 'DELETE' })
-    await refresh()
+    await Promise.all([refresh(), refreshAvailable()])
   } catch (e: any) {
     err.value = e?.data?.statusMessage ?? 'Could not remove member.'
   } finally {
@@ -119,45 +132,63 @@ useSeoMeta({ title: 'My dashboard', robots: 'noindex' })
             <!-- roster -->
             <div class="mt-5">
               <p class="text-xs font-bold uppercase tracking-wide text-ink-faint">Team roster ({{ team.roster.length }})</p>
-              <ul class="mt-3 space-y-2">
-                <li v-for="m in team.roster" :key="m.memberId" class="flex items-center justify-between gap-3 rounded-xl border border-line px-4 py-2.5">
-                  <div class="flex items-center gap-3">
-                    <span class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-sm font-extrabold text-brand-600">
+              <ul class="mt-3 space-y-2.5">
+                <li v-for="m in team.roster" :key="m.memberId" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-line p-3.5 sm:px-4 sm:py-3 bg-white/50">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-sm font-extrabold text-brand-600">
                       {{ m.fullName.charAt(0) }}
                     </span>
-                    <div class="min-w-0">
-                      <p class="truncate text-sm font-bold">{{ m.fullName }}</p>
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate text-sm font-bold text-ink">{{ m.fullName }}</p>
                       <p class="truncate text-xs text-ink-faint">{{ m.email }}</p>
                     </div>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <span v-if="m.role === 'leader'" class="badge badge-blue">Leader</span>
-                    <span v-else-if="m.status === 'invited'" class="badge badge-amber" title="Hasn't set a password yet">Invited</span>
-                    <span v-else class="badge badge-green">Active</span>
-                    <button
-                      v-if="team.canManage && m.role !== 'leader'"
-                      class="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600"
-                      aria-label="Remove member"
-                      :disabled="busy"
-                      @click="removeMember(team.registrationId, m.memberId, m.fullName)"
-                    >
-                      <Icon name="lucide:x" />
-                    </button>
+                  <div class="flex items-center justify-between sm:justify-end gap-2 border-t border-line/40 pt-2 sm:border-t-0 sm:pt-0">
+                    <div class="flex items-center gap-1.5">
+                      <span v-if="m.role === 'leader'" class="badge badge-blue">Leader</span>
+                      <span v-else-if="m.status === 'invited'" class="badge badge-amber" title="Hasn't set a password yet">Invited</span>
+                      <span v-else class="badge badge-green">Active</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <!-- Leader can hand the set-password link over directly,
+                           rather than relying on the invite email arriving. -->
+                      <button
+                        v-if="m.inviteLink"
+                        class="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-brand-700 transition-colors hover:bg-brand-50"
+                        :title="`Copy ${m.fullName}'s set-password link`"
+                        @click="copyInvite(m.memberId, m.inviteLink)"
+                      >
+                        <Icon :name="copiedFor === m.memberId ? 'lucide:check' : 'lucide:link'" />
+                        {{ copiedFor === m.memberId ? 'Copied' : 'Invite link' }}
+                      </button>
+                      <button
+                        v-if="team.canManage && m.role !== 'leader'"
+                        class="flex h-8 w-8 items-center justify-center rounded-lg text-ink-faint transition-colors hover:bg-red-50 hover:text-red-600"
+                        aria-label="Remove member"
+                        :disabled="busy"
+                        @click="removeMember(team.registrationId, m.memberId, m.fullName)"
+                      >
+                        <Icon name="lucide:x" />
+                      </button>
+                    </div>
                   </div>
                 </li>
               </ul>
 
               <!-- add member (leader, before deadline) -->
-              <div v-if="team.canManage && team.competition && team.roster.length < team.competition.maxTeamSize" class="mt-4 rounded-xl border border-dashed border-line p-4">
+              <div v-if="team.canManage && team.competition && team.roster.length < team.competition.maxTeamSize" class="mt-4 rounded-xl border border-dashed border-line p-4 bg-mist-1/30">
                 <p class="text-xs font-bold uppercase tracking-wide text-ink-faint">Add a teammate</p>
-                <div class="mt-3 flex flex-col gap-2 sm:flex-row">
+                <div class="mt-3 flex flex-col gap-2.5 sm:flex-row">
                   <input v-model="draft(team.registrationId).name" class="field sm:flex-1" placeholder="Full name" maxlength="150" />
                   <input v-model="draft(team.registrationId).email" type="email" class="field sm:flex-1" placeholder="Email" maxlength="254" />
-                  <button class="btn-primary shrink-0" :disabled="busy" @click="addMember(team.registrationId)">
+                  <button class="btn-primary shrink-0 justify-center" :disabled="busy" @click="addMember(team.registrationId)">
                     <Icon name="lucide:user-plus" /> Add
                   </button>
                 </div>
-                <p class="mt-2 text-xs text-ink-soft">They'll get an email invite with their own QR code.</p>
+                <p class="mt-2 text-xs text-ink-soft">
+                  They'll get an email invite with their own QR code. If it doesn't arrive, copy their
+                  <strong>Invite link</strong> from the roster above and send it yourself.
+                </p>
               </div>
               <p v-else-if="team.myRole === 'leader' && !team.canManage" class="mt-4 text-xs text-ink-faint">
                 The registration deadline has passed — the team is now locked.
@@ -168,6 +199,42 @@ useSeoMeta({ title: 'My dashboard', robots: 'noindex' })
           <div v-if="!data.teams.length" class="card p-10 text-center text-ink-soft">
             You're not on any team yet.
             <NuxtLink to="/events" class="font-semibold text-brand-600 hover:underline">Browse competitions</NuxtLink>.
+          </div>
+
+          <!-- Enter another competition. One team per competition, but as many
+               competitions as are open. -->
+          <div class="card p-6 sm:p-7">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 class="text-lg font-extrabold tracking-tight">Enter another competition</h2>
+                <p class="mt-1 text-sm text-ink-soft">You can join one team per competition.</p>
+              </div>
+              <span v-if="available?.length" class="badge badge-blue">{{ available.length }} open</span>
+            </div>
+
+            <ul v-if="available?.length" class="mt-5 space-y-2.5">
+              <li
+                v-for="c in available"
+                :key="c.id"
+                class="flex flex-col gap-3 rounded-xl border border-line p-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-4"
+              >
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-bold text-ink">{{ c.name }}</p>
+                  <p class="truncate text-xs text-ink-faint">
+                    {{ c.eventTitle }}
+                    <template v-if="c.registrationDeadline"> · closes {{ formatDate(c.registrationDeadline) }}</template>
+                    <template v-if="c.teamBased"> · teams up to {{ c.maxTeamSize }}</template>
+                  </p>
+                </div>
+                <NuxtLink :to="`/events/${c.eventId}/${c.id}/register`" class="btn-primary shrink-0 justify-center !py-2.5 text-sm">
+                  Register <Icon name="lucide:arrow-right" />
+                </NuxtLink>
+              </li>
+            </ul>
+
+            <p v-else class="mt-5 rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-ink-faint">
+              You're entered in every competition that's currently open. Nice.
+            </p>
           </div>
         </div>
       </div>

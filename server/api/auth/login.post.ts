@@ -19,7 +19,7 @@ const loginSchema = z.object({
 const DUMMY_HASH = '$2b$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinva'
 
 export default defineEventHandler(async (event) => {
-  assertRateLimit(event, { bucket: 'login', max: 5, windowMs: 15 * 60 * 1000 })
+  assertRateLimit(event, { bucket: 'login', max: 20, windowMs: 15 * 60 * 1000 })
 
   const body = await readValidatedBody(event, loginSchema.parse)
   const db = useDb()

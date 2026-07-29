@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { eq, count } from 'drizzle-orm'
+import { eq, and, count } from 'drizzle-orm'
 import { useDb, schema } from '../../../../database/client'
 import { teamMemberAddSchema, idParam } from '../../../../utils/validation'
 import { requireTeamLeader, syncLegacyRoster } from '../../../../utils/team'
@@ -34,9 +34,27 @@ export default defineEventHandler(async (event) => {
       .returning()
   }
 
+  // One team per competition: they may already be on a *different* team for
+  // this same competition. Checked explicitly so the message says which,
+  // rather than surfacing the bare unique-index conflict below.
+  const elsewhere = await db
+    .select({ registrationId: schema.teamMembers.registrationId })
+    .from(schema.teamMembers)
+    .where(and(eq(schema.teamMembers.competitionId, comp.id), eq(schema.teamMembers.accountId, account!.id)))
+    .get()
+  if (elsewhere) {
+    throw createError({
+      statusCode: 409,
+      statusMessage:
+        elsewhere.registrationId === registrationId
+          ? 'This person is already on the team.'
+          : `${body.name} is already on another team for ${comp.name}. Each person can join one team per competition.`,
+    })
+  }
+
   const inserted = await db
     .insert(schema.teamMembers)
-    .values({ registrationId, accountId: account!.id, role: 'member' })
+    .values({ registrationId, competitionId: comp.id, accountId: account!.id, role: 'member' })
     .onConflictDoNothing()
     .returning()
   if (!inserted.length) {

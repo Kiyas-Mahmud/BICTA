@@ -78,6 +78,9 @@ const year = new Date().getFullYear()
           </div>
         </div>
       </div>
+
+      <!-- clears the fixed bottom tab bar so the last row is never covered -->
+      <div class="nav-bottom-spacer sm:hidden" aria-hidden="true" />
     </footer>
   </div>
 </template>

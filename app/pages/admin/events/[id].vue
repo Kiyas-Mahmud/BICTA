@@ -15,7 +15,7 @@ async function save(data: any) {
   try {
     await $fetch(`/api/admin/events/${id}`, { method: 'PUT', body: data })
     savedAt.value = new Date().toLocaleTimeString()
-    await refresh()
+    await Promise.all([refresh(), refreshAdminStats()])
     toast.success('Event saved')
   } catch (e: any) {
     toast.error('Could not save the event', e?.data?.statusMessage ?? 'Check the fields and try again.')
@@ -32,7 +32,7 @@ async function removeCompetition(compId: number, name: string) {
   })
   if (!ok) return
   await $fetch(`/api/admin/competitions/${compId}`, { method: 'DELETE' })
-  await refresh()
+  await Promise.all([refresh(), refreshAdminStats()])
   toast.success(`${name} deleted`)
 }
 </script>

@@ -14,7 +14,7 @@ async function save(data: any) {
   try {
     await $fetch(`/api/admin/news/${id}`, { method: 'PUT', body: data })
     savedAt.value = new Date().toLocaleTimeString()
-    await refresh()
+    await Promise.all([refresh(), refreshAdminStats()])
     toast.success(data.status === 'published' ? 'Article published' : 'Draft saved')
   } catch (e: any) {
     toast.error('Could not save the article', e?.data?.statusMessage ?? 'Check the fields and try again.')

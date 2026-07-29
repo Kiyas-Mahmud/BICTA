@@ -1,6 +1,7 @@
 import { eq, and, inArray } from 'drizzle-orm'
 import { useDb, schema } from '../../database/client'
 import { qrDataUrl } from '../../utils/qr'
+import { siteUrl } from '../../utils/email'
 
 // Everything the participant dashboard needs in one payload.
 export default defineEventHandler(async (event) => {
@@ -28,13 +29,14 @@ export default defineEventHandler(async (event) => {
     const comp = await db.select().from(schema.competitions).where(eq(schema.competitions.id, registration.competitionId)).get()
     const ev = comp ? await db.select().from(schema.events).where(eq(schema.events.id, comp.eventId)).get() : null
 
-    const roster = await db
+    const rosterRows = await db
       .select({
         memberId: schema.teamMembers.id,
         role: schema.teamMembers.role,
         fullName: schema.participantAccounts.fullName,
         email: schema.participantAccounts.email,
         status: schema.participantAccounts.status,
+        inviteToken: schema.participantAccounts.inviteToken,
       })
       .from(schema.teamMembers)
       .innerJoin(schema.participantAccounts, eq(schema.participantAccounts.id, schema.teamMembers.accountId))
@@ -43,6 +45,19 @@ export default defineEventHandler(async (event) => {
     const deadlinePassed = comp?.registrationDeadline
       ? new Date(`${comp.registrationDeadline}T23:59:59Z`) < new Date()
       : false
+
+    // The leader of this team gets each pending teammate's set-password link so
+    // they can pass it on directly (email delivery is not guaranteed). Scoped
+    // deliberately: leaders only, still-invited members only, and the raw token
+    // never leaves this branch.
+    const isLeader = membership.role === 'leader'
+    const roster = rosterRows.map(({ inviteToken, ...m }) => ({
+      ...m,
+      inviteLink:
+        isLeader && m.status === 'invited' && inviteToken
+          ? siteUrl(`/portal/set-password?token=${inviteToken}`)
+          : null,
+    }))
 
     teams.push({
       registrationId: registration.id,

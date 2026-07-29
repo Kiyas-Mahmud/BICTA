@@ -7,7 +7,7 @@ import { sendMail, resetEmail } from '../../utils/email'
 // Public form endpoint — full anti-spam contract + no account enumeration:
 // the response is identical whether or not the email exists.
 export default defineEventHandler(async (event) => {
-  assertRateLimit(event, { bucket: 'participant-forgot', max: 5, windowMs: 60 * 60 * 1000 })
+  assertRateLimit(event, { bucket: 'participant-forgot', max: 20, windowMs: 60 * 60 * 1000 })
 
   const body = await readValidatedBody(event, forgotSchema.parse)
 

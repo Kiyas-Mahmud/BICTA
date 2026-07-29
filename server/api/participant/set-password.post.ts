@@ -5,7 +5,7 @@ import { setPasswordSchema } from '../../utils/validation'
 
 // Invite acceptance: exchange the emailed inviteToken for a password.
 export default defineEventHandler(async (event) => {
-  assertRateLimit(event, { bucket: 'participant-setpw', max: 10, windowMs: 60 * 60 * 1000 })
+  assertRateLimit(event, { bucket: 'participant-setpw', max: 30, windowMs: 60 * 60 * 1000 })
 
   const body = await readValidatedBody(event, setPasswordSchema.parse)
   const db = useDb()

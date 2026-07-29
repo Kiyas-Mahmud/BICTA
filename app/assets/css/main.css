@@ -132,6 +132,27 @@
   .btn-secondary:active {
     transform: translateY(0) scale(0.97);
   }
+  /* lowest-emphasis action: sits beside a primary CTA without competing */
+  .btn-quiet {
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-ink-soft;
+    background: transparent;
+    border: 1px solid transparent;
+    transition:
+      color 200ms ease,
+      background-color 200ms ease,
+      border-color 200ms ease;
+  }
+  .btn-quiet:hover {
+    color: theme('colors.ink.DEFAULT');
+    background: theme('colors.mist.1');
+  }
+  .btn-quiet:active {
+    background: theme('colors.mist.2');
+  }
+  /* hero primary: taller tap target + a touch more presence than a page button */
+  .hero-cta {
+    @apply py-3.5 text-base;
+  }
 
   /* ---------- badges / pills ---------- */
   .badge {
@@ -369,6 +390,15 @@
   .console-table tbody tr:hover {
     background: theme('colors.brand.50');
   }
+  /* sortable column header */
+  .th-sort {
+    @apply inline-flex items-center gap-1.5 rounded text-[0.66rem] font-bold uppercase tracking-[0.1em] text-ink-faint;
+    transition: color 150ms ease;
+  }
+  .th-sort:hover {
+    @apply text-ink-soft;
+  }
+
   /* row-level action cluster: revealed on hover, always visible on touch */
   .row-actions {
     @apply flex items-center justify-end gap-1;
@@ -493,6 +523,130 @@
     @apply border-brand-400 outline-none;
     box-shadow: 0 0 0 3px rgba(171, 185, 166, 0.28);
   }
+}
+
+/* ---------- mobile navigation ----------
+   Bottom tab bar on phones (thumb reach), floating top pill on >= sm.
+   Both respect iOS/Android safe-area insets. */
+.nav-top-mobile {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 50;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid rgba(227, 231, 234, 0.8);
+}
+
+.nav-bottom {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 50;
+  padding: 0 0.75rem;
+  /* clear the home indicator, keep a minimum lift off the edge */
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
+  pointer-events: none;
+}
+.nav-bottom-bar {
+  display: flex;
+  align-items: stretch;
+  gap: 0.125rem;
+  padding: 0.375rem;
+  border-radius: 1.25rem;
+  pointer-events: auto;
+  background: rgba(255, 255, 255, 0.88);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid rgba(227, 231, 234, 0.9);
+  /* two-layer elevation: tight contact shadow + wide ambient */
+  box-shadow:
+    0 1px 2px rgba(38, 48, 42, 0.06),
+    0 12px 32px -8px rgba(38, 48, 42, 0.22);
+}
+.nav-tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1875rem;
+  /* 48px tall: comfortably above the 44px minimum touch target */
+  min-height: 3rem;
+  padding: 0.375rem 0.25rem;
+  border-radius: 0.875rem;
+  color: theme('colors.ink.faint');
+  transition: color 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-tab-active {
+  color: theme('colors.brand.700');
+}
+/* the animated indicator: scales up from the tab centre when it becomes active */
+.nav-tab-pill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: theme('colors.brand.50');
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nav-tab-active .nav-tab-pill {
+  opacity: 1;
+  transform: scale(1);
+}
+.nav-tab-icon {
+  position: relative;
+  font-size: 1.25rem;
+  line-height: 1;
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nav-tab-active .nav-tab-icon {
+  transform: translateY(-1px);
+}
+.nav-tab-label {
+  position: relative;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+.nav-tab:active .nav-tab-icon {
+  transform: scale(0.9);
+}
+/* Desktop nav active pill. Mirrors the mobile tab treatment so both
+   breakpoints read as one system. */
+.nav-desktop-indicator {
+  border-radius: 9999px;
+  background: theme('colors.brand.50');
+  box-shadow: inset 0 0 0 1px theme('colors.brand.100');
+  transition:
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 200ms ease;
+}
+
+/* height of the bar + its safe-area padding, so page content can clear it */
+.nav-bottom-spacer {
+  height: calc(3.75rem + max(env(safe-area-inset-bottom, 0px), 0.75rem));
+}
+
+/* Page top padding that clears the fixed mobile header, including the notch.
+   Above sm the header becomes the floating pill and needs the larger offset.
+   Defined here (outside @layer) so it wins over the utilities it replaces. */
+.pt-header-safe {
+  padding-top: calc(4.5rem + env(safe-area-inset-top, 0px));
+}
+@media (min-width: 640px) {
+  .pt-header-safe { padding-top: 8rem; }
+}
+@media (min-width: 1024px) {
+  .pt-header-safe--hero { padding-top: 9rem; }
 }
 
 /* ---------- hero ambient field (soft blue light, floats) ---------- */
@@ -623,26 +777,6 @@
               opacity 200ms ease;
 }
 
-/* ---------- swiper overrides ---------- */
-.featured-swiper .swiper-pagination-bullet,
-.news-swiper .swiper-pagination-bullet {
-  background: theme('colors.brand.300');
-  opacity: 0.5;
-  width: 8px;
-  height: 8px;
-  transition: all 200ms ease;
-}
-.featured-swiper .swiper-pagination-bullet-active,
-.news-swiper .swiper-pagination-bullet-active {
-  background: theme('colors.brand.600');
-  opacity: 1;
-  width: 24px;
-  border-radius: 4px;
-}
-.featured-swiper .swiper-slide {
-  transition: transform 400ms ease;
-}
-
 /* ---------- console motion ---------- */
 @keyframes skel-shift {
   0% { background-position: 100% 50%; }
@@ -718,6 +852,23 @@
   outline-offset: 3px;
 }
 
+/* ---------- print (report -> PDF via the browser) ---------- */
+@media print {
+  .no-print,
+  #admin-nav,
+  header.sticky,
+  .nav-bottom,
+  .nav-top-mobile {
+    display: none !important;
+  }
+  body { background: #fff; }
+  .surface, .card { box-shadow: none !important; break-inside: avoid; }
+  .table-wrap { overflow: visible !important; }
+  .console-table { min-width: 0 !important; font-size: 11px; }
+  main { padding: 0 !important; }
+  .lg\:pl-\[16\.5rem\] { padding-left: 0 !important; }
+}
+
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   .fade-up, .pop-in, .skel, .scan-halo::after {
@@ -744,4 +895,10 @@
   .btn-primary:active, .btn-secondary:active, .back-btn:hover { transform: none; }
   .nav-underline { transition: none; }
   .tilt-card { transform: none !important; }
+  .nav-tab, .nav-tab-pill, .nav-tab-icon,
+  .countdown-cell, .countdown-digit-enter-active, .countdown-digit-leave-active {
+    transition: none !important;
+    animation: none !important;
+  }
+  .nav-tab-active .nav-tab-icon, .nav-tab:active .nav-tab-icon { transform: none; }
 }

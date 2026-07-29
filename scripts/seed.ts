@@ -23,13 +23,41 @@ export async function seed(db: BetterSQLite3Database<typeof schema>) {
     throw new Error('Refusing to seed example.com admin email in production')
   }
 
-  // Admin (upsert by email)
+  // 1. Admin (upsert by email)
   const passwordHash = await bcrypt.hash(password, 12)
   await db
     .insert(schema.admins)
-    .values({ name, email, passwordHash })
-    .onConflictDoUpdate({ target: schema.admins.email, set: { name, passwordHash } })
+    .values({ name, email, passwordHash, role: 'admin' })
+    .onConflictDoUpdate({ target: schema.admins.email, set: { name, passwordHash, role: 'admin' } })
   console.log(`Admin ready: ${email}`)
+
+  // 2. Volunteer / Event Staff (upsert by email)
+  const volunteerPass = 'volunteer-pass-2026'
+  const volunteerHash = await bcrypt.hash(volunteerPass, 12)
+  await db
+    .insert(schema.admins)
+    .values({ name: 'Volunteer Staff', email: 'volunteer@bicta.local', passwordHash: volunteerHash, role: 'volunteer' })
+    .onConflictDoUpdate({ target: schema.admins.email, set: { name: 'Volunteer Staff', passwordHash: volunteerHash, role: 'volunteer' } })
+  console.log('Volunteer ready: volunteer@bicta.local')
+
+  // 3. Participant (upsert by email)
+  const participantPass = 'participant-pass-2026'
+  const participantHash = await bcrypt.hash(participantPass, 12)
+  await db
+    .insert(schema.participantAccounts)
+    .values({
+      fullName: 'Demo Participant',
+      email: 'participant@bicta.local',
+      passwordHash: participantHash,
+      phone: '+8801700000000',
+      status: 'active',
+      checkinToken: 'chk_demo_participant_2026',
+    })
+    .onConflictDoUpdate({
+      target: schema.participantAccounts.email,
+      set: { fullName: 'Demo Participant', passwordHash: participantHash, status: 'active' },
+    })
+  console.log('Participant ready: participant@bicta.local')
 
   if (process.env.NODE_ENV === 'production') {
     console.log('Production mode: skipping sample data.')
@@ -239,12 +267,6 @@ export async function seed(db: BetterSQLite3Database<typeof schema>) {
       '/gallery-images/photo-1688733720228-4f7a18681c4f.avif',
     ].map((url, i) => ({ eventId: current!.id, url, sortOrder: i + 1 })),
   )
-
-  await db.insert(schema.testimonials).values([
-    { name: 'Rafid Karim', role: 'Team Quantum, Datathon Champion 2025', quote: 'BICTA was the first stage where our work got seen by real industry leaders. We walked out with a trophy and two internship offers.', sortOrder: 1 },
-    { name: 'Sadia Noor', role: 'Hackathon Finalist 2025', quote: 'The mentorship during the 36-hour build changed how I think about shipping products. Best weekend of my year.', sortOrder: 2 },
-    { name: 'Tanjim Hasan', role: 'Project Showcase, 1st Runner-up 2025', quote: 'Professional judging, clear criteria, zero chaos. BICTA treats student builders like professionals.', sortOrder: 3 },
-  ])
 
   await db.insert(schema.howItWorksSteps).values([
     { title: 'Pick your track', body: 'Browse the competitions and choose the arena that fits your skills.', icon: 'list-checks', sortOrder: 1 },
