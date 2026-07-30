@@ -2,6 +2,10 @@
 import type { Field } from '~/components/admin/Collection.vue'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
+// Milestones belong to one edition, so this screen always works on a chosen
+// event rather than silently assuming the current one.
+const { eventOptions, eventId, query, activeEvent } = useEventFilter()
+
 const fields: Field[] = [
   { key: 'label', label: 'Label', placeholder: 'Registration closes' },
   { key: 'date', label: 'Date', type: 'date' },
@@ -13,17 +17,31 @@ const columns = [
   { key: 'date', label: 'Date' },
   { key: 'sortOrder', label: 'Order' },
 ]
+const defaults = computed(() => ({ eventId: eventId.value || undefined }))
 </script>
 
 <template>
-  <AdminCollection
-    title="Important Dates"
-    subtitle="Milestones for the current event, shown in the public timeline."
-    icon="lucide:milestone"
-    new-label="New milestone"
-    endpoint="/api/admin/timeline"
-    :fields="fields"
-    :columns="columns"
-    empty-text="No milestones yet. If this stays empty after adding one, set a current event first."
-  />
+  <div class="space-y-4">
+    <AdminPageHeader
+      title="Important Dates"
+      :subtitle="activeEvent ? `Milestones shown in the public timeline for ${activeEvent.title}.` : 'Milestones shown in the public timeline.'"
+      icon="lucide:milestone"
+    />
+
+    <AdminEventFilter v-model="eventId" :options="eventOptions" hint="Each edition keeps its own set of milestones." />
+
+    <AdminCollection
+      :key="String(eventId)"
+      flush
+      title="Milestones"
+      subtitle="Registration opening, deadlines, the ceremony — the dates participants plan around."
+      new-label="New milestone"
+      endpoint="/api/admin/timeline"
+      :query="query"
+      :fields="fields"
+      :columns="columns"
+      :defaults="defaults"
+      empty-text="No milestones for this edition yet."
+    />
+  </div>
 </template>

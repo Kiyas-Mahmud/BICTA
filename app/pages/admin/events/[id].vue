@@ -19,6 +19,7 @@ const tabs = [
   { id: 'details', label: 'Details', icon: 'lucide:file-text' },
   { id: 'competitions', label: 'Competitions', icon: 'lucide:trophy' },
   { id: 'prizes', label: 'Prize pool', icon: 'lucide:award' },
+  { id: 'timeline', label: 'Timeline', icon: 'lucide:milestone' },
   { id: 'schedule', label: 'Schedule', icon: 'lucide:clock' },
   { id: 'criteria', label: 'Judging', icon: 'lucide:list-checks' },
   { id: 'announcements', label: 'Announcements', icon: 'lucide:megaphone' },
@@ -117,6 +118,12 @@ const criteriaFields = computed<Field[]>(() => [
   { key: 'published', label: 'Published', type: 'toggle' },
   { key: 'sortOrder', label: 'Sort order', type: 'number' },
 ])
+const timelineFields: Field[] = [
+  { key: 'label', label: 'Label', placeholder: 'Registration closes' },
+  { key: 'date', label: 'Date', type: 'date' },
+  { key: 'note', label: 'Note', type: 'textarea', colSpan: 2 },
+  { key: 'sortOrder', label: 'Sort order', type: 'number', hint: 'Lower numbers appear first.' },
+]
 const announcementFields: Field[] = [
   { key: 'title', label: 'Headline', colSpan: 2, placeholder: 'Submission deadline extended' },
   { key: 'body', label: 'Details', type: 'rich' },
@@ -272,6 +279,25 @@ const announcementFields: Field[] = [
       ]"
       :defaults="{ eventId: id, highlight: false, published: true }"
       empty-text="No prizes yet. Add the champion prize first, then the runners-up."
+    />
+
+    <!-- TIMELINE -->
+    <AdminCollection
+      v-else-if="tab === 'timeline'"
+      flush
+      title="Timeline"
+      subtitle="The milestones participants plan around: registration opening, deadlines, the ceremony."
+      new-label="New milestone"
+      endpoint="/api/admin/timeline"
+      :query="scope"
+      :fields="timelineFields"
+      :columns="[
+        { key: 'label', label: 'Milestone' },
+        { key: 'date', label: 'Date' },
+        { key: 'sortOrder', label: 'Order' },
+      ]"
+      :defaults="{ eventId: id }"
+      empty-text="No milestones for this edition yet."
     />
 
     <!-- SCHEDULE -->

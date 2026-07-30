@@ -245,6 +245,9 @@ export const homeFeatureSchema = z.object({
 })
 
 export const timelineSchema = z.object({
+  // Which edition the milestone belongs to. Optional so a caller without a
+  // picker still lands on the current event; the admin screens always send it.
+  eventId: z.coerce.number().int().positive().optional(),
   label: z.string().trim().min(1).max(150),
   date: isoDate.nullable().optional(),
   note: z.string().trim().max(500).nullable().optional(),
@@ -290,6 +293,7 @@ export const volunteerAssignmentSchema = z.object({
 })
 
 export const winnerSchema = z.object({
+  eventId: z.coerce.number().int().positive().nullable().optional(),
   name: z.string().trim().min(1).max(150),
   competitionName: z.string().trim().max(150).default(''),
   position: z.string().trim().max(100).default(''),

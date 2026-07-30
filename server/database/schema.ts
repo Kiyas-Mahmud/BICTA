@@ -222,6 +222,9 @@ export const people = sqliteTable('people', {
 
 export const winners = sqliteTable('winners', {
   id: integer('id').primaryKey({ autoIncrement: true }),
+  // Which edition they won. Nullable so older rows that only recorded a year
+  // keep working; the admin screen filters on it when it is set.
+  eventId: integer('event_id').references(() => events.id, { onDelete: 'set null' }),
   name: text('name').notNull(),
   competitionName: text('competition_name').notNull().default(''),
   position: text('position').notNull().default(''),

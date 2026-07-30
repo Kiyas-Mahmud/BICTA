@@ -16,7 +16,11 @@ interface Person {
   sortOrder: number
 }
 
-const { data: people, refresh } = await useFetch<Person[]>('/api/admin/people')
+// People are reusable across editions, so filtering by event means "assigned to
+// judge something in that event". "All events" also covers speakers, who have
+// no competition assignment at all.
+const { eventOptions, eventId, query, activeEvent } = useEventFilter({ allowAll: true })
+const { data: people, refresh } = await useFetch<Person[]>('/api/admin/people', { query })
 const { data: tree } = await useFetch('/api/admin/event-tree', { key: 'admin-event-tree' })
 
 const toast = useToast()
@@ -107,13 +111,19 @@ const roleOptions = computed(() => [
   <div class="space-y-6">
     <AdminPageHeader
       title="Judges & Speakers"
-      subtitle="People featured on the public site. Judges can be assigned to the competitions they score."
+      :subtitle="activeEvent ? `Judging on ${activeEvent.title}.` : 'People featured on the public site. Judges can be assigned to the competitions they score.'"
       icon="lucide:users"
     >
       <template #actions>
         <button class="btn-primary !py-2.5" @click="startNew"><Icon name="lucide:plus" /> New person</button>
       </template>
     </AdminPageHeader>
+
+    <AdminEventFilter
+      v-model="eventId"
+      :options="eventOptions"
+      hint="Filters to judges assigned to that edition. Speakers appear under All events."
+    />
 
     <!-- editor -->
     <Transition

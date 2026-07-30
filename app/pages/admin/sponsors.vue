@@ -4,11 +4,15 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 // Sponsors belong to an event; leaving the event blank keeps a sponsor on
 // every edition (house partners).
-const { data: tree } = await useFetch('/api/admin/event-tree', { key: 'admin-event-tree' })
+// The filter drives which sponsors are listed; the field below sets which event
+// a sponsor belongs to. House partners (no event) always show, because they
+// appear on every edition's page.
+const { eventOptions: filterOptions, eventId, query, activeEvent } = useEventFilter({ allowAll: true })
 const eventOptions = computed(() => [
   { value: null, label: 'All events (house partner)' },
-  ...(tree.value ?? []).map((e) => ({ value: e.id, label: `${e.title} (${e.year})` })),
+  ...filterOptions.value.filter((o) => o.value !== ''),
 ])
+const defaults = computed(() => ({ eventId: eventId.value || null, active: true }))
 
 const fields: Field[] = [
   { key: 'logoUrl', label: 'Company logo', type: 'image' },
@@ -32,15 +36,27 @@ const columns = [
 </script>
 
 <template>
-  <AdminCollection
-    title="Sponsors & Partners"
-    subtitle="Partners shown on their event's pages. Leave the event blank for a house partner that appears everywhere."
-    icon="lucide:handshake"
-    new-label="New sponsor"
-    endpoint="/api/admin/sponsors"
-    :fields="fields"
-    :columns="columns"
-    :defaults="{ eventId: null, active: true }"
-    empty-text="No sponsors yet. Upload a logo on a transparent background for the cleanest result."
-  />
+  <div class="space-y-4">
+    <AdminPageHeader
+      title="Sponsors & Partners"
+      :subtitle="activeEvent ? `Partners on ${activeEvent.title}, plus house partners shown everywhere.` : 'Partners shown on their event pages. Leave the event blank for a house partner that appears everywhere.'"
+      icon="lucide:handshake"
+    />
+
+    <AdminEventFilter v-model="eventId" :options="filterOptions" hint="House partners appear under every edition." />
+
+    <AdminCollection
+      :key="String(eventId)"
+      flush
+      title="Sponsors"
+      subtitle="Shown grouped by tier on the event page."
+      new-label="New sponsor"
+      endpoint="/api/admin/sponsors"
+      :query="query"
+      :fields="fields"
+      :columns="columns"
+      :defaults="defaults"
+      empty-text="No sponsors for this selection yet. Upload a logo on a transparent background for the cleanest result."
+    />
+  </div>
 </template>
