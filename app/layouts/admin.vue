@@ -22,16 +22,9 @@ const groups = [
     ],
   },
   {
-    label: 'Event page',
-    links: [
-      { to: '/admin/announcements', label: 'Announcements', icon: 'lucide:megaphone' },
-      { to: '/admin/event-prizes', label: 'Prize Pool', icon: 'lucide:award' },
-      { to: '/admin/schedule', label: 'Programme Schedule', icon: 'lucide:clock' },
-      { to: '/admin/criteria', label: 'Judging Criteria', icon: 'lucide:list-checks' },
-    ],
-  },
-  {
-    label: 'Home page',
+    // Announcements, prize pool, schedule and judging criteria are edited on
+    // the event they belong to (Events > open one), not as separate screens.
+    label: 'Shared content',
     links: [
       { to: '/admin/home-features', label: 'Why Join', icon: 'lucide:sparkles' },
       { to: '/admin/timeline', label: 'Timeline', icon: 'lucide:milestone' },

@@ -7,7 +7,13 @@ const eventKey = route.params.id as string
 // Both fetches are awaited up front. An await later in setup would strand every
 // lifecycle hook registered after it: Vue loses the active instance across the
 // async boundary, so those hooks silently never run.
-const { data: ev } = await useFetch(`/api/public/events/${encodeURIComponent(eventKey)}`, { key: `event-${eventKey}` })
+// Admins previewing a draft pass ?preview=1; the server still checks the
+// session, so the flag on its own reveals nothing.
+const isPreview = computed(() => route.query.preview === '1')
+const { data: ev } = await useFetch(`/api/public/events/${encodeURIComponent(eventKey)}`, {
+  key: `event-${eventKey}${isPreview.value ? '-preview' : ''}`,
+  query: computed(() => (isPreview.value ? { preview: '1' } : {})),
+})
 // Same key the default layout uses, so this shares one request.
 const { data: siteSettings } = await useFetch('/api/public/settings', { key: 'site-settings' })
 if (!ev.value) {
@@ -209,6 +215,12 @@ useSeoMeta({
 
 <template>
   <div v-if="ev">
+    <!-- Draft warning, so a preview is never mistaken for the live page. -->
+    <div v-if="!ev.published" class="sticky top-0 z-40 bg-amber-400 px-4 py-2 text-center text-sm font-bold text-ink">
+      <Icon name="lucide:eye" /> Preview — this event is a draft and is not visible to the public.
+      <NuxtLink :to="`/admin/events/${ev.id}`" class="underline">Edit or publish it</NuxtLink>
+    </div>
+
     <!-- 1. HERO — full viewport, cover image behind, content centred -->
     <section class="relative flex min-h-[100svh] flex-col overflow-hidden">
       <div class="absolute inset-0 z-0">

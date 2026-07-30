@@ -31,9 +31,15 @@ const props = defineProps<{
   defaults?: Record<string, any>
   /** label for the create button, e.g. "New question" */
   newLabel?: string
+  /** query sent with the list request, e.g. { eventId } to scope to one event */
+  query?: Record<string, any>
+  /** hide the page header when embedded inside another screen */
+  flush?: boolean
 }>()
 
-const { data: rows, refresh } = await useFetch<any[]>(props.endpoint)
+const { data: rows, refresh } = await useFetch<any[]>(props.endpoint, {
+  query: computed(() => props.query ?? {}),
+})
 const toast = useToast()
 const { confirm } = useConfirm()
 
@@ -131,13 +137,24 @@ function wide(f: Field) {
 
 <template>
   <div class="space-y-6">
-    <AdminPageHeader :title="title" :subtitle="subtitle" :icon="icon">
+    <AdminPageHeader v-if="!flush" :title="title" :subtitle="subtitle" :icon="icon">
       <template #actions>
         <button class="btn-primary !py-2.5" @click="startNew">
           <Icon name="lucide:plus" /> {{ newLabel ?? 'New' }}
         </button>
       </template>
     </AdminPageHeader>
+
+    <!-- embedded: the parent screen owns the page header, so only the action shows -->
+    <div v-else class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h2 class="text-lg font-extrabold text-ink">{{ title }}</h2>
+        <p v-if="subtitle" class="mt-1 max-w-2xl text-sm text-ink-soft">{{ subtitle }}</p>
+      </div>
+      <button class="btn-primary !py-2.5" @click="startNew">
+        <Icon name="lucide:plus" /> {{ newLabel ?? 'New' }}
+      </button>
+    </div>
 
     <!-- editor panel -->
     <Transition

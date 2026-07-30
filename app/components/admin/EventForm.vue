@@ -54,7 +54,7 @@ const SECTION_KEYS = [
 ] as const
 
 const props = defineProps<{ initial?: Partial<EventFormData>; saving?: boolean }>()
-const emit = defineEmits<{ submit: [data: EventFormData] }>()
+const emit = defineEmits<{ submit: [data: EventFormData]; draft: [data: Record<string, any>] }>()
 
 const form = reactive<EventFormData>({
   title: props.initial?.title ?? '',
@@ -123,12 +123,29 @@ const slugPreview = computed(() => {
     .replace(/^-+|-+$/g, '') || 'your-event'
 })
 
-function submit() {
-  // Only persist the switches that are off; absent keys mean visible.
+// Only the switches that are off are persisted; an absent key means visible.
+function sectionSnapshot() {
   const out: Record<string, { visible: boolean }> = {}
   for (const s of SECTION_KEYS) if (!sectionState[s.key]) out[s.key] = { visible: false }
-  emit('submit', { ...form, sections: Object.keys(out).length ? JSON.stringify(out) : '' })
+  return Object.keys(out).length ? JSON.stringify(out) : ''
 }
+
+function submit() {
+  emit('submit', { ...form, sections: sectionSnapshot() })
+}
+
+// Work in progress is reported upward (debounced) so a screen that has nowhere
+// to save it yet — the create form — can keep it in the browser.
+let draftTimer: ReturnType<typeof setTimeout> | undefined
+watch(
+  () => ({ ...form, sections: sectionSnapshot() }),
+  (snapshot) => {
+    clearTimeout(draftTimer)
+    draftTimer = setTimeout(() => emit('draft', snapshot), 500)
+  },
+  { deep: true },
+)
+onBeforeUnmount(() => clearTimeout(draftTimer))
 
 // Surfaced inline so a bad range is caught before the server rejects it.
 const dateWarning = computed(() =>
@@ -378,17 +395,24 @@ const dateWarning = computed(() =>
         </div>
       </AdminFormSection>
 
-      <AdminFormSection title="Publish state" description="Draft events are hidden from the public site entirely." icon="lucide:send">
-        <label class="flex items-start gap-3">
-          <input v-model="form.published" type="checkbox" class="mt-0.5 h-4 w-4 accent-brand-600" />
-          <span>
-            <span class="font-semibold text-ink">Published</span>
-            <span class="block text-xs text-ink-faint">Unpublished events 404 on the public site and drop out of every listing.</span>
+      <AdminFormSection title="Publish state" description="Controlled by the Preview and Publish buttons at the top of this page." icon="lucide:send">
+        <p class="flex items-start gap-2 rounded-xl bg-mist-1 p-3 text-xs leading-relaxed text-ink-soft">
+          <Icon name="lucide:info" class="mt-0.5 shrink-0 text-brand-700" />
+          <span v-if="form.published">
+            This event is <strong>published</strong> and visible to everyone. Saving here keeps it published.
           </span>
-        </label>
+          <span v-else>
+            This event is a <strong>draft</strong>: it 404s on the public site and stays out of every listing.
+            Preview it, then use Publish when it is ready.
+          </span>
+        </p>
       </AdminFormSection>
     </div>
 
-    <AdminFormActions :saving="saving" label="Save event" hint="Changes go live on the public site immediately." />
+    <AdminFormActions
+      :saving="saving"
+      label="Save event"
+      :hint="form.published ? 'This event is published, so changes go live immediately.' : 'Saved as a draft. Nothing is public until you publish.'"
+    />
   </form>
 </template>
