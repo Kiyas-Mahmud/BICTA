@@ -2,11 +2,12 @@
 import type { Competition } from '~/composables/useCompetitions'
 
 const route = useRoute()
-const eventId = route.params.id as string
+const eventKey = route.params.id as string
 const compId = route.params.compId as string
 const { competition } = useCompetitionById(compId)
 
-if (!competition.value || competition.value.eventId !== eventId) {
+// The event segment may be the canonical slug or a legacy numeric id.
+if (!competition.value || (competition.value.eventId !== eventKey && competition.value.eventSlug !== eventKey)) {
   throw createError({ statusCode: 404, statusMessage: 'Competition not found', fatal: true })
 }
 
@@ -127,7 +128,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
   <div class="relative min-h-screen">
     <section class="container-site section relative z-10">
     <div class="mx-auto max-w-5xl">
-      <SiteBackButton :to="`/events/${eventId}/${ev.id}`" label="Back to competition" />
+      <SiteBackButton :to="`/events/${ev.eventSlug}/${ev.slug}`" label="Back to competition" />
 
       <!-- Success state -->
       <template v-if="submitted">
@@ -142,7 +143,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
           </p>
           <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
             <NuxtLink :to="isParticipant ? '/portal' : '/login'" class="btn-primary">Open my dashboard</NuxtLink>
-            <NuxtLink :to="`/events/${eventId}/${ev.id}`" class="btn-secondary">Back to competition</NuxtLink>
+            <NuxtLink :to="`/events/${ev.eventSlug}/${ev.slug}`" class="btn-secondary">Back to competition</NuxtLink>
           </div>
         </div>
       </template>
@@ -383,7 +384,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
                 variant="outline"
                 class="whitespace-nowrap"
                 as="NuxtLink"
-                :to="`/events/${eventId}/${ev.id}`"
+                :to="`/events/${ev.eventSlug}/${ev.slug}`"
               >
                 Go back
               </UiButton>

@@ -58,11 +58,16 @@ function dateRange(ev: any) {
                 <NuxtLink :to="`/admin/events/${ev.id}`" class="truncate font-bold text-ink hover:text-brand-700">{{ ev.title }}</NuxtLink>
                 <AdminStatusBadge :status="ev.status" />
                 <span v-if="ev.isCurrent" class="status status-brand">Current</span>
+                <span v-if="!ev.published" class="status status-warn">Draft</span>
+                <span v-if="!ev.published" class="status status-warn">Draft</span>
               </div>
               <p class="mt-0.5 text-xs text-ink-faint">{{ ev.year }} · {{ ev.competitionCount }} competitions</p>
               <p class="mt-0.5 text-xs text-ink-soft">{{ dateRange(ev) }}</p>
               <div class="mt-3 flex flex-wrap gap-2">
                 <NuxtLink :to="`/admin/events/${ev.id}`" class="btn-ghost !py-2 !text-xs"><Icon name="lucide:pencil" /> Edit</NuxtLink>
+                <a v-if="ev.published" :href="`/events/${ev.slug}`" target="_blank" rel="noopener" class="btn-ghost !py-2 !text-xs">
+                  <Icon name="lucide:external-link" /> View
+                </a>
                 <button v-if="!ev.isCurrent" class="btn-ghost !py-2 !text-xs" :disabled="busy === ev.id" @click="setCurrent(ev.id, ev.title)">
                   <Icon name="lucide:star" /> Make current
                 </button>

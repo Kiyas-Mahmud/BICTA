@@ -17,6 +17,86 @@ export const eventSchema = z.object({
   venue: z.string().trim().max(200).nullable().optional(),
   heroImage: imagePath.nullable().optional(),
   status: z.enum(['upcoming', 'ongoing', 'past']).default('upcoming'),
+  featured: z.boolean().default(false),
+  theme: z.string().trim().max(200).default(''),
+  organizer: z.string().trim().max(200).default('BICTA'),
+  contactEmail: z.string().trim().max(200).default(''),
+  contactPhone: z.string().trim().max(100).default(''),
+  emergencyContact: z.string().trim().max(200).default(''),
+  entryFee: z.string().trim().max(100).default(''),
+  certificate: z.boolean().default(true),
+  language: z.string().trim().max(100).default(''),
+  eligibility: z.string().max(5_000).default(''),
+  objectives: z.string().max(10_000).default(''),
+  audience: z.string().max(5_000).default(''),
+  benefits: z.string().max(10_000).default(''),
+  venueAddress: z.string().max(1_000).default(''),
+  venueDirections: z.string().max(5_000).default(''),
+  venueParking: z.string().max(2_000).default(''),
+  mapEmbed: z.string().trim().max(2_000).default(''),
+  tagline: z.string().trim().max(300).default(''),
+  eventType: z.enum(['offline', 'online', 'hybrid']).default('offline'),
+  published: z.boolean().default(true),
+  countdownMode: z.enum(['start', 'deadline', 'custom', 'off']).default('start'),
+  countdownAt: z.string().trim().max(30).nullable().optional(),
+  meetingInfo: z.string().max(2_000).default(''),
+  // Section visibility/heading overrides, validated as a JSON string of a
+  // bounded shape so the admin UI cannot store arbitrary payloads.
+  sections: z
+    .string()
+    .max(4_000)
+    .default('')
+    .refine((v) => {
+      if (!v) return true
+      try {
+        const parsed = JSON.parse(v)
+        return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
+      } catch {
+        return false
+      }
+    }, 'Invalid section settings'),
+  seoDescription: z.string().trim().max(300).default(''),
+}).refine((v) => !(v.startDate && v.endDate) || v.endDate >= v.startDate, {
+  message: 'End date must be on or after the start date',
+  path: ['endDate'],
+})
+
+export const eventPrizeSchema = z.object({
+  eventId: z.number().int().positive(),
+  title: z.string().trim().min(1).max(150),
+  amount: z.string().trim().max(100).default(''),
+  note: z.string().trim().max(300).default(''),
+  highlight: z.boolean().default(false),
+  published: z.boolean().default(true),
+  sortOrder: z.number().int().min(0).max(1000).default(0),
+})
+
+const hhmm = z.union([z.string().regex(/^\d{2}:\d{2}$/, 'Use HH:MM'), z.literal('')])
+
+export const scheduleItemSchema = z.object({
+  eventId: z.number().int().positive(),
+  competitionId: z.number().int().positive().nullable().optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD').nullable().optional(),
+  startTime: hhmm.default(''),
+  endTime: hhmm.default(''),
+  title: z.string().trim().min(1).max(200),
+  sessionType: z.string().trim().max(100).default(''),
+  venue: z.string().trim().max(200).default(''),
+  speaker: z.string().trim().max(200).default(''),
+  description: z.string().trim().max(1_000).default(''),
+  published: z.boolean().default(true),
+  sortOrder: z.number().int().min(0).max(1000).default(0),
+})
+
+export const judgingCriterionSchema = z.object({
+  eventId: z.number().int().positive(),
+  competitionId: z.number().int().positive().nullable().optional(),
+  name: z.string().trim().min(1).max(150),
+  description: z.string().trim().max(1_000).default(''),
+  weight: z.number().int().min(0).max(100).default(0),
+  icon: z.string().trim().max(64).nullable().optional(),
+  published: z.boolean().default(true),
+  sortOrder: z.number().int().min(0).max(1000).default(0),
 })
 
 export const prizeSchema = z.object({
@@ -37,6 +117,12 @@ export const competitionSchema = z.object({
   teamBased: z.boolean().default(false),
   maxTeamSize: z.number().int().min(1).max(20).default(1),
   coverImage: imagePath.nullable().optional(),
+  bannerImage: imagePath.nullable().optional(),
+  category: z.string().trim().max(100).default(''),
+  difficulty: z.enum(['', 'beginner', 'intermediate', 'advanced']).default(''),
+  submissionGuidelines: z.string().max(50_000).default(''),
+  evaluationCriteria: z.string().max(50_000).default(''),
+  resources: z.string().max(50_000).default(''),
   sortOrder: z.number().int().min(0).max(1000).default(0),
   prizes: z.array(prizeSchema).max(20).default([]),
 })
@@ -50,7 +136,9 @@ export const newsSchema = z.object({
   status: z.enum(['draft', 'published']).default('draft'),
 })
 
-export const settingsSchema = z.record(z.string().max(100), z.string().max(2000))
+// 20k per value: the About BICTA prose (history, objectives, achievements)
+// lives here and outgrew the old 2k cap.
+export const settingsSchema = z.record(z.string().max(100), z.string().max(20_000))
 
 export const registrationStatusSchema = z.object({
   status: z.enum(['pending', 'confirmed', 'rejected']),
@@ -206,9 +294,20 @@ export const winnerSchema = z.object({
 })
 
 export const faqSchema = z.object({
+  // Leave both null for a site-wide question; set one to scope it.
+  eventId: z.number().int().positive().nullable().optional(),
+  competitionId: z.number().int().positive().nullable().optional(),
   question: z.string().trim().min(1).max(300),
   answer: z.string().max(10_000).default(''),
   sortOrder: z.number().int().min(0).max(1000).default(0),
+})
+
+export const announcementSchema = z.object({
+  eventId: z.number().int().positive(),
+  title: z.string().trim().min(1).max(200),
+  body: z.string().max(20_000).default(''),
+  pinned: z.boolean().default(false),
+  published: z.boolean().default(true),
 })
 
 export const howItWorksSchema = z.object({

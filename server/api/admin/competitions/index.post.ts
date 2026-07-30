@@ -34,6 +34,12 @@ export default defineEventHandler(async (event) => {
       teamBased: body.teamBased,
       maxTeamSize: body.maxTeamSize,
       coverImage: body.coverImage || null,
+      bannerImage: body.bannerImage || null,
+      category: body.category,
+      difficulty: body.difficulty,
+      submissionGuidelines: sanitizeRichText(body.submissionGuidelines),
+      evaluationCriteria: sanitizeRichText(body.evaluationCriteria),
+      resources: sanitizeRichText(body.resources),
       sortOrder: body.sortOrder,
     })
     .returning()

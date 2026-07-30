@@ -16,6 +16,7 @@ export interface EventListing {
   description: string
   competitions: Array<{
     id: string
+    slug: string
     name: string
     type: string
     imageUrl: string
@@ -32,8 +33,9 @@ export function useEvents(): { events: Ref<EventListing[]>; loading: Ref<boolean
   return { events: eventsState(), loading: ref(false) }
 }
 
-export function useEventById(id: string): { event: Ref<EventListing | undefined>; loading: Ref<boolean> } {
+/** Resolve by slug (canonical) or legacy numeric id. */
+export function useEventById(slugOrId: string): { event: Ref<EventListing | undefined>; loading: Ref<boolean> } {
   const events = eventsState()
-  const event = computed(() => events.value.find((e) => e.id === id))
+  const event = computed(() => events.value.find((e) => e.slug === slugOrId || e.id === slugOrId))
   return { event, loading: ref(false) }
 }

@@ -22,6 +22,15 @@ const groups = [
     ],
   },
   {
+    label: 'Event page',
+    links: [
+      { to: '/admin/announcements', label: 'Announcements', icon: 'lucide:megaphone' },
+      { to: '/admin/event-prizes', label: 'Prize Pool', icon: 'lucide:award' },
+      { to: '/admin/schedule', label: 'Programme Schedule', icon: 'lucide:clock' },
+      { to: '/admin/criteria', label: 'Judging Criteria', icon: 'lucide:list-checks' },
+    ],
+  },
+  {
     label: 'Home page',
     links: [
       { to: '/admin/home-features', label: 'Why Join', icon: 'lucide:sparkles' },

@@ -14,7 +14,9 @@ const FALLBACK_NEWS_IMG = '/gallery-images/images.jpg'
 
 export interface CompetitionDTO {
   id: string
+  slug: string
   eventId: string
+  eventSlug: string
   eventTitle: string
   title: string
   status: 'ongoing' | 'upcoming' | 'past'
@@ -53,6 +55,7 @@ export interface EventListingDTO {
   description: string
   competitions: Array<{
     id: string
+    slug: string
     name: string
     type: string
     imageUrl: string
@@ -108,10 +111,13 @@ function initialsImage(name: string): string {
 async function loadCompetitionRows() {
   const db = useDb()
 
-  const events = await db.select().from(schema.events)
+  // Draft editions stay off the public site entirely.
+  const events = await db.select().from(schema.events).where(eq(schema.events.published, true))
   const eventById = new Map(events.map((e) => [e.id, e]))
 
-  const competitions = await db.select().from(schema.competitions).orderBy(asc(schema.competitions.sortOrder))
+  const competitions = (await db.select().from(schema.competitions).orderBy(asc(schema.competitions.sortOrder))).filter((c) =>
+    eventById.has(c.eventId),
+  )
 
   const prizes = competitions.length
     ? await db
@@ -157,7 +163,9 @@ export async function getCompetitions(): Promise<CompetitionDTO[]> {
     const topPrize = compPrizes[0]
     return {
       id: String(c.id),
+      slug: c.slug,
       eventId: String(c.eventId),
+      eventSlug: e?.slug ?? String(c.eventId),
       eventTitle: e?.title ?? '',
       title: c.name,
       status: (e?.status ?? 'upcoming') as CompetitionDTO['status'],
@@ -207,6 +215,7 @@ export async function getPublicEvents(): Promise<EventListingDTO[]> {
           const topPrize = prizes.find((p) => p.competitionId === c.id)
           return {
             id: String(c.id),
+            slug: c.slug,
             name: c.name,
             type: c.type,
             imageUrl: c.coverImage || e.heroImage || FALLBACK_EVENT_IMG,

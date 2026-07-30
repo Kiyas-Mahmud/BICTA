@@ -13,8 +13,83 @@ export const events = sqliteTable('events', {
   heroImage: text('hero_image'),
   status: text('status', { enum: ['upcoming', 'ongoing', 'past'] }).notNull().default('upcoming'),
   isCurrent: integer('is_current', { mode: 'boolean' }).notNull().default(false),
+  // Promoted on the home page's Featured Events rail.
+  featured: integer('featured', { mode: 'boolean' }).notNull().default(false),
+  theme: text('theme').notNull().default(''),
+  organizer: text('organizer').notNull().default('BICTA'),
+  contactEmail: text('contact_email').notNull().default(''),
+  contactPhone: text('contact_phone').notNull().default(''),
+  emergencyContact: text('emergency_contact').notNull().default(''),
+  entryFee: text('entry_fee').notNull().default(''),
+  certificate: integer('certificate', { mode: 'boolean' }).notNull().default(true),
+  language: text('language').notNull().default(''),
+  eligibility: text('eligibility').notNull().default(''),
+  objectives: text('objectives').notNull().default(''),
+  audience: text('audience').notNull().default(''),
+  benefits: text('benefits').notNull().default(''),
+  venueAddress: text('venue_address').notNull().default(''),
+  venueDirections: text('venue_directions').notNull().default(''),
+  venueParking: text('venue_parking').notNull().default(''),
+  mapEmbed: text('map_embed').notNull().default(''),
+  // ---- Event page (spec 2026-07) ----
+  tagline: text('tagline').notNull().default(''),
+  eventType: text('event_type', { enum: ['offline', 'online', 'hybrid'] }).notNull().default('offline'),
+  // Draft events are visible only in admin; the public site 404s them.
+  published: integer('published', { mode: 'boolean' }).notNull().default(true),
+  // Hero countdown: what it counts to. 'off' hides it.
+  countdownMode: text('countdown_mode', { enum: ['start', 'deadline', 'custom', 'off'] }).notNull().default('start'),
+  countdownAt: text('countdown_at'),
+  meetingInfo: text('meeting_info').notNull().default(''),
+  // JSON: per-event section visibility + heading overrides,
+  // e.g. {"prizes":{"visible":false},"about":{"heading":"The story"}}.
+  sections: text('sections').notNull().default(''),
+  seoDescription: text('seo_description').notNull().default(''),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+})
+
+// Event-level prize pool (champion, runners-up, special awards). Competition
+// prizes stay in `prizes` keyed by competition.
+export const eventPrizes = sqliteTable('event_prizes', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  eventId: integer('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  amount: text('amount').notNull().default(''),
+  note: text('note').notNull().default(''),
+  highlight: integer('highlight', { mode: 'boolean' }).notNull().default(false),
+  published: integer('published', { mode: 'boolean' }).notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
+})
+
+// Hour-by-hour programme, distinct from the milestone timeline.
+export const scheduleItems = sqliteTable('schedule_items', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  eventId: integer('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  // null = applies to the whole event, set = one segment's session.
+  competitionId: integer('competition_id').references(() => competitions.id, { onDelete: 'cascade' }),
+  date: text('date'),
+  startTime: text('start_time').notNull().default(''),
+  endTime: text('end_time').notNull().default(''),
+  title: text('title').notNull(),
+  sessionType: text('session_type').notNull().default(''),
+  venue: text('venue').notNull().default(''),
+  speaker: text('speaker').notNull().default(''),
+  description: text('description').notNull().default(''),
+  published: integer('published', { mode: 'boolean' }).notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
+})
+
+// Judging criteria; event-wide when competitionId is null, else per segment.
+export const judgingCriteria = sqliteTable('judging_criteria', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  eventId: integer('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  competitionId: integer('competition_id').references(() => competitions.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description').notNull().default(''),
+  weight: integer('weight').notNull().default(0),
+  icon: text('icon'),
+  published: integer('published', { mode: 'boolean' }).notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
 })
 
 export const competitions = sqliteTable('competitions', {
@@ -30,6 +105,12 @@ export const competitions = sqliteTable('competitions', {
   teamBased: integer('team_based', { mode: 'boolean' }).notNull().default(false),
   maxTeamSize: integer('max_team_size').notNull().default(1),
   coverImage: text('cover_image'),
+  bannerImage: text('banner_image'),
+  category: text('category').notNull().default(''),
+  difficulty: text('difficulty').notNull().default(''),
+  submissionGuidelines: text('submission_guidelines').notNull().default(''),
+  evaluationCriteria: text('evaluation_criteria').notNull().default(''),
+  resources: text('resources').notNull().default(''),
   sortOrder: integer('sort_order').notNull().default(0),
 })
 
@@ -98,6 +179,17 @@ export const timelineMilestones = sqliteTable('timeline_milestones', {
   sortOrder: integer('sort_order').notNull().default(0),
 })
 
+// Per-event notice board, newest first, pinned rows floating to the top.
+export const announcements = sqliteTable('announcements', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  eventId: integer('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  body: text('body').notNull().default(''),
+  pinned: integer('pinned', { mode: 'boolean' }).notNull().default(false),
+  published: integer('published', { mode: 'boolean' }).notNull().default(true),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+})
+
 export const sponsors = sqliteTable('sponsors', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   // null = shown on every event (house partners); set = that event only.
@@ -141,6 +233,9 @@ export const winners = sqliteTable('winners', {
 
 export const faqs = sqliteTable('faqs', {
   id: integer('id').primaryKey({ autoIncrement: true }),
+  // Both null = a site-wide question. Set one to scope it to an event or a competition.
+  eventId: integer('event_id').references(() => events.id, { onDelete: 'cascade' }),
+  competitionId: integer('competition_id').references(() => competitions.id, { onDelete: 'cascade' }),
   question: text('question').notNull(),
   answer: text('answer').notNull().default(''),
   sortOrder: integer('sort_order').notNull().default(0),

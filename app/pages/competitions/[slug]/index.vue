@@ -8,7 +8,7 @@ if (!comp.value) {
   throw createError({ statusCode: 404, statusMessage: 'Competition not found', fatal: true })
 }
 
-await navigateTo(`/events/${comp.value.event.id}/${comp.value.id}`, { redirectCode: 301 })
+await navigateTo(`/events/${comp.value.event.slug}/${comp.value.slug}`, { redirectCode: 301 })
 </script>
 
 <template>

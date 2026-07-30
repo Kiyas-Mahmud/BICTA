@@ -1,265 +1,390 @@
 <script setup lang="ts">
-import type { Competition } from '~/composables/useCompetitions'
 import type { TimelineItem } from '~/components/site/Timeline.vue'
 
 const route = useRoute()
-const eventId = route.params.id as string
-const compId = route.params.compId as string
-const { competition } = useCompetitionById(compId)
+const eventKey = route.params.id as string
+const compKey = route.params.compId as string
 
-if (!competition.value || competition.value.eventId !== eventId) {
+const { data: comp } = await useFetch(
+  `/api/public/events/${encodeURIComponent(eventKey)}/${encodeURIComponent(compKey)}`,
+  { key: `competition-${eventKey}-${compKey}` },
+)
+if (!comp.value) {
   throw createError({ statusCode: 404, statusMessage: 'Competition not found', fatal: true })
 }
 
-const ev = competition.value as Competition
+const ev = computed(() => comp.value!.event)
 
-function statusBadgeClass(status: Competition['status']) {
-  if (status === 'ongoing') return 'badge badge-green'
-  if (status === 'upcoming') return 'badge badge-blue'
-  return 'badge badge-gray'
+// Canonical URL uses slugs. Legacy numeric links redirect permanently.
+if ((/^\d+$/.test(eventKey) || /^\d+$/.test(compKey)) && ev.value?.slug && comp.value.slug) {
+  await navigateTo(`/events/${ev.value.slug}/${comp.value.slug}`, { redirectCode: 301 })
 }
 
-function statusLabel(status: Competition['status']) {
-  return status.charAt(0).toUpperCase() + status.slice(1)
-}
-
-const timelineItems = computed<TimelineItem[]>(() => {
-  if (!ev) return []
-  const now = new Date()
-  const regDeadline = new Date(ev.registrationDeadline)
-  const end = new Date(ev.endDate)
-  return [
-    { id: '1', title: 'Registration Opens', description: 'The registration period begins for all participants.', timestamp: ev.startDate, status: 'completed' },
-    { id: '2', title: 'Registration Deadline', description: 'The final date to register and form teams.', timestamp: ev.registrationDeadline, status: now > regDeadline ? 'completed' : 'active' },
-    { id: '3', title: 'Project Submission', description: 'Deadline to submit your projects and repositories.', timestamp: ev.endDate, status: now > end ? 'completed' : now > regDeadline ? 'active' : 'pending' },
-    { id: '4', title: 'Winners Announced', description: 'The judging period concludes and winners are celebrated.', timestamp: ev.endDate, status: 'pending' },
-  ]
+const now = useState('comp-now', () => Date.now())
+onMounted(() => {
+  const t = setInterval(() => (now.value = Date.now()), 30_000)
+  onBeforeUnmount(() => clearInterval(t))
 })
 
-// Real prize rows from the admin DB (no derived/fake amounts).
+// Registration is open only while the switch is on and the deadline stands —
+// the same two rules the server enforces on submit.
+const deadlinePassed = computed(() => {
+  const d = comp.value!.registrationDeadline
+  return Boolean(d) && new Date(`${d}T23:59:59`).getTime() < now.value
+})
+const canRegister = computed(() => comp.value!.registrationOpen && !deadlinePassed.value)
+const isComplete = computed(() => ev.value?.status === 'past')
+
+const daysLeft = computed(() => {
+  const d = comp.value!.registrationDeadline
+  if (!d) return null
+  return Math.ceil((new Date(`${d}T23:59:59`).getTime() - now.value) / 86_400_000)
+})
+
+const registrationState = computed(() => {
+  if (isComplete.value) return { label: 'Event Completed', class: 'badge badge-gray', dot: false }
+  if (canRegister.value) return { label: 'Registration Open', class: 'pill-open', dot: true }
+  if (deadlinePassed.value) return { label: 'Registration Closed', class: 'badge badge-gray', dot: false }
+  return { label: 'Coming Soon', class: 'badge badge-blue', dot: false }
+})
+
+const difficultyBadge = computed(() => {
+  const d = comp.value!.difficulty
+  if (d === 'beginner') return 'badge badge-green'
+  if (d === 'intermediate') return 'badge badge-blue'
+  if (d === 'advanced') return 'badge badge-purple'
+  return ''
+})
+
 const prizeStyles = [
-  { icon: 'lucide:trophy', chip: 'badge-amber' },
-  { icon: 'lucide:medal', chip: 'badge-gray' },
-  { icon: 'lucide:award', chip: 'badge-orange' },
+  { icon: 'lucide:trophy', tile: 'tile-orange' },
+  { icon: 'lucide:medal', tile: 'tile-blue' },
+  { icon: 'lucide:award', tile: 'tile-purple' },
 ]
 
-// Shared component shapes.
-const judgeCards = computed(() =>
-  ev.judges.map((j, i) => ({
-    id: i,
-    name: j.name,
-    title: j.role,
-    organization: '',
-    photoUrl: j.avatar,
-    bio: '',
-    socialUrl: null,
-  })),
-)
-const sponsorCards = computed(() =>
-  ev.sponsors.map((s, i) => ({ id: i, name: s.name, logoUrl: s.logo, websiteUrl: null, tier: 'Sponsors' })),
-)
+// Milestone timeline comes from the parent event.
+const timelineItems = computed<TimelineItem[]>(() => {
+  const rows = comp.value!.timeline ?? []
+  const today = new Date().toISOString().slice(0, 10)
+  const firstUpcoming = rows.findIndex((r: any) => (r.date ?? '') >= today)
+  return rows.map((r: any, i: number) => ({
+    id: String(r.id),
+    title: r.label,
+    description: r.note ?? '',
+    timestamp: r.date ?? '',
+    status: firstUpcoming === -1 || i < firstUpcoming ? 'completed' : i === firstUpcoming ? 'active' : 'pending',
+  }))
+})
 
-const canRegister = computed(() => ev.status !== 'past' && new Date(ev.registrationDeadline) >= new Date())
+const criteriaTotal = computed(() => comp.value!.criteria.reduce((a: number, c: any) => a + c.weight, 0))
+
+const sections = computed(() => {
+  const c = comp.value!
+  return [
+    { id: 'overview', label: 'Overview', show: Boolean(c.description) },
+    { id: 'rules', label: 'Rules', show: Boolean(c.rules) },
+    { id: 'submission', label: 'Submission', show: Boolean(c.submissionGuidelines) },
+    { id: 'criteria', label: 'Judging', show: Boolean(c.evaluationCriteria) || c.criteria.length > 0 },
+    { id: 'prizes', label: 'Prizes', show: c.prizes.length > 0 },
+    { id: 'schedule', label: 'Schedule', show: c.schedule.length > 0 || timelineItems.value.length > 0 },
+    { id: 'judges', label: 'Judges', show: c.judges.length > 0 },
+    { id: 'resources', label: 'Resources', show: Boolean(c.resources) },
+    { id: 'faq', label: 'FAQ', show: c.faqs.length > 0 },
+  ].filter((s) => s.show)
+})
+
+const activeSection = ref('')
+onMounted(() => {
+  if (!('IntersectionObserver' in window)) return
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) if (entry.isIntersecting) activeSection.value = entry.target.id
+    },
+    { rootMargin: '-25% 0px -65% 0px' },
+  )
+  for (const s of sections.value) {
+    const el = document.getElementById(s.id)
+    if (el) observer.observe(el)
+  }
+  onBeforeUnmount(() => observer.disconnect())
+})
+
+const registerHref = computed(() => `/events/${ev.value?.slug ?? eventKey}/${comp.value!.slug}/register`)
 
 useSeoMeta({
-  title: ev.title,
-  description: ev.description,
+  title: () => `${comp.value!.name}${ev.value ? ` — ${ev.value.title}` : ''}`,
+  description: () => (comp.value!.description || '').replace(/<[^>]+>/g, ' ').trim().slice(0, 160),
+  ogImage: () => comp.value!.bannerImage || comp.value!.coverImage || undefined,
 })
 </script>
 
 <template>
-  <div v-if="ev">
-    <!-- HERO BANNER -->
+  <div v-if="comp">
+    <!-- HERO -->
     <section class="relative overflow-hidden">
       <div class="absolute inset-0 z-0">
-        <img :src="ev.imageUrl" :alt="ev.title" class="h-full w-full object-cover" />
-        <div class="absolute inset-0 bg-gradient-to-t from-ink via-ink/70 to-ink/30" />
+        <img
+          v-if="comp.bannerImage || comp.coverImage"
+          :src="comp.bannerImage || comp.coverImage!"
+          :alt="comp.name"
+          class="h-full w-full object-cover"
+        />
+        <div
+          class="absolute inset-0"
+          :class="comp.bannerImage || comp.coverImage ? 'bg-gradient-to-t from-ink via-ink/75 to-ink/40' : 'bg-gradient-to-br from-brand-800 to-brand-600'"
+        />
       </div>
+
       <div class="container-site relative z-10 pb-12 pt-28">
-        <SiteBackButton :to="`/events/${eventId}`" label="Back to event" class="!border-white/20 !bg-transparent !text-white/70 hover:!text-white" />
+        <SiteBackButton
+          :to="`/events/${ev?.slug ?? eventKey}`"
+          :label="ev?.title ?? 'Back to event'"
+          class="!border-white/20 !bg-transparent !text-white/70 hover:!text-white"
+        />
+
         <div class="mt-6 max-w-3xl">
-          <div class="flex flex-wrap items-center gap-2">
-            <span :class="statusBadgeClass(ev.status)">{{ statusLabel(ev.status) }}</span>
-            <span class="text-sm font-semibold text-white/70">{{ ev.eventTitle }}</span>
+          <div class="rise rise-1 flex flex-wrap items-center gap-2">
+            <span :class="registrationState.class"><span v-if="registrationState.dot" class="dot-live" />{{ registrationState.label }}</span>
+            <span v-if="comp.type" class="badge badge-blue">{{ comp.type }}</span>
+            <span v-if="comp.category" class="badge badge-purple">{{ comp.category }}</span>
+            <span v-if="comp.difficulty" :class="difficultyBadge" class="capitalize">{{ comp.difficulty }}</span>
           </div>
-          <h1 class="text-display mt-4 text-white">{{ ev.title }}</h1>
-          <div class="mt-4 flex flex-wrap items-center gap-3">
-            <span v-for="tag in ev.tags" :key="tag" class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/80 backdrop-blur-sm">
-              {{ tag }}
+
+          <h1 class="text-display rise rise-2 mt-4 text-white">{{ comp.name }}</h1>
+
+          <p class="rise rise-3 mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-semibold text-white/75">
+            <span class="inline-flex items-center gap-1.5">
+              <Icon name="lucide:users" /> {{ comp.teamBased ? `Teams of up to ${comp.maxTeamSize}` : 'Individual entry' }}
+            </span>
+            <span v-if="comp.prizes[0]" class="inline-flex items-center gap-1.5">
+              <Icon name="lucide:trophy" /> {{ comp.prizes[0].amount }} top prize
+            </span>
+            <span v-if="comp.registeredTeams" class="inline-flex items-center gap-1.5">
+              <Icon name="lucide:user-check" /> {{ comp.registeredTeams }} teams registered
+            </span>
+            <span v-if="comp.registrationDeadline" class="inline-flex items-center gap-1.5">
+              <Icon name="lucide:clock" /> Closes {{ formatDate(comp.registrationDeadline) }}
+            </span>
+          </p>
+
+          <div class="rise rise-4 mt-7 flex flex-col items-stretch gap-2.5 sm:flex-row sm:items-center">
+            <NuxtLink v-if="canRegister" :to="registerHref" class="btn-primary w-full justify-center sm:w-auto">
+              Register Now <Icon name="lucide:arrow-right" />
+            </NuxtLink>
+            <span v-else class="rounded-full bg-white/10 px-4 py-2.5 text-center text-sm font-bold text-white/70">
+              {{ registrationState.label }}
+            </span>
+            <NuxtLink :to="`/events/${ev?.slug ?? eventKey}`" class="btn-secondary w-full justify-center sm:w-auto">
+              All segments
+            </NuxtLink>
+          </div>
+
+          <p v-if="canRegister && daysLeft !== null && daysLeft <= 7" class="mt-3 text-sm font-bold text-white">
+            <Icon name="lucide:triangle-alert" />
+            {{ daysLeft <= 0 ? 'Registration closes today.' : `Only ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left to register.` }}
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- STICKY SECTION NAV -->
+    <nav v-if="sections.length > 1" class="sticky top-16 z-30 border-b border-line bg-white/95 sm:top-[4.25rem]" aria-label="Competition sections">
+      <div class="container-site flex items-center gap-1 overflow-x-auto py-2">
+        <a
+          v-for="s in sections"
+          :key="s.id"
+          :href="`#${s.id}`"
+          class="whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-bold transition"
+          :class="activeSection === s.id ? 'bg-brand-50 text-brand-700' : 'text-ink-soft hover:bg-mist-1 hover:text-brand-700'"
+        >
+          {{ s.label }}
+        </a>
+        <NuxtLink v-if="canRegister" :to="registerHref" class="btn-primary ml-auto shrink-0 !px-3.5 !py-1.5 !text-xs">
+          Register
+        </NuxtLink>
+      </div>
+    </nav>
+
+    <!-- completed notice -->
+    <section v-if="isComplete" class="container-site pt-8">
+      <div class="card flex items-start gap-3 border-brand-200 bg-brand-50/40 p-5">
+        <span class="tile tile-purple shrink-0"><Icon name="lucide:flag" /></span>
+        <div>
+          <h2 class="text-base font-extrabold text-ink">This competition has finished</h2>
+          <p class="mt-1 text-sm text-ink-soft">
+            Photos are in the
+            <NuxtLink :to="`/events/${ev?.slug ?? eventKey}#gallery`" class="link-underline text-brand-600">event gallery</NuxtLink>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <div class="container-site section grid gap-8 lg:grid-cols-[1.5fr_1fr] lg:items-start">
+      <!-- MAIN COLUMN -->
+      <div class="space-y-10">
+        <section v-if="comp.description" id="overview" class="scroll-mt-28">
+          <h2 class="text-title">Overview</h2>
+          <!-- eslint-disable-next-line vue/no-v-html -- sanitised on write -->
+          <div class="prose-site mt-4" v-html="comp.description" />
+        </section>
+
+        <section v-if="comp.rules" id="rules" class="scroll-mt-28">
+          <h2 class="text-title">Rules & eligibility</h2>
+          <!-- eslint-disable-next-line vue/no-v-html -- sanitised on write -->
+          <div class="prose-site mt-4" v-html="comp.rules" />
+        </section>
+
+        <section v-if="comp.submissionGuidelines" id="submission" class="scroll-mt-28">
+          <h2 class="text-title">Submission guidelines</h2>
+          <!-- eslint-disable-next-line vue/no-v-html -- sanitised on write -->
+          <div class="prose-site mt-4" v-html="comp.submissionGuidelines" />
+        </section>
+
+        <section v-if="comp.evaluationCriteria || comp.criteria.length" id="criteria" class="scroll-mt-28">
+          <div class="flex flex-wrap items-end justify-between gap-3">
+            <h2 class="text-title">How entries are judged</h2>
+            <span v-if="criteriaTotal" class="badge" :class="criteriaTotal === 100 ? 'badge-green' : 'badge-orange'">
+              Total {{ criteriaTotal }}%
             </span>
           </div>
-        </div>
-      </div>
-    </section>
 
-    <!-- KEY STATS BAR -->
-    <section class="container-site relative z-20 -mt-6">
-      <div class="card grid grid-cols-2 gap-4 p-5 shadow-soft sm:p-6 md:grid-cols-5">
-        <div class="flex items-center gap-3">
-          <span class="tile tile-blue h-10 w-10 text-lg"><Icon name="lucide:trophy" /></span>
-          <div>
-            <p class="text-xs font-semibold text-ink-faint">Prize Pool</p>
-            <p class="text-lg font-extrabold tracking-tight text-brand-600">{{ ev.prize }}</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-3">
-          <span class="tile tile-orange h-10 w-10 text-lg"><Icon name="lucide:calendar" /></span>
-          <div>
-            <p class="text-xs font-semibold text-ink-faint">Deadline</p>
-            <p class="text-sm font-bold">{{ formatDate(ev.registrationDeadline) }}</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-3">
-          <span class="tile tile-purple h-10 w-10 text-lg"><Icon name="lucide:users" /></span>
-          <div>
-            <p class="text-xs font-semibold text-ink-faint">Team Size</p>
-            <p class="text-sm font-bold">{{ ev.teamSizeMin }}–{{ ev.teamSizeMax }} members</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-3">
-          <span class="tile tile-green h-10 w-10 text-lg"><Icon name="lucide:map-pin" /></span>
-          <div>
-            <p class="text-xs font-semibold text-ink-faint">Location</p>
-            <p class="text-sm font-bold">{{ ev.location }}</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-3">
-          <span class="tile tile-cyan h-10 w-10 text-lg"><Icon name="lucide:user-check" /></span>
-          <div>
-            <p class="text-xs font-semibold text-ink-faint">Participants</p>
-            <p class="text-sm font-bold">{{ ev.registeredCount }} registered</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Main content + sidebar -->
-    <section class="container-site grid gap-8 py-12 lg:grid-cols-[1fr_340px]">
-      <div class="card space-y-12 bg-white p-6 sm:p-8 md:p-10">
-        <!-- ABOUT -->
-        <div>
-          <h2 class="text-title">About this competition</h2>
-          <div class="prose-site mt-4">
-            <p>{{ ev.description }}</p>
-            <p>
-              The event runs from <strong>{{ formatDate(ev.startDate) }}</strong> to <strong>{{ formatDate(ev.endDate) }}</strong>
-              <template v-if="ev.location !== 'Online'"> at <strong>{{ ev.location }}</strong></template>.
-              Teams of {{ ev.teamSizeMin }}–{{ ev.teamSizeMax }} compete for a prize pool of <strong>{{ ev.prize }}</strong>.
-            </p>
-          </div>
-        </div>
-
-        <div v-if="ev.eligibility">
-          <h2 class="text-title">Who can participate</h2>
-          <div class="prose-site mt-4"><p>{{ ev.eligibility }}</p></div>
-        </div>
-
-        <!-- TIMELINE -->
-        <div>
-          <h2 class="text-title">Timeline</h2>
-          <div class="mt-6"><SiteTimeline layout="vertical" :items="timelineItems" /></div>
-        </div>
-
-        <!-- PRIZES (real rows from admin) -->
-        <div v-if="ev.prizes.length">
-          <h2 class="text-title">Prizes</h2>
-          <div class="mt-6 grid gap-4 sm:grid-cols-3">
-            <div
-              v-for="(p, i) in ev.prizes"
-              :key="i"
-              class="card flex flex-col items-center p-6 text-center"
-              :class="{ 'border-brand-200 shadow-soft': i === 0 }"
-            >
-              <span class="flex h-14 w-14 items-center justify-center rounded-full text-2xl" :class="prizeStyles[Math.min(i, prizeStyles.length - 1)].chip">
-                <Icon :name="prizeStyles[Math.min(i, prizeStyles.length - 1)].icon" />
-              </span>
-              <p class="mt-3 text-sm font-bold text-ink-soft">{{ p.position }}</p>
-              <p class="mt-1 text-2xl font-extrabold tracking-tight" :class="i === 0 ? 'text-brand-600' : 'text-ink'">{{ p.amount }}</p>
-              <p v-if="p.note" class="mt-1 text-xs text-ink-faint">{{ p.note }}</p>
+          <div v-if="comp.criteria.length" class="mt-5 grid gap-4 sm:grid-cols-2">
+            <div v-for="(k, i) in comp.criteria" :key="k.id" class="card p-5">
+              <div class="flex items-center justify-between gap-3">
+                <span class="tile" :class="['tile-blue', 'tile-purple', 'tile-green', 'tile-orange', 'tile-cyan'][i % 5]">
+                  <Icon :name="k.icon || 'lucide:check-circle-2'" />
+                </span>
+                <span v-if="k.weight" class="text-2xl font-extrabold tabular-nums text-brand-700">{{ k.weight }}%</span>
+              </div>
+              <h3 class="mt-3 text-base font-extrabold text-ink">{{ k.name }}</h3>
+              <p v-if="k.description" class="mt-1 text-sm text-ink-soft">{{ k.description }}</p>
+              <div v-if="k.weight" class="mt-3 h-1.5 overflow-hidden rounded-full bg-mist-2" role="presentation">
+                <div class="h-full rounded-full bg-brand-500" :style="{ width: `${Math.min(k.weight, 100)}%` }" />
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- JUDGES -->
-        <div v-if="judgeCards.length">
-          <h2 class="text-title">Judges & Mentors</h2>
-          <div class="mt-6 grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr))">
-            <SitePersonCard v-for="j in judgeCards" :key="j.id" :person="j" />
+          <!-- eslint-disable-next-line vue/no-v-html -- sanitised on write -->
+          <div v-if="comp.evaluationCriteria" class="prose-site mt-4" v-html="comp.evaluationCriteria" />
+        </section>
+
+        <section v-if="comp.schedule.length || timelineItems.length" id="schedule" class="scroll-mt-28">
+          <h2 class="text-title">Schedule</h2>
+
+          <ol v-if="comp.schedule.length" class="card mt-5 divide-y divide-line overflow-hidden">
+            <li v-for="s in comp.schedule" :key="s.id" class="flex flex-col gap-1 p-4 sm:flex-row sm:items-center sm:gap-5">
+              <div class="w-32 shrink-0 text-sm font-extrabold tabular-nums text-brand-700">
+                <span v-if="s.date" class="block text-xs font-semibold text-ink-faint">{{ formatDate(s.date) }}</span>
+                {{ s.startTime || '—' }}<template v-if="s.endTime"> – {{ s.endTime }}</template>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="font-bold text-ink">{{ s.title }}</p>
+                <p v-if="s.description" class="mt-0.5 text-sm text-ink-soft">{{ s.description }}</p>
+                <p v-if="s.venue || s.speaker" class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-faint">
+                  <span v-if="s.venue" class="inline-flex items-center gap-1"><Icon name="lucide:map-pin" />{{ s.venue }}</span>
+                  <span v-if="s.speaker" class="inline-flex items-center gap-1"><Icon name="lucide:mic" />{{ s.speaker }}</span>
+                </p>
+              </div>
+            </li>
+          </ol>
+
+          <div v-if="timelineItems.length" class="mt-6">
+            <h3 class="mb-4 text-base font-extrabold text-ink">Event milestones</h3>
+            <SiteTimeline layout="vertical" :items="timelineItems" />
           </div>
+        </section>
+
+        <section v-if="comp.judges.length" id="judges" class="scroll-mt-28">
+          <h2 class="text-title">Judges</h2>
+          <div class="mt-6 grid gap-4 sm:grid-cols-2">
+            <SitePersonCard v-for="j in comp.judges" :key="j.id" :person="j" />
+          </div>
+        </section>
+
+        <section v-if="comp.resources" id="resources" class="scroll-mt-28">
+          <h2 class="text-title">Resources</h2>
+          <!-- eslint-disable-next-line vue/no-v-html -- sanitised on write -->
+          <div class="prose-site mt-4" v-html="comp.resources" />
+        </section>
+
+        <section v-if="comp.faqs.length" id="faq" class="scroll-mt-28">
+          <h2 class="text-title">Questions about this competition</h2>
+          <SiteFaqAccordion class="mt-6" :faqs="comp.faqs" />
+        </section>
+      </div>
+
+      <!-- SIDEBAR -->
+      <aside class="space-y-4 lg:sticky lg:top-28">
+        <div class="card p-5">
+          <h2 class="text-base font-extrabold text-ink">At a glance</h2>
+          <dl class="mt-3 space-y-2.5 text-sm">
+            <div v-if="ev" class="flex justify-between gap-3">
+              <dt class="text-ink-faint">Event</dt>
+              <dd class="text-right font-semibold">
+                <NuxtLink :to="`/events/${ev.slug}`" class="link-underline text-brand-700">{{ ev.title }}</NuxtLink>
+              </dd>
+            </div>
+            <div v-if="comp.category" class="flex justify-between gap-3">
+              <dt class="text-ink-faint">Category</dt>
+              <dd class="font-semibold text-ink">{{ comp.category }}</dd>
+            </div>
+            <div v-if="comp.difficulty" class="flex justify-between gap-3">
+              <dt class="text-ink-faint">Difficulty</dt>
+              <dd class="font-semibold capitalize text-ink">{{ comp.difficulty }}</dd>
+            </div>
+            <div class="flex justify-between gap-3">
+              <dt class="text-ink-faint">Format</dt>
+              <dd class="font-semibold text-ink">{{ comp.teamBased ? `Teams of up to ${comp.maxTeamSize}` : 'Individual' }}</dd>
+            </div>
+            <div v-if="comp.registrationDeadline" class="flex justify-between gap-3">
+              <dt class="text-ink-faint">Deadline</dt>
+              <dd class="font-semibold text-ink">{{ formatDate(comp.registrationDeadline) }}</dd>
+            </div>
+            <div v-if="comp.registeredTeams" class="flex justify-between gap-3">
+              <dt class="text-ink-faint">Registered</dt>
+              <dd class="font-semibold text-ink">{{ comp.registeredTeams }} teams</dd>
+            </div>
+            <div v-if="ev?.entryFee" class="flex justify-between gap-3">
+              <dt class="text-ink-faint">Entry fee</dt>
+              <dd class="font-semibold text-ink">{{ ev.entryFee }}</dd>
+            </div>
+          </dl>
+
+          <NuxtLink v-if="canRegister" :to="registerHref" class="btn-primary mt-4 w-full justify-center">
+            Register <Icon name="lucide:arrow-right" />
+          </NuxtLink>
+          <p v-else class="mt-4 rounded-xl bg-mist-1 p-3 text-center text-xs font-semibold text-ink-soft">
+            {{ deadlinePassed ? 'Registration has closed for this competition.' : 'Registration is not open yet.' }}
+          </p>
         </div>
 
-        <!-- SPONSORS -->
-        <div v-if="sponsorCards.length">
-          <h2 class="text-title">Sponsors</h2>
-          <SiteSponsorWall class="mt-6" :sponsors="sponsorCards" />
-        </div>
-
-        <!-- RULES -->
-        <div v-if="ev.rules.length">
-          <h2 class="text-title">Rules</h2>
-          <ul class="mt-4 space-y-3">
-            <li v-for="(rule, i) in ev.rules" :key="i" class="flex gap-3 text-sm leading-relaxed text-ink-soft">
-              <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-600">
-                {{ i + 1 }}
+        <div v-if="comp.prizes.length" id="prizes" class="card scroll-mt-28 p-5">
+          <h2 class="text-base font-extrabold text-ink">Prizes</h2>
+          <ul class="mt-3 space-y-3">
+            <li v-for="(p, i) in comp.prizes" :key="p.id" class="flex items-start gap-3">
+              <span class="tile shrink-0" :class="prizeStyles[Math.min(i, prizeStyles.length - 1)]!.tile">
+                <Icon :name="prizeStyles[Math.min(i, prizeStyles.length - 1)]!.icon" />
               </span>
-              {{ rule }}
+              <div class="min-w-0">
+                <p class="text-xs font-bold uppercase tracking-wide text-ink-faint">{{ p.position }}</p>
+                <p class="text-base font-extrabold text-brand-700">{{ p.amount }}</p>
+                <p v-if="p.note" class="mt-0.5 text-xs text-ink-soft">{{ p.note }}</p>
+              </div>
             </li>
           </ul>
         </div>
 
-        <!-- FAQ (shared accordion) -->
-        <div v-if="ev.faqs.length">
-          <h2 class="text-title">Frequently Asked Questions</h2>
-          <SiteFaqAccordion class="mt-4" :faqs="ev.faqs" />
-        </div>
-      </div>
-
-      <!-- SIDEBAR -->
-      <aside class="space-y-5">
-        <div class="card flex flex-col items-center justify-center bg-white p-6 shadow-soft">
-          <p class="mb-4 text-sm font-bold uppercase tracking-wide text-ink-soft">Event Starts In</p>
-          <UiAnimatedNumberCountdown :end-date="ev.startDate" />
-        </div>
-
-        <div class="lg:sticky lg:top-20">
-          <div v-if="canRegister" class="card gradient-brand border-0 p-6 text-white">
-            <h3 class="text-xl font-extrabold">Ready to compete?</h3>
-            <p class="mt-2 text-sm text-white/80">Form your team and register before the deadline. Registration takes about two minutes.</p>
-            <NuxtLink
-              :to="`/events/${eventId}/${ev.id}/register`"
-              class="mt-5 flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3.5 text-sm font-bold text-brand-600 transition-transform hover:-translate-y-0.5 active:scale-95"
-            >
-              Register Now <Icon name="lucide:arrow-right" />
-            </NuxtLink>
-            <p class="mt-3 text-center text-xs text-white/60">Deadline: {{ formatDate(ev.registrationDeadline) }}</p>
-          </div>
-          <div v-else class="card p-6 text-center">
-            <Icon name="lucide:clock" class="mx-auto text-3xl text-ink-faint" />
-            <p class="mt-3 font-bold text-ink-soft">Registration Closed</p>
-            <p class="mt-1 text-sm text-ink-faint">This competition is no longer accepting registrations.</p>
-          </div>
-
-          <div class="card mt-5 p-5">
-            <h3 class="text-sm font-bold text-ink-faint">Details</h3>
-            <dl class="mt-3 space-y-3 text-sm">
-              <div class="flex justify-between"><dt class="text-ink-faint">Start Date</dt><dd class="font-bold">{{ formatDate(ev.startDate) }}</dd></div>
-              <div class="flex justify-between"><dt class="text-ink-faint">End Date</dt><dd class="font-bold">{{ formatDate(ev.endDate) }}</dd></div>
-              <div class="flex justify-between"><dt class="text-ink-faint">Location</dt><dd class="font-bold">{{ ev.location }}</dd></div>
-              <div class="flex justify-between"><dt class="text-ink-faint">Prize Pool</dt><dd class="font-bold text-brand-600">{{ ev.prize }}</dd></div>
-              <div class="flex justify-between"><dt class="text-ink-faint">Team Size</dt><dd class="font-bold">{{ ev.teamSizeMin }}–{{ ev.teamSizeMax }}</dd></div>
-            </dl>
-            <a
-              v-if="ev.website"
-              :href="ev.website"
-              target="_blank"
-              rel="noopener"
-              class="btn-secondary mt-4 w-full"
-            >
-              <Icon name="lucide:external-link" /> Visit Website
-            </a>
-          </div>
+        <div v-if="ev" class="card p-5">
+          <h2 class="text-base font-extrabold text-ink">More in this event</h2>
+          <p class="mt-1 text-sm text-ink-soft">See every segment, the schedule, judges and venue.</p>
+          <NuxtLink :to="`/events/${ev.slug}`" class="btn-secondary mt-3 w-full justify-center">
+            Back to {{ ev.title }}
+          </NuxtLink>
         </div>
       </aside>
-    </section>
+    </div>
+
+    <!-- Mobile registration lives in the sticky section nav above; the bottom
+         edge belongs to the site's fixed mobile navigation (.nav-bottom). -->
   </div>
 </template>

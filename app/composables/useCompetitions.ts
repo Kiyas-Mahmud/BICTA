@@ -5,7 +5,9 @@ import type { Ref } from 'vue'
 // /api/public/competitions, prefetched into useState by app/plugins/content.ts.
 export interface Competition {
   id: string
+  slug: string
   eventId: string
+  eventSlug: string
   eventTitle: string
   title: string
   status: 'ongoing' | 'upcoming' | 'past'
@@ -39,9 +41,10 @@ export function useCompetitions(): { competitions: Ref<Competition[]>; loading: 
   return { competitions: competitionsState(), loading: ref(false) }
 }
 
-export function useCompetitionById(id: string): { competition: Ref<Competition | undefined>; loading: Ref<boolean> } {
+/** Resolve by slug (canonical) or legacy numeric id. */
+export function useCompetitionById(slugOrId: string): { competition: Ref<Competition | undefined>; loading: Ref<boolean> } {
   const competitions = competitionsState()
-  const competition = computed(() => competitions.value.find((c) => c.id === id))
+  const competition = computed(() => competitions.value.find((c) => c.slug === slugOrId || c.id === slugOrId))
   return { competition, loading: ref(false) }
 }
 
