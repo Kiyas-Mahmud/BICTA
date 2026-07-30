@@ -202,7 +202,7 @@ useSeoMeta({
     </section>
 
     <!-- STICKY SECTION NAV -->
-    <nav v-if="sections.length > 1" class="sticky top-16 z-30 border-b border-line bg-white/95 sm:top-[4.25rem]" aria-label="Competition sections">
+    <nav v-if="sections.length > 1" class="section-nav" aria-label="Competition sections">
       <div class="container-site flex items-center gap-1 overflow-x-auto py-2">
         <a
           v-for="s in sections"
@@ -236,25 +236,25 @@ useSeoMeta({
     <div class="container-site section grid gap-8 lg:grid-cols-[1.5fr_1fr] lg:items-start">
       <!-- MAIN COLUMN -->
       <div class="space-y-10">
-        <section v-if="comp.description" id="overview" class="scroll-mt-28">
+        <section v-if="comp.description" id="overview" class="section-anchor">
           <h2 class="text-title">Overview</h2>
           <!-- eslint-disable-next-line vue/no-v-html -- sanitised on write -->
           <div class="prose-site mt-4" v-html="comp.description" />
         </section>
 
-        <section v-if="comp.rules" id="rules" class="scroll-mt-28">
+        <section v-if="comp.rules" id="rules" class="section-anchor">
           <h2 class="text-title">Rules & eligibility</h2>
           <!-- eslint-disable-next-line vue/no-v-html -- sanitised on write -->
           <div class="prose-site mt-4" v-html="comp.rules" />
         </section>
 
-        <section v-if="comp.submissionGuidelines" id="submission" class="scroll-mt-28">
+        <section v-if="comp.submissionGuidelines" id="submission" class="section-anchor">
           <h2 class="text-title">Submission guidelines</h2>
           <!-- eslint-disable-next-line vue/no-v-html -- sanitised on write -->
           <div class="prose-site mt-4" v-html="comp.submissionGuidelines" />
         </section>
 
-        <section v-if="comp.evaluationCriteria || comp.criteria.length" id="criteria" class="scroll-mt-28">
+        <section v-if="comp.evaluationCriteria || comp.criteria.length" id="criteria" class="section-anchor">
           <div class="flex flex-wrap items-end justify-between gap-3">
             <h2 class="text-title">How entries are judged</h2>
             <span v-if="criteriaTotal" class="badge" :class="criteriaTotal === 100 ? 'badge-green' : 'badge-orange'">
@@ -282,7 +282,7 @@ useSeoMeta({
           <div v-if="comp.evaluationCriteria" class="prose-site mt-4" v-html="comp.evaluationCriteria" />
         </section>
 
-        <section v-if="comp.schedule.length || timelineItems.length" id="schedule" class="scroll-mt-28">
+        <section v-if="comp.schedule.length || timelineItems.length" id="schedule" class="section-anchor">
           <h2 class="text-title">Schedule</h2>
 
           <ol v-if="comp.schedule.length" class="card mt-5 divide-y divide-line overflow-hidden">
@@ -308,20 +308,20 @@ useSeoMeta({
           </div>
         </section>
 
-        <section v-if="comp.judges.length" id="judges" class="scroll-mt-28">
+        <section v-if="comp.judges.length" id="judges" class="section-anchor">
           <h2 class="text-title">Judges</h2>
           <div class="mt-6 grid gap-4 sm:grid-cols-2">
             <SitePersonCard v-for="j in comp.judges" :key="j.id" :person="j" />
           </div>
         </section>
 
-        <section v-if="comp.resources" id="resources" class="scroll-mt-28">
+        <section v-if="comp.resources" id="resources" class="section-anchor">
           <h2 class="text-title">Resources</h2>
           <!-- eslint-disable-next-line vue/no-v-html -- sanitised on write -->
           <div class="prose-site mt-4" v-html="comp.resources" />
         </section>
 
-        <section v-if="comp.faqs.length" id="faq" class="scroll-mt-28">
+        <section v-if="comp.faqs.length" id="faq" class="section-anchor">
           <h2 class="text-title">Questions about this competition</h2>
           <SiteFaqAccordion class="mt-6" :faqs="comp.faqs" />
         </section>
@@ -372,7 +372,7 @@ useSeoMeta({
           </p>
         </div>
 
-        <div v-if="comp.prizes.length" id="prizes" class="card scroll-mt-28 p-5">
+        <div v-if="comp.prizes.length" id="prizes" class="section-anchor card p-5">
           <h2 class="text-base font-extrabold text-ink">Prizes</h2>
           <ul class="mt-3 space-y-3">
             <li v-for="(p, i) in comp.prizes" :key="p.id" class="flex items-start gap-3">

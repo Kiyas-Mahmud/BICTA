@@ -320,7 +320,7 @@ useSeoMeta({
     </section>
 
     <!-- 2. STICKY EVENT NAV -->
-    <nav v-if="sections.length > 1" class="sticky top-16 z-30 border-b border-line bg-white/95 sm:top-[4.25rem]" aria-label="Event sections">
+    <nav v-if="sections.length > 1" class="section-nav" aria-label="Event sections">
       <div class="container-site flex items-center gap-1 overflow-x-auto py-2">
         <a
           v-for="s in sections"
@@ -398,7 +398,7 @@ useSeoMeta({
 
     <!-- 4. ABOUT -->
     <SiteSectionReveal v-if="sections.some((s) => s.id === 'about')">
-      <section id="about" class="section scroll-mt-28">
+      <section id="about" class="section-anchor section">
         <div class="container-site grid gap-8 lg:grid-cols-[1.4fr_1fr]">
           <div>
             <h2 class="text-title">{{ secHeading('about', 'About the event') }}</h2>
@@ -430,7 +430,7 @@ useSeoMeta({
 
     <!-- 5. PRIZE POOL -->
     <SiteSectionReveal v-if="sections.some((s) => s.id === 'prizes')">
-      <section id="prizes" class="section scroll-mt-28 !pt-0">
+      <section id="prizes" class="section-anchor section !pt-0">
         <div class="container-site">
           <div class="flex flex-wrap items-end justify-between gap-3">
             <h2 class="text-title">{{ secHeading('prizes', 'Prize pool') }}</h2>
@@ -457,7 +457,7 @@ useSeoMeta({
 
     <!-- 6. TIMELINE -->
     <SiteSectionReveal v-if="sections.some((s) => s.id === 'timeline')">
-      <section id="timeline" class="section scroll-mt-28 !pt-0">
+      <section id="timeline" class="section-anchor section !pt-0">
         <div class="container-site">
           <div class="mx-auto mb-12 max-w-2xl text-center">
             <h2 class="text-title">{{ secHeading('timeline', 'Event timeline') }}</h2>
@@ -470,7 +470,7 @@ useSeoMeta({
 
     <!-- 7. COMPETITION SEGMENTS -->
     <SiteSectionReveal v-if="sections.some((s) => s.id === 'competitions')">
-      <section id="competitions" class="section scroll-mt-28 !pt-0">
+      <section id="competitions" class="section-anchor section !pt-0">
         <div class="container-site">
           <div class="flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -536,7 +536,7 @@ useSeoMeta({
 
     <!-- 8. FULL-DAY SCHEDULE -->
     <SiteSectionReveal v-if="sections.some((s) => s.id === 'schedule')">
-      <section id="schedule" class="section scroll-mt-28 !pt-0">
+      <section id="schedule" class="section-anchor section !pt-0">
         <div class="container-site">
           <h2 class="text-title">{{ secHeading('schedule', 'Programme schedule') }}</h2>
 
@@ -599,7 +599,7 @@ useSeoMeta({
 
     <!-- 9. JUDGING CRITERIA -->
     <SiteSectionReveal v-if="sections.some((s) => s.id === 'criteria')">
-      <section id="criteria" class="section scroll-mt-28 !pt-0">
+      <section id="criteria" class="section-anchor section !pt-0">
         <div class="container-site">
           <div class="flex flex-wrap items-end justify-between gap-3">
             <h2 class="text-title">{{ secHeading('criteria', 'Judging criteria') }}</h2>
@@ -628,7 +628,7 @@ useSeoMeta({
 
     <!-- 10. JUDGES -->
     <SiteSectionReveal v-if="sections.some((s) => s.id === 'people')">
-      <section id="people" class="section scroll-mt-28 !pt-0">
+      <section id="people" class="section-anchor section !pt-0">
         <div class="container-site">
           <h2 class="text-title">{{ secHeading('people', 'Judges') }}</h2>
           <p class="mt-2 text-ink-soft">Who evaluates your work, and which segments they judge.</p>
@@ -665,7 +665,7 @@ useSeoMeta({
 
     <!-- 11. SPONSORS -->
     <SiteSectionReveal v-if="sections.some((s) => s.id === 'sponsors')">
-      <section id="sponsors" class="section scroll-mt-28 !pt-0">
+      <section id="sponsors" class="section-anchor section !pt-0">
         <div class="container-site">
           <h2 class="text-title text-center">{{ secHeading('sponsors', 'Sponsors & partners') }}</h2>
           <SiteSponsorWall class="mt-8" :sponsors="ev.sponsors" />
@@ -675,7 +675,7 @@ useSeoMeta({
 
     <!-- 12. VENUE -->
     <SiteSectionReveal v-if="sections.some((s) => s.id === 'venue')">
-      <section id="venue" class="section scroll-mt-28 !pt-0">
+      <section id="venue" class="section-anchor section !pt-0">
         <div class="container-site">
           <h2 class="text-title">{{ secHeading('venue', ev.eventType === 'online' ? 'How to join' : 'Venue & location') }}</h2>
           <div class="mt-6 grid gap-6" :class="venueAsides ? 'lg:grid-cols-2' : ''">
@@ -715,7 +715,7 @@ useSeoMeta({
 
     <!-- 13. GALLERY -->
     <SiteSectionReveal v-if="sections.some((s) => s.id === 'gallery')">
-      <section id="gallery" class="section scroll-mt-28 !pt-0">
+      <section id="gallery" class="section-anchor section !pt-0">
         <div class="container-site">
           <div class="mb-8 flex flex-wrap items-end justify-between gap-3">
             <h2 class="text-title">{{ secHeading('gallery', 'Gallery') }}</h2>
@@ -728,7 +728,7 @@ useSeoMeta({
 
     <!-- 14. FAQ -->
     <SiteSectionReveal v-if="sections.some((s) => s.id === 'faq')">
-      <section id="faq" class="section scroll-mt-28 !pt-0">
+      <section id="faq" class="section-anchor section !pt-0">
         <div class="container-site">
           <div class="mx-auto max-w-3xl">
             <h2 class="text-title text-center">{{ secHeading('faq', 'Frequently asked questions') }}</h2>
