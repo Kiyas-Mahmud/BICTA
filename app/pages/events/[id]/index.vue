@@ -197,23 +197,6 @@ const sections = computed(() => {
   return list.filter((s) => s.show)
 })
 
-// Active-section highlight in the sticky nav.
-const activeSection = ref('')
-onMounted(() => {
-  if (!('IntersectionObserver' in window)) return
-  const observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) if (entry.isIntersecting) activeSection.value = entry.target.id
-    },
-    { rootMargin: '-25% 0px -65% 0px' },
-  )
-  for (const s of sections.value) {
-    const el = document.getElementById(s.id)
-    if (el) observer.observe(el)
-  }
-  onBeforeUnmount(() => observer.disconnect())
-})
-
 const criteriaTotal = computed(() => ev.value!.criteria.reduce((a: number, c: any) => a + c.weight, 0))
 
 useSeoMeta({
@@ -319,29 +302,7 @@ useSeoMeta({
       </div>
     </section>
 
-    <!-- 2. STICKY EVENT NAV -->
-    <nav v-if="sections.length > 1" class="section-nav" aria-label="Event sections">
-      <div class="container-site flex items-center gap-1 overflow-x-auto py-2">
-        <a
-          v-for="s in sections"
-          :key="s.id"
-          :href="`#${s.id}`"
-          class="whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-bold transition"
-          :class="activeSection === s.id ? 'bg-brand-50 text-brand-700' : 'text-ink-soft hover:bg-mist-1 hover:text-brand-700'"
-        >
-          {{ s.label }}
-        </a>
-        <NuxtLink
-          v-if="firstOpen"
-          :to="`/events/${ev.slug}/${firstOpen.slug}/register`"
-          class="btn-primary ml-auto shrink-0 !px-3.5 !py-1.5 !text-xs"
-        >
-          Register
-        </NuxtLink>
-      </div>
-    </nav>
-
-    <!-- 3. QUICK INFORMATION -->
+    <!-- 2. QUICK INFORMATION -->
     <section v-if="secVisible('quick')" class="container-site pt-8">
       <dl class="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div v-if="formatDateRange(ev.startDate, ev.endDate)" class="card flex items-start gap-3 p-4">

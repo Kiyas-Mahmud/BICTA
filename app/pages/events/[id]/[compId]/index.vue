@@ -80,37 +80,6 @@ const timelineItems = computed<TimelineItem[]>(() => {
 
 const criteriaTotal = computed(() => comp.value!.criteria.reduce((a: number, c: any) => a + c.weight, 0))
 
-const sections = computed(() => {
-  const c = comp.value!
-  return [
-    { id: 'overview', label: 'Overview', show: Boolean(c.description) },
-    { id: 'rules', label: 'Rules', show: Boolean(c.rules) },
-    { id: 'submission', label: 'Submission', show: Boolean(c.submissionGuidelines) },
-    { id: 'criteria', label: 'Judging', show: Boolean(c.evaluationCriteria) || c.criteria.length > 0 },
-    { id: 'prizes', label: 'Prizes', show: c.prizes.length > 0 },
-    { id: 'schedule', label: 'Schedule', show: c.schedule.length > 0 || timelineItems.value.length > 0 },
-    { id: 'judges', label: 'Judges', show: c.judges.length > 0 },
-    { id: 'resources', label: 'Resources', show: Boolean(c.resources) },
-    { id: 'faq', label: 'FAQ', show: c.faqs.length > 0 },
-  ].filter((s) => s.show)
-})
-
-const activeSection = ref('')
-onMounted(() => {
-  if (!('IntersectionObserver' in window)) return
-  const observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) if (entry.isIntersecting) activeSection.value = entry.target.id
-    },
-    { rootMargin: '-25% 0px -65% 0px' },
-  )
-  for (const s of sections.value) {
-    const el = document.getElementById(s.id)
-    if (el) observer.observe(el)
-  }
-  onBeforeUnmount(() => observer.disconnect())
-})
-
 const registerHref = computed(() => `/events/${ev.value?.slug ?? eventKey}/${comp.value!.slug}/register`)
 
 useSeoMeta({
@@ -200,24 +169,6 @@ useSeoMeta({
         </a>
       </div>
     </section>
-
-    <!-- STICKY SECTION NAV -->
-    <nav v-if="sections.length > 1" class="section-nav" aria-label="Competition sections">
-      <div class="container-site flex items-center gap-1 overflow-x-auto py-2">
-        <a
-          v-for="s in sections"
-          :key="s.id"
-          :href="`#${s.id}`"
-          class="whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-bold transition"
-          :class="activeSection === s.id ? 'bg-brand-50 text-brand-700' : 'text-ink-soft hover:bg-mist-1 hover:text-brand-700'"
-        >
-          {{ s.label }}
-        </a>
-        <NuxtLink v-if="canRegister" :to="registerHref" class="btn-primary ml-auto shrink-0 !px-3.5 !py-1.5 !text-xs">
-          Register
-        </NuxtLink>
-      </div>
-    </nav>
 
     <!-- completed notice -->
     <section v-if="isComplete" class="container-site pt-8">
