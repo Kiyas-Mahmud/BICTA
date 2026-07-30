@@ -1,9 +1,15 @@
 import { z } from 'zod'
 
+// Any same-origin absolute path (uploads, or the bundled /gallery-images seed
+// art) or an absolute http(s) URL. Protocol-relative "//host" is rejected
+// because it escapes the origin while looking like a local path.
 const imagePath = z
   .string()
   .max(500)
-  .refine((v) => v === '' || v.startsWith('/uploads/') || /^https?:\/\//.test(v), 'Invalid image URL')
+  .refine(
+    (v) => v === '' || (v.startsWith('/') && !v.startsWith('//')) || /^https?:\/\//.test(v),
+    'Invalid image URL',
+  )
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
 

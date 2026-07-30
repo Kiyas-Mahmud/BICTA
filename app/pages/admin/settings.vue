@@ -84,7 +84,7 @@ const groups: { id: string; title: string; icon: string; description: string; fi
       { key: 'venue_name', label: 'Venue name' },
       { key: 'venue_address', label: 'Venue address', type: 'textarea' },
       { key: 'venue_directions', label: 'Directions', type: 'textarea' },
-      { key: 'venue_map_embed', label: 'Google Maps embed URL', hint: 'The src of the iframe Google gives you.' },
+      { key: 'venue_map_embed', label: 'Google Maps embed URL', hint: 'The src from Share > Embed a map. A short maps.app.goo.gl link cannot be embedded; leave blank to build the map from the address.' },
     ],
   },
 ]

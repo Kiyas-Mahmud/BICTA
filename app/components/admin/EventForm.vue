@@ -300,7 +300,11 @@ const dateWarning = computed(() =>
       <div>
         <label class="label" for="ev-map">Google Maps embed URL</label>
         <input id="ev-map" v-model="form.mapEmbed" class="input font-mono text-xs" maxlength="2000" placeholder="https://www.google.com/maps/embed?pb=…" />
-        <p class="mt-1 text-xs text-ink-faint">The src of the iframe Google gives you under Share &gt; Embed a map.</p>
+        <p class="mt-1 text-xs text-ink-faint">
+          Use the <strong>src</strong> from Google Maps &gt; Share &gt; <strong>Embed a map</strong>. A short share link
+          (maps.app.goo.gl/…) cannot be embedded — Google blocks it — but it still works as the "Open in Google Maps"
+          button. Leave this blank and the map is built from the address above.
+        </p>
       </div>
     </AdminFormSection>
 

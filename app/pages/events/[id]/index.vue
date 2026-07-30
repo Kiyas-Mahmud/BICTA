@@ -97,8 +97,8 @@ const galleryImages = computed(() => (ev.value!.gallery ?? []).map((g: any) => g
 
 // Venue. The fallback to the site-wide venue is all-or-nothing: mixing an
 // event's own address with the default map would point the pin at the wrong
-// place. When the event has an address but no embed, the map is derived from
-// that address so the pin always matches the text beside it.
+// place. SiteVenueMap decides what is actually embeddable and derives a map
+// from the address when the stored URL is not.
 const venue = computed(() => {
   const s = (siteSettings.value ?? {}) as Record<string, string>
   const e = ev.value!
@@ -113,12 +113,11 @@ const venue = computed(() => {
     }
   }
 
-  const query = e.venueAddress || e.venue || ''
   return {
     name: e.venue ?? '',
     address: e.venueAddress,
     directions: e.venueDirections,
-    mapEmbed: e.mapEmbed || (query ? `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed` : ''),
+    mapEmbed: e.mapEmbed,
   }
 })
 const hasVenue = computed(() =>
