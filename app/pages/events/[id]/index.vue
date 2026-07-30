@@ -9,8 +9,10 @@ if (!ev.value) {
   throw createError({ statusCode: 404, statusMessage: 'Event not found', fatal: true })
 }
 
-// Canonical URL is the slug. Legacy numeric links redirect permanently.
-if (/^\d+$/.test(eventKey) && ev.value.slug) {
+// Canonical URL is the slug. Legacy numeric links redirect permanently, but
+// only during SSR: awaiting navigateTo inside setup on the client suspends the
+// component and leaves the page blank until a manual refresh.
+if (import.meta.server && /^\d+$/.test(eventKey) && ev.value.slug) {
   await navigateTo(`/events/${ev.value.slug}`, { redirectCode: 301 })
 }
 
@@ -221,32 +223,47 @@ useSeoMeta({
 
 <template>
   <div v-if="ev">
-    <!-- 1. HERO -->
-    <section class="relative overflow-hidden">
+    <!-- 1. HERO — full viewport, cover image behind, content centred -->
+    <section class="relative flex min-h-[100svh] flex-col overflow-hidden">
       <div class="absolute inset-0 z-0">
-        <img v-if="ev.heroImage" :src="ev.heroImage" :alt="ev.title" class="h-full w-full object-cover" />
+        <img
+          v-if="ev.heroImage"
+          :src="ev.heroImage"
+          :alt="ev.title"
+          class="h-full w-full object-cover"
+          fetchpriority="high"
+        />
+        <!-- Layered scrim: keeps every text size readable over any photo. -->
         <div
           class="absolute inset-0"
-          :class="ev.heroImage ? 'bg-gradient-to-t from-ink via-ink/75 to-ink/35' : 'bg-gradient-to-br from-brand-800 to-brand-600'"
+          :class="ev.heroImage ? 'bg-ink/65' : 'bg-gradient-to-br from-brand-800 to-brand-600'"
         />
+        <div v-if="ev.heroImage" class="absolute inset-0 bg-gradient-to-t from-ink via-ink/35 to-ink/55" />
       </div>
 
-      <div class="container-site relative z-10 pb-14 pt-28">
+      <div class="container-site relative z-10 pt-24">
         <SiteBackButton to="/events" label="All events" class="!border-white/20 !bg-transparent !text-white/70 hover:!text-white" />
+      </div>
 
-        <div class="mt-6 max-w-3xl">
-          <div class="rise rise-1 flex flex-wrap items-center gap-2">
+      <div class="container-site relative z-10 flex flex-1 items-center justify-center py-10">
+        <div class="mx-auto max-w-3xl text-center">
+          <div class="rise rise-1 flex flex-wrap items-center justify-center gap-2">
             <span :class="lifecycle.class"><span v-if="lifecycle.dot" class="dot-live" />{{ lifecycle.label }}</span>
             <span class="badge badge-blue">{{ eventTypeLabel }}</span>
             <span class="text-sm font-semibold text-white/70">{{ ev.organizer || 'BICTA' }} · {{ ev.year }}</span>
           </div>
 
-          <h1 class="text-display rise rise-2 mt-4 text-white">{{ ev.title }}</h1>
-          <p v-if="ev.tagline || ev.theme" class="rise rise-2 mt-3 text-lg font-bold text-white/85 sm:text-xl">
+          <h1 class="rise rise-2 mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl">
+            {{ ev.title }}
+          </h1>
+          <p v-if="ev.tagline || ev.theme" class="rise rise-2 mx-auto mt-4 max-w-2xl text-lg font-bold text-white/90 sm:text-xl">
             {{ ev.tagline || ev.theme }}
           </p>
+          <p v-if="ev.seoDescription" class="rise rise-3 mx-auto mt-3 max-w-xl text-sm leading-relaxed text-white/70 sm:text-base">
+            {{ ev.seoDescription }}
+          </p>
 
-          <p class="rise rise-3 mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-semibold text-white/75">
+          <p class="rise rise-3 mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-semibold text-white/75">
             <span v-if="formatDateRange(ev.startDate, ev.endDate)" class="inline-flex items-center gap-1.5">
               <Icon name="lucide:calendar" /> {{ formatDateRange(ev.startDate, ev.endDate) }}
             </span>
@@ -257,7 +274,7 @@ useSeoMeta({
           </p>
 
           <!-- live proof: participants + teams, straight from the database -->
-          <p v-if="ev.stats.participants || ev.stats.teams" class="rise rise-3 mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-semibold text-white/75">
+          <p v-if="ev.stats.participants || ev.stats.teams" class="rise rise-3 mt-2.5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-semibold text-white/75">
             <span v-if="ev.stats.participants" class="inline-flex items-center gap-1.5">
               <Icon name="lucide:users" /> {{ ev.stats.participants }} participants
             </span>
@@ -266,9 +283,9 @@ useSeoMeta({
             </span>
           </p>
 
-          <div v-if="countdownState !== 'hidden'" class="rise rise-4 mt-7">
+          <div v-if="countdownState !== 'hidden'" class="rise rise-4 mt-9">
             <template v-if="countdownState === 'counting'">
-              <p class="mb-2.5 text-[0.7rem] font-bold uppercase tracking-[0.16em] text-white/60">
+              <p class="mb-3 text-[0.7rem] font-bold uppercase tracking-[0.16em] text-white/60">
                 {{ ev.countdownMode === 'deadline' ? 'Registration closes in' : 'Event starts in' }}
               </p>
               <UiAnimatedNumberCountdown :end-date="countdownTarget!" class="text-white" />
@@ -277,7 +294,7 @@ useSeoMeta({
             <p v-else class="badge badge-gray !text-sm">Event Completed</p>
           </div>
 
-          <div class="rise rise-4 mt-7 flex flex-col items-stretch gap-2.5 sm:flex-row sm:items-center">
+          <div class="rise rise-4 mt-8 flex flex-col items-stretch gap-2.5 sm:flex-row sm:items-center sm:justify-center">
             <NuxtLink
               v-if="firstOpen"
               :to="`/events/${ev.slug}/${firstOpen.slug}/register`"
@@ -288,6 +305,13 @@ useSeoMeta({
             <a href="#competitions" class="btn-secondary w-full justify-center sm:w-auto">Explore Competitions</a>
           </div>
         </div>
+      </div>
+
+      <!-- scroll affordance: the fold is a full screen tall now -->
+      <div class="relative z-10 flex justify-center pb-8" aria-hidden="true">
+        <a href="#competitions" class="rounded-full p-2 text-white/50 transition hover:text-white">
+          <Icon name="lucide:chevron-down" class="text-2xl" />
+        </a>
       </div>
     </section>
 

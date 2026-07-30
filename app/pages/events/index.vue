@@ -91,7 +91,7 @@ useSeoMeta({ title: 'Events', description: "Browse BICTA's yearly editions and t
         <NuxtLink
           v-for="event in filteredEvents"
           :key="event.id"
-          :to="`/events/${event.id}`"
+          :to="`/events/${event.slug}`"
           class="group card card-hover flex flex-col overflow-hidden sm:flex-row"
         >
           <!-- Thumbnail -->

@@ -15,8 +15,10 @@ if (!comp.value) {
 
 const ev = computed(() => comp.value!.event)
 
-// Canonical URL uses slugs. Legacy numeric links redirect permanently.
-if ((/^\d+$/.test(eventKey) || /^\d+$/.test(compKey)) && ev.value?.slug && comp.value.slug) {
+// Canonical URL uses slugs. Legacy numeric links redirect permanently, but
+// only during SSR: awaiting navigateTo inside setup on the client suspends the
+// component and leaves the page blank until a manual refresh.
+if (import.meta.server && (/^\d+$/.test(eventKey) || /^\d+$/.test(compKey)) && ev.value?.slug && comp.value.slug) {
   await navigateTo(`/events/${ev.value.slug}/${comp.value.slug}`, { redirectCode: 301 })
 }
 
@@ -120,39 +122,45 @@ useSeoMeta({
 
 <template>
   <div v-if="comp">
-    <!-- HERO -->
-    <section class="relative overflow-hidden">
+    <!-- HERO — full viewport, cover image behind, content centred -->
+    <section class="relative flex min-h-[100svh] flex-col overflow-hidden">
       <div class="absolute inset-0 z-0">
         <img
           v-if="comp.bannerImage || comp.coverImage"
           :src="comp.bannerImage || comp.coverImage!"
           :alt="comp.name"
           class="h-full w-full object-cover"
+          fetchpriority="high"
         />
         <div
           class="absolute inset-0"
-          :class="comp.bannerImage || comp.coverImage ? 'bg-gradient-to-t from-ink via-ink/75 to-ink/40' : 'bg-gradient-to-br from-brand-800 to-brand-600'"
+          :class="comp.bannerImage || comp.coverImage ? 'bg-ink/65' : 'bg-gradient-to-br from-brand-800 to-brand-600'"
         />
+        <div v-if="comp.bannerImage || comp.coverImage" class="absolute inset-0 bg-gradient-to-t from-ink via-ink/35 to-ink/55" />
       </div>
 
-      <div class="container-site relative z-10 pb-12 pt-28">
+      <div class="container-site relative z-10 pt-24">
         <SiteBackButton
           :to="`/events/${ev?.slug ?? eventKey}`"
           :label="ev?.title ?? 'Back to event'"
           class="!border-white/20 !bg-transparent !text-white/70 hover:!text-white"
         />
+      </div>
 
-        <div class="mt-6 max-w-3xl">
-          <div class="rise rise-1 flex flex-wrap items-center gap-2">
+      <div class="container-site relative z-10 flex flex-1 items-center justify-center py-10">
+        <div class="mx-auto max-w-3xl text-center">
+          <div class="rise rise-1 flex flex-wrap items-center justify-center gap-2">
             <span :class="registrationState.class"><span v-if="registrationState.dot" class="dot-live" />{{ registrationState.label }}</span>
             <span v-if="comp.type" class="badge badge-blue">{{ comp.type }}</span>
             <span v-if="comp.category" class="badge badge-purple">{{ comp.category }}</span>
             <span v-if="comp.difficulty" :class="difficultyBadge" class="capitalize">{{ comp.difficulty }}</span>
           </div>
 
-          <h1 class="text-display rise rise-2 mt-4 text-white">{{ comp.name }}</h1>
+          <h1 class="rise rise-2 mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl">
+            {{ comp.name }}
+          </h1>
 
-          <p class="rise rise-3 mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-semibold text-white/75">
+          <p class="rise rise-3 mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-semibold text-white/75">
             <span class="inline-flex items-center gap-1.5">
               <Icon name="lucide:users" /> {{ comp.teamBased ? `Teams of up to ${comp.maxTeamSize}` : 'Individual entry' }}
             </span>
@@ -167,7 +175,7 @@ useSeoMeta({
             </span>
           </p>
 
-          <div class="rise rise-4 mt-7 flex flex-col items-stretch gap-2.5 sm:flex-row sm:items-center">
+          <div class="rise rise-4 mt-8 flex flex-col items-stretch gap-2.5 sm:flex-row sm:items-center sm:justify-center">
             <NuxtLink v-if="canRegister" :to="registerHref" class="btn-primary w-full justify-center sm:w-auto">
               Register Now <Icon name="lucide:arrow-right" />
             </NuxtLink>
@@ -179,11 +187,17 @@ useSeoMeta({
             </NuxtLink>
           </div>
 
-          <p v-if="canRegister && daysLeft !== null && daysLeft <= 7" class="mt-3 text-sm font-bold text-white">
+          <p v-if="canRegister && daysLeft !== null && daysLeft <= 7" class="mt-4 text-sm font-bold text-white">
             <Icon name="lucide:triangle-alert" />
             {{ daysLeft <= 0 ? 'Registration closes today.' : `Only ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left to register.` }}
           </p>
         </div>
+      </div>
+
+      <div class="relative z-10 flex justify-center pb-8" aria-hidden="true">
+        <a href="#overview" class="rounded-full p-2 text-white/50 transition hover:text-white">
+          <Icon name="lucide:chevron-down" class="text-2xl" />
+        </a>
       </div>
     </section>
 

@@ -231,7 +231,7 @@ useSeoMeta({
           <!-- Lead event: the edition visitors should open first -->
           <NuxtLink
             v-if="leadEvent"
-            :to="`/events/${leadEvent.id}`"
+            :to="`/events/${leadEvent.slug}`"
             class="group card card-hover mt-8 grid overflow-hidden lg:grid-cols-[1.15fr_1fr]"
           >
             <div class="img-zoom relative aspect-[16/10] lg:aspect-auto lg:min-h-[22rem]">
@@ -296,7 +296,7 @@ useSeoMeta({
             <NuxtLink
               v-for="e in otherEvents"
               :key="e.id"
-              :to="`/events/${e.id}`"
+              :to="`/events/${e.slug}`"
               class="group card card-hover flex items-stretch gap-4 overflow-hidden p-3"
             >
               <div class="img-zoom relative h-24 w-24 shrink-0 overflow-hidden rounded-xl sm:h-28 sm:w-28">

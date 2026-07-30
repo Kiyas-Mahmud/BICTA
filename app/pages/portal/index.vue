@@ -226,7 +226,7 @@ useSeoMeta({ title: 'My dashboard', robots: 'noindex' })
                     <template v-if="c.teamBased"> · teams up to {{ c.maxTeamSize }}</template>
                   </p>
                 </div>
-                <NuxtLink :to="`/events/${c.eventId}/${c.id}/register`" class="btn-primary shrink-0 justify-center !py-2.5 text-sm">
+                <NuxtLink :to="`/events/${c.eventSlug}/${c.slug}/register`" class="btn-primary shrink-0 justify-center !py-2.5 text-sm">
                   Register <Icon name="lucide:arrow-right" />
                 </NuxtLink>
               </li>
