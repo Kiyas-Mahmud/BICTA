@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { Competition } from '~/composables/useCompetitions'
-import type { TimelineItem } from '~/components/site/Timeline.vue'
+import type { EventListing } from '~/composables/useEvents'
 
 const { data } = await useFetch('/api/public/home')
 
@@ -25,31 +24,26 @@ const stats = computed(() => [
   { icon: 'lucide:trophy', value: String(current.value?.competitions.length ?? 0), label: 'Competitions', tile: 'tile-orange' },
 ])
 
-// Competitions — DB-backed via the content plugin. The first one leads the
-// section; the rest sit beside it as compact rows.
-const featuredEvents = useFeaturedCompetitions()
-const leadCompetition = computed(() => featuredEvents.value[0])
-const otherCompetitions = computed(() => featuredEvents.value.slice(1))
+// Events — one card per yearly edition (competitions live on the event page).
+// Non-past editions lead, newest year first; the first one gets the big card.
+const { events: allEvents } = useEvents()
+const orderedEvents = computed(() =>
+  [...allEvents.value].sort((a, b) => {
+    const rank = (e: EventListing) => (e.status === 'past' ? 1 : 0)
+    return rank(a) - rank(b) || b.year - a.year
+  }),
+)
+const leadEvent = computed(() => orderedEvents.value[0])
+const otherEvents = computed(() => orderedEvents.value.slice(1))
 
-function statusBadge(status: Competition['status']) {
+function statusBadge(status: EventListing['status']) {
   if (status === 'ongoing') return { class: 'pill-open', label: 'Live', dot: true }
   if (status === 'upcoming') return { class: 'badge badge-blue', label: 'Upcoming', dot: false }
   return { class: 'badge badge-gray', label: 'Past', dot: false }
 }
-
-// timeline_milestones rows -> TimelineItem, status derived from today.
-const timelineItems = computed<TimelineItem[]>(() => {
-  const rows = data.value?.timeline ?? []
-  const today = new Date().toISOString().slice(0, 10)
-  const firstUpcoming = rows.findIndex((r: any) => (r.date ?? '') >= today)
-  return rows.map((r: any, i: number) => ({
-    id: String(r.id),
-    title: r.label,
-    description: r.note ?? '',
-    timestamp: r.date ?? '',
-    status: firstUpcoming === -1 || i < firstUpcoming ? 'completed' : i === firstUpcoming ? 'active' : 'pending',
-  }))
-})
+function openCount(e: EventListing) {
+  return e.competitions.filter((c) => c.registrationOpen).length
+}
 
 const marqueePeople = computed(() => [...(data.value?.judges ?? []), ...(data.value?.speakers ?? [])])
 const galleryImages = computed(() => (data.value?.gallery ?? []).map((g: any) => g.url))
@@ -214,19 +208,19 @@ useSeoMeta({
       </section>
     </SiteSectionReveal>
 
-    <!-- 4. COMPETITIONS (DB-backed, server-rendered) -->
-    <SiteSectionReveal v-if="featuredEvents.length">
+    <!-- 4. EVENTS (one card per yearly edition; competitions live inside) -->
+    <SiteSectionReveal v-if="orderedEvents.length">
       <section id="competitions" class="section !pt-0">
         <div class="container-site">
           <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
             <div>
               <div class="flex items-center gap-2.5">
-                <h2 class="text-title">Competitions</h2>
+                <h2 class="text-title">Events</h2>
                 <span class="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">
-                  {{ featuredEvents.length }} {{ featuredEvents.length === 1 ? 'track' : 'tracks' }}
+                  {{ orderedEvents.length }} {{ orderedEvents.length === 1 ? 'edition' : 'editions' }}
                 </span>
               </div>
-              <p class="mt-2 max-w-md text-ink-soft">Pick your arena. Each track has its own rules and prizes.</p>
+              <p class="mt-2 max-w-md text-ink-soft">Every edition of BICTA. Open one for its competitions, dates and prizes.</p>
             </div>
             <NuxtLink to="/events" class="group inline-flex items-center gap-1.5 text-sm font-bold text-brand-700">
               View all events
@@ -234,94 +228,95 @@ useSeoMeta({
             </NuxtLink>
           </div>
 
-          <!-- Lead competition: the one visitors should read first -->
+          <!-- Lead event: the edition visitors should open first -->
           <NuxtLink
-            v-if="leadCompetition"
-            :to="`/events/${leadCompetition.eventId}/${leadCompetition.id}`"
+            v-if="leadEvent"
+            :to="`/events/${leadEvent.id}`"
             class="group card card-hover mt-8 grid overflow-hidden lg:grid-cols-[1.15fr_1fr]"
           >
             <div class="img-zoom relative aspect-[16/10] lg:aspect-auto lg:min-h-[22rem]">
               <img
-                :src="leadCompetition.imageUrl"
-                :alt="leadCompetition.title"
+                :src="leadEvent.imageUrl"
+                :alt="leadEvent.title"
                 class="h-full w-full object-cover"
               />
               <div class="absolute inset-0 bg-gradient-to-t from-ink/55 via-ink/10 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-transparent lg:to-white/10" />
-              <span class="absolute left-4 top-4" :class="statusBadge(leadCompetition.status).class">
-                <span v-if="statusBadge(leadCompetition.status).dot" class="dot-live" />
-                {{ statusBadge(leadCompetition.status).label }}
+              <span class="absolute left-4 top-4" :class="statusBadge(leadEvent.status).class">
+                <span v-if="statusBadge(leadEvent.status).dot" class="dot-live" />
+                {{ statusBadge(leadEvent.status).label }}
               </span>
             </div>
 
             <div class="flex flex-col justify-center gap-4 p-6 sm:p-8">
               <div class="flex flex-wrap items-center gap-2">
-                <span v-if="leadCompetition.tags[0]" class="badge badge-blue">{{ leadCompetition.tags[0] }}</span>
-                <span v-if="leadCompetition.registrationOpen" class="pill-open">
+                <span class="badge badge-blue">{{ leadEvent.year }} edition</span>
+                <span v-if="openCount(leadEvent)" class="pill-open">
                   <span class="dot-live" /> Registration open
                 </span>
               </div>
 
               <div>
                 <h3 class="text-2xl font-extrabold leading-tight tracking-tight transition-colors group-hover:text-brand-700 sm:text-3xl">
-                  {{ leadCompetition.title }}
+                  {{ leadEvent.title }}
                 </h3>
-                <p v-if="leadCompetition.description" class="mt-2.5 line-clamp-2 text-sm leading-relaxed text-ink-soft">
-                  {{ leadCompetition.description }}
+                <p v-if="leadEvent.description" class="mt-2.5 line-clamp-2 text-sm leading-relaxed text-ink-soft">
+                  {{ leadEvent.description }}
                 </p>
               </div>
 
-              <!-- prize gets its own line: it is the strongest pull -->
+              <!-- competitions count gets its own line: it is the strongest pull -->
               <div class="flex items-baseline gap-2 border-t border-line pt-4">
                 <Icon name="lucide:trophy" class="text-brand-600" />
-                <span class="text-xl font-extrabold tracking-tight text-brand-700">{{ leadCompetition.prize }}</span>
-                <span class="text-xs font-semibold text-ink-faint">top prize</span>
+                <span class="text-xl font-extrabold tracking-tight text-brand-700">{{ leadEvent.competitions.length }}</span>
+                <span class="text-xs font-semibold text-ink-faint">
+                  {{ leadEvent.competitions.length === 1 ? 'competition' : 'competitions' }}<template v-if="openCount(leadEvent)">, {{ openCount(leadEvent) }} open now</template>
+                </span>
               </div>
 
               <dl class="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
                 <div>
                   <dt class="font-semibold text-ink-faint">Dates</dt>
-                  <dd class="mt-0.5 font-bold text-ink">{{ formatDateRange(leadCompetition.startDate, leadCompetition.endDate) }}</dd>
+                  <dd class="mt-0.5 font-bold text-ink">{{ formatDateRange(leadEvent.startDate, leadEvent.endDate) || 'To be announced' }}</dd>
                 </div>
                 <div>
-                  <dt class="font-semibold text-ink-faint">Team size</dt>
-                  <dd class="mt-0.5 font-bold text-ink">
-                    {{ leadCompetition.teamSizeMax > 1 ? `${leadCompetition.teamSizeMin}–${leadCompetition.teamSizeMax} members` : 'Individual' }}
-                  </dd>
+                  <dt class="font-semibold text-ink-faint">Venue</dt>
+                  <dd class="mt-0.5 truncate font-bold text-ink">{{ leadEvent.venue }}</dd>
                 </div>
               </dl>
 
               <span class="inline-flex items-center gap-1.5 text-sm font-bold text-brand-700">
-                View details
+                View event
                 <Icon name="lucide:arrow-right" class="transition-transform duration-200 group-hover:translate-x-1" />
               </span>
             </div>
           </NuxtLink>
 
-          <!-- Remaining tracks: compact rows, scannable side by side -->
-          <div v-if="otherCompetitions.length" class="mt-4 grid gap-4 sm:grid-cols-2">
+          <!-- Remaining editions: compact rows, scannable side by side -->
+          <div v-if="otherEvents.length" class="mt-4 grid gap-4 sm:grid-cols-2">
             <NuxtLink
-              v-for="comp in otherCompetitions"
-              :key="comp.id"
-              :to="`/events/${comp.eventId}/${comp.id}`"
+              v-for="e in otherEvents"
+              :key="e.id"
+              :to="`/events/${e.id}`"
               class="group card card-hover flex items-stretch gap-4 overflow-hidden p-3"
             >
               <div class="img-zoom relative h-24 w-24 shrink-0 overflow-hidden rounded-xl sm:h-28 sm:w-28">
-                <img :src="comp.imageUrl" :alt="comp.title" class="h-full w-full object-cover" />
+                <img :src="e.imageUrl" :alt="e.title" class="h-full w-full object-cover" />
               </div>
 
               <div class="flex min-w-0 flex-1 flex-col justify-center gap-1.5 py-1 pr-1">
                 <div class="flex flex-wrap items-center gap-1.5">
-                  <span v-if="comp.tags[0]" class="text-[0.7rem] font-bold uppercase tracking-wider text-ink-faint">{{ comp.tags[0] }}</span>
-                  <span v-if="comp.registrationOpen" class="dot-live" />
+                  <span class="text-[0.7rem] font-bold uppercase tracking-wider text-ink-faint">{{ e.year }} edition</span>
+                  <span v-if="openCount(e)" class="dot-live" />
                 </div>
                 <h3 class="truncate text-base font-extrabold leading-tight tracking-tight transition-colors group-hover:text-brand-700">
-                  {{ comp.title }}
+                  {{ e.title }}
                 </h3>
                 <p class="flex items-center gap-1.5 text-sm font-bold text-brand-700">
-                  <Icon name="lucide:trophy" class="text-xs" /> {{ comp.prize }}
+                  <Icon name="lucide:trophy" class="text-xs" />
+                  {{ e.competitions.length }} {{ e.competitions.length === 1 ? 'competition' : 'competitions' }}
                 </p>
                 <p class="truncate text-xs text-ink-faint">
-                  {{ comp.teamSizeMax > 1 ? `Teams of ${comp.teamSizeMax}` : 'Individual' }}
+                  {{ formatDateRange(e.startDate, e.endDate) || e.venue }}
                 </p>
               </div>
 
@@ -333,18 +328,6 @@ useSeoMeta({
               </div>
             </NuxtLink>
           </div>
-        </div>
-      </section>
-    </SiteSectionReveal>
-
-    <!-- 5. IMPORTANT DATES -->
-    <SiteSectionReveal v-if="visible('timeline') && timelineItems.length">
-      <section class="section !pt-0">
-        <div class="container-site">
-          <div class="mx-auto mb-12 max-w-2xl text-center">
-            <h2 class="text-title">{{ s('timeline_heading', 'Important dates') }}</h2>
-          </div>
-          <SiteTimeline layout="horizontal" :items="timelineItems" />
         </div>
       </section>
     </SiteSectionReveal>
