@@ -87,10 +87,47 @@ const eventTypeLabel = computed(
 const objectiveList = computed(() => (ev.value!.objectives ?? '').split('\n').map((l: string) => l.trim()).filter(Boolean))
 const benefitList = computed(() => (ev.value!.benefits ?? '').split('\n').map((l: string) => l.trim()).filter(Boolean))
 const galleryImages = computed(() => (ev.value!.gallery ?? []).map((g: any) => g.url))
+
+// Venue. The fallback to the site-wide venue is all-or-nothing: mixing an
+// event's own address with the default map would point the pin at the wrong
+// place. When the event has an address but no embed, the map is derived from
+// that address so the pin always matches the text beside it.
+const { data: siteSettings } = await useFetch('/api/public/settings', { key: 'public-settings' })
+const venue = computed(() => {
+  const s = (siteSettings.value ?? {}) as Record<string, string>
+  const e = ev.value!
+  const ownVenue = e.venue || e.venueAddress || e.mapEmbed
+
+  if (!ownVenue) {
+    return {
+      name: s.venue_name ?? '',
+      address: s.venue_address ?? '',
+      directions: s.venue_directions ?? '',
+      mapEmbed: s.venue_map_embed ?? '',
+    }
+  }
+
+  const query = e.venueAddress || e.venue || ''
+  return {
+    name: e.venue ?? '',
+    address: e.venueAddress,
+    directions: e.venueDirections,
+    mapEmbed: e.mapEmbed || (query ? `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed` : ''),
+  }
+})
 const hasVenue = computed(() =>
   ev.value!.eventType === 'online'
     ? Boolean(ev.value!.meetingInfo)
-    : Boolean(ev.value!.venue || ev.value!.venueAddress || ev.value!.mapEmbed),
+    : Boolean(venue.value.name || venue.value.address || venue.value.mapEmbed),
+)
+// Parking / online-joining / phone cards sit beside the map; with none of them
+// the map takes the full width instead of leaving a gap.
+const venueAsides = computed(() =>
+  [
+    ev.value!.eventType === 'hybrid' && ev.value!.meetingInfo,
+    ev.value!.venueParking,
+    ev.value!.contactPhone,
+  ].filter(Boolean).length,
 )
 const totalPrizePool = computed(() => {
   // Free-text amounts: only summable when every published amount is numeric.
@@ -613,7 +650,7 @@ useSeoMeta({
       <section id="venue" class="section scroll-mt-28 !pt-0">
         <div class="container-site">
           <h2 class="text-title">{{ secHeading('venue', ev.eventType === 'online' ? 'How to join' : 'Venue & location') }}</h2>
-          <div class="mt-6 grid gap-6 lg:grid-cols-2">
+          <div class="mt-6 grid gap-6" :class="venueAsides ? 'lg:grid-cols-2' : ''">
             <div v-if="ev.eventType === 'online'" class="card p-5">
               <span class="tile tile-blue"><Icon name="lucide:video" /></span>
               <h3 class="mt-2.5 text-base font-extrabold text-ink">Online event</h3>
@@ -621,12 +658,12 @@ useSeoMeta({
             </div>
             <SiteVenueMap
               v-else
-              :name="ev.venue ?? ''"
-              :address="ev.venueAddress"
-              :directions="ev.venueDirections"
-              :map-embed="ev.mapEmbed"
+              :name="venue.name"
+              :address="venue.address"
+              :directions="venue.directions"
+              :map-embed="venue.mapEmbed"
             />
-            <div class="space-y-4">
+            <div v-if="venueAsides" class="space-y-4">
               <div v-if="ev.eventType === 'hybrid' && ev.meetingInfo" class="card p-5">
                 <span class="tile tile-blue"><Icon name="lucide:video" /></span>
                 <h3 class="mt-2.5 text-base font-extrabold text-ink">Joining online</h3>
