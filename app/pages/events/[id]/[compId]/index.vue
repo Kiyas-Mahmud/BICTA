@@ -32,7 +32,7 @@ onMounted(() => {
 // the same two rules the server enforces on submit.
 const deadlinePassed = computed(() => {
   const d = comp.value!.registrationDeadline
-  return Boolean(d) && new Date(`${d}T23:59:59`).getTime() < now.value
+  return Boolean(d) && new Date(`${d}T23:59:59Z`).getTime() < now.value
 })
 const canRegister = computed(() => comp.value!.registrationOpen && !deadlinePassed.value)
 const isComplete = computed(() => ev.value?.status === 'past')
@@ -40,7 +40,7 @@ const isComplete = computed(() => ev.value?.status === 'past')
 const daysLeft = computed(() => {
   const d = comp.value!.registrationDeadline
   if (!d) return null
-  return Math.ceil((new Date(`${d}T23:59:59`).getTime() - now.value) / 86_400_000)
+  return Math.ceil((new Date(`${d}T23:59:59Z`).getTime() - now.value) / 86_400_000)
 })
 
 const registrationState = computed(() => {

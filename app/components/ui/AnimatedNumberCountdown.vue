@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { onMounted, onBeforeUnmount, computed } from 'vue'
 
 const props = defineProps<{ endDate: Date | string; class?: string }>()
 
-const now = ref(Date.now())
+// The render clock is shared state, not a fresh Date.now(), so the server and
+// the first client render agree. A plain ref would compute a different second
+// on each side, and because the digits sit inside a <Transition> keyed on their
+// own value, that mismatch makes Vue abandon hydration of the surrounding
+// subtree and leave the page blank. The real clock starts after mount.
+const now = useState<number>('countdown-render-clock', () => Date.now())
 let timer: ReturnType<typeof setInterval> | undefined
 
 onMounted(() => {
+  now.value = Date.now()
   timer = setInterval(() => (now.value = Date.now()), 1000)
 })
 
@@ -14,7 +20,13 @@ onBeforeUnmount(() => timer && clearInterval(timer))
 
 const diffParts = computed(() => {
   const dateStr = props.endDate instanceof Date ? props.endDate.toISOString() : props.endDate
-  const end = new Date(dateStr.length === 10 ? `${dateStr}T00:00:00` : dateStr).getTime()
+  // Date-only and naive timestamps are pinned to UTC, matching how the database
+  // stores dates. Without the Z they would parse in the *local* zone, so the
+  // server (UTC) and a browser in another zone would render different digits
+  // and break hydration.
+  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(dateStr)
+  const normalised = dateStr.length === 10 ? `${dateStr}T00:00:00Z` : hasZone ? dateStr : `${dateStr}Z`
+  const end = new Date(normalised).getTime()
   let diff = Math.max(0, end - now.value)
 
   const days = Math.floor(diff / 86_400_000); diff -= days * 86_400_000

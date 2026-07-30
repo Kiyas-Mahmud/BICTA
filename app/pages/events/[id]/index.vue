@@ -4,7 +4,12 @@ import type { TimelineItem } from '~/components/site/Timeline.vue'
 const route = useRoute()
 const eventKey = route.params.id as string
 
+// Both fetches are awaited up front. An await later in setup would strand every
+// lifecycle hook registered after it: Vue loses the active instance across the
+// async boundary, so those hooks silently never run.
 const { data: ev } = await useFetch(`/api/public/events/${encodeURIComponent(eventKey)}`, { key: `event-${eventKey}` })
+// Same key the default layout uses, so this shares one request.
+const { data: siteSettings } = await useFetch('/api/public/settings', { key: 'site-settings' })
 if (!ev.value) {
   throw createError({ statusCode: 404, statusMessage: 'Event not found', fatal: true })
 }
@@ -49,13 +54,13 @@ const regDeadline = computed(() => {
 
 const lifecycle = computed(() => {
   const e = ev.value!
-  const start = e.startDate ? new Date(`${e.startDate}T00:00:00`).getTime() : null
-  const end = e.endDate ? new Date(`${e.endDate}T23:59:59`).getTime() : null
+  const start = e.startDate ? new Date(`${e.startDate}T00:00:00Z`).getTime() : null
+  const end = e.endDate ? new Date(`${e.endDate}T23:59:59Z`).getTime() : null
   if (e.status === 'past' || (end && now.value > end)) return { label: 'Event Completed', class: 'badge badge-gray', dot: false }
   if (e.status === 'ongoing' || (start && end && now.value >= start && now.value <= end))
     return { label: 'Event Ongoing', class: 'pill-open', dot: true }
   if (openComps.value.length) {
-    const d = regDeadline.value ? Math.ceil((new Date(`${regDeadline.value}T23:59:59`).getTime() - now.value) / 86_400_000) : null
+    const d = regDeadline.value ? Math.ceil((new Date(`${regDeadline.value}T23:59:59Z`).getTime() - now.value) / 86_400_000) : null
     if (d !== null && d >= 0 && d <= 7) return { label: 'Registration Closing Soon', class: 'badge badge-orange', dot: false }
     return { label: 'Registration Open', class: 'pill-open', dot: true }
   }
@@ -67,8 +72,8 @@ const countdownTarget = computed(() => {
   const e = ev.value!
   if (e.countdownMode === 'off') return null
   if (e.countdownMode === 'custom') return e.countdownAt || null
-  if (e.countdownMode === 'deadline') return regDeadline.value ? `${regDeadline.value}T23:59:59` : null
-  return e.startDate ? `${e.startDate}T00:00:00` : null
+  if (e.countdownMode === 'deadline') return regDeadline.value ? `${regDeadline.value}T23:59:59Z` : null
+  return e.startDate ? `${e.startDate}T00:00:00Z` : null
 })
 const countdownState = computed(() => {
   if (!countdownTarget.value) return 'hidden'
@@ -76,7 +81,7 @@ const countdownState = computed(() => {
   if (Number.isNaN(target)) return 'hidden'
   if (now.value < target) return 'counting'
   const e = ev.value!
-  const end = e.endDate ? new Date(`${e.endDate}T23:59:59`).getTime() : null
+  const end = e.endDate ? new Date(`${e.endDate}T23:59:59Z`).getTime() : null
   if (end && now.value > end) return 'done'
   return e.countdownMode === 'start' ? 'live' : 'done'
 })
@@ -94,7 +99,6 @@ const galleryImages = computed(() => (ev.value!.gallery ?? []).map((g: any) => g
 // event's own address with the default map would point the pin at the wrong
 // place. When the event has an address but no embed, the map is derived from
 // that address so the pin always matches the text beside it.
-const { data: siteSettings } = await useFetch('/api/public/settings', { key: 'public-settings' })
 const venue = computed(() => {
   const s = (siteSettings.value ?? {}) as Record<string, string>
   const e = ev.value!
@@ -274,12 +278,12 @@ useSeoMeta({
           </p>
 
           <!-- live proof: participants + teams, straight from the database -->
-          <p v-if="ev.stats.participants || ev.stats.teams" class="rise rise-3 mt-2.5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-semibold text-white/75">
-            <span v-if="ev.stats.participants" class="inline-flex items-center gap-1.5">
-              <Icon name="lucide:users" /> {{ ev.stats.participants }} participants
+          <p v-if="(ev.stats?.participants ?? 0) || (ev.stats?.teams ?? 0)" class="rise rise-3 mt-2.5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-semibold text-white/75">
+            <span v-if="(ev.stats?.participants ?? 0)" class="inline-flex items-center gap-1.5">
+              <Icon name="lucide:users" /> {{ (ev.stats?.participants ?? 0) }} participants
             </span>
-            <span v-if="ev.stats.teams" class="inline-flex items-center gap-1.5">
-              <Icon name="lucide:users-round" /> {{ ev.stats.teams }} teams registered
+            <span v-if="(ev.stats?.teams ?? 0)" class="inline-flex items-center gap-1.5">
+              <Icon name="lucide:users-round" /> {{ (ev.stats?.teams ?? 0) }} teams registered
             </span>
           </p>
 
