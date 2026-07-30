@@ -16,14 +16,24 @@ export default defineEventHandler(async (event) => {
     .where(eq(schema.participantAccounts.inviteToken, body.token))
     .get()
 
-  if (!account) {
-    throw createError({ statusCode: 400, statusMessage: 'This link is invalid or was already used.' })
+  // No inviteExpires on an old, already-migrated row is treated as "always
+  // valid" rather than "already expired" — the column only started being set
+  // going forward, and refusing every pre-existing invite would be a needless
+  // break, not a security fix.
+  const expired = Boolean(account?.inviteExpires) && new Date(account!.inviteExpires!) < new Date()
+  if (!account || expired) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: expired
+        ? 'This invite link has expired. Ask your team leader to copy a fresh one from their dashboard.'
+        : 'This link is invalid or was already used.',
+    })
   }
 
   const passwordHash = await bcrypt.hash(body.password, 12)
   await db
     .update(schema.participantAccounts)
-    .set({ passwordHash, status: 'active', inviteToken: null })
+    .set({ passwordHash, status: 'active', inviteToken: null, inviteExpires: null })
     .where(eq(schema.participantAccounts.id, account.id))
 
   // Log them straight in — no second step.

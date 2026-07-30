@@ -70,6 +70,7 @@ function removeMember(id: number) {
 
 const submitting = ref(false)
 const submitted = ref(false)
+const verificationRequired = ref(false)
 const error = ref('')
 
 async function submit() {
@@ -90,7 +91,7 @@ async function submit() {
 
   submitting.value = true
   try {
-    await $fetch('/api/registrations', {
+    const res = await $fetch('/api/registrations', {
       method: 'POST',
       body: {
         competitionId: Number(ev.id),
@@ -111,6 +112,7 @@ async function submit() {
         formToken: formToken.value,
       },
     })
+    verificationRequired.value = Boolean(res.verificationRequired)
     submitted.value = true
   } catch (e: any) {
     error.value = e?.data?.statusMessage ?? 'Something went wrong. Please try again.'
@@ -134,15 +136,22 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
       <template v-if="submitted">
         <div class="card mx-auto mt-8 max-w-xl p-10 text-center shadow-soft sm:p-12">
           <span class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-600 text-white">
-            <Icon name="lucide:check" class="text-3xl" />
+            <Icon :name="verificationRequired ? 'lucide:mail-check' : 'lucide:check'" class="text-3xl" />
           </span>
-          <h1 class="mt-6 text-3xl font-extrabold tracking-tight">Registration received</h1>
-          <p class="mx-auto mt-4 max-w-sm text-ink-soft">
+          <h1 class="mt-6 text-3xl font-extrabold tracking-tight">
+            {{ verificationRequired ? 'Almost there — check your email' : 'Registration received' }}
+          </h1>
+          <p v-if="verificationRequired" class="mx-auto mt-4 max-w-sm text-ink-soft">
+            You're in for <span class="font-bold text-ink">{{ ev.title }}</span>. We've sent a verification link to
+            <span class="font-bold text-ink">{{ form.email }}</span> — click it to activate your dashboard.
+            Teammates get their own invite separately.
+          </p>
+          <p v-else class="mx-auto mt-4 max-w-sm text-ink-soft">
             You're in for <span class="font-bold text-ink">{{ ev.title }}</span>. Your participant dashboard is ready,
             and each teammate has been emailed an invite with their personal QR code.
           </p>
           <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <NuxtLink :to="isParticipant ? '/portal' : '/login'" class="btn-primary">Open my dashboard</NuxtLink>
+            <NuxtLink v-if="!verificationRequired" :to="isParticipant ? '/portal' : '/login'" class="btn-primary">Open my dashboard</NuxtLink>
             <NuxtLink :to="`/events/${ev.eventSlug}/${ev.slug}`" class="btn-secondary">Back to competition</NuxtLink>
           </div>
         </div>

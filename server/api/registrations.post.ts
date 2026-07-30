@@ -3,7 +3,10 @@ import bcrypt from 'bcryptjs'
 import { eq, and, inArray } from 'drizzle-orm'
 import { useDb, schema } from '../database/client'
 import { registrationSchema } from '../utils/validation'
-import { sendMail, inviteEmail, leaderConfirmationEmail } from '../utils/email'
+import { sendMail, inviteEmail, leaderConfirmationEmail, leaderVerifyEmail } from '../utils/email'
+
+const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+const VERIFY_TTL_MS = 48 * 60 * 60 * 1000 // 48 hours
 
 // Public write endpoint. Handler order is the security contract
 // (Security_Plan.md §6a): honeypot/time-trap → schema validation → business
@@ -113,13 +116,16 @@ export default defineEventHandler(async (event) => {
   const findAccount = (email: string) =>
     db.select().from(schema.participantAccounts).where(eq(schema.participantAccounts.email, email)).get()
 
-  // Leader: create an active account with the chosen password. An existing
-  // active account (from another competition) keeps its password — but an
-  // account that only ever existed as an *invited* teammate has no password
-  // yet, so activate it with the one just chosen. Without this the registration
-  // succeeds while login keeps rejecting them, since auth requires
-  // status === 'active' && passwordHash.
+  // Leader: create the account with the chosen password, but not as 'active'
+  // yet — nothing so far has proven they own this inbox (unlike a teammate,
+  // who must click an emailed link to ever get a password at all). A fresh
+  // account, or one that only ever existed as an *invited* teammate, goes to
+  // 'pending' with an email-verify token; login already rejects anything
+  // short of 'active', so an unverified leader simply cannot sign in yet. An
+  // account that is already 'active' (entering another competition) is left
+  // untouched — it was verified the first time and does not need to be again.
   let leader = await findAccount(leaderEmail)
+  let newlyPending = false
   if (!leader) {
     const passwordHash = await bcrypt.hash(body.password!, 12)
     ;[leader] = await db
@@ -129,17 +135,30 @@ export default defineEventHandler(async (event) => {
         passwordHash,
         fullName: body.fullName,
         phone: body.phone,
-        status: 'active',
+        status: 'pending',
+        emailVerifyToken: randomBytes(32).toString('hex'),
+        emailVerifyExpires: new Date(Date.now() + VERIFY_TTL_MS).toISOString(),
         checkinToken: randomBytes(24).toString('hex'),
       })
       .returning()
+    newlyPending = true
   } else if (!leader.passwordHash || leader.status !== 'active') {
     const passwordHash = await bcrypt.hash(body.password!, 12)
     ;[leader] = await db
       .update(schema.participantAccounts)
-      .set({ passwordHash, status: 'active', inviteToken: null, fullName: body.fullName, phone: body.phone })
+      .set({
+        passwordHash,
+        status: 'pending',
+        inviteToken: null,
+        inviteExpires: null,
+        emailVerifyToken: randomBytes(32).toString('hex'),
+        emailVerifyExpires: new Date(Date.now() + VERIFY_TTL_MS).toISOString(),
+        fullName: body.fullName,
+        phone: body.phone,
+      })
       .where(eq(schema.participantAccounts.id, leader.id))
       .returning()
+    newlyPending = true
   }
   await db
     .insert(schema.teamMembers)
@@ -157,6 +176,7 @@ export default defineEventHandler(async (event) => {
           fullName: m.name,
           status: 'invited',
           inviteToken: randomBytes(32).toString('hex'),
+          inviteExpires: new Date(Date.now() + INVITE_TTL_MS).toISOString(),
           checkinToken: randomBytes(24).toString('hex'),
         })
         .returning()
@@ -171,9 +191,10 @@ export default defineEventHandler(async (event) => {
   // ---- Emails (console transport in dev; Resend when key is set). Failures
   // are logged inside sendMail and never break the registration. ----
   const teamName = registration!.teamName ?? ''
-  leaderConfirmationEmail({ name: leader!.fullName, teamName, competition: comp.name, checkinToken: leader!.checkinToken })
-    .then((mail) => sendMail({ to: leader!.email, ...mail }))
-    .catch(() => {})
+  const leaderMail = newlyPending
+    ? leaderVerifyEmail({ name: leader!.fullName, teamName, competition: comp.name, verifyToken: leader!.emailVerifyToken!, checkinToken: leader!.checkinToken })
+    : leaderConfirmationEmail({ name: leader!.fullName, teamName, competition: comp.name, checkinToken: leader!.checkinToken })
+  leaderMail.then((mail) => sendMail({ to: leader!.email, ...mail })).catch(() => {})
 
   for (const { account, name } of invites) {
     if (!account) continue
@@ -184,6 +205,8 @@ export default defineEventHandler(async (event) => {
     build.then((mail) => sendMail({ to: account!.email, ...mail })).catch(() => {})
   }
 
-  // Confirmation only — no stored data echoed back.
-  return { ok: true }
+  // The client needs to know whether the leader must verify before they can
+  // log in, so it can show "check your email" instead of implying the
+  // dashboard is ready right now.
+  return { ok: true, verificationRequired: newlyPending }
 })

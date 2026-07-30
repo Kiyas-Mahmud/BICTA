@@ -193,6 +193,14 @@ export const setPasswordSchema = z.object({
   password: z.string().min(8).max(200),
 })
 
+export const verifyEmailSchema = z.object({
+  token: z.string().trim().min(20).max(200),
+})
+
+export const reassignLeaderSchema = z.object({
+  accountId: z.number().int().positive(),
+})
+
 export const forgotSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
   website: z.string().max(200).optional().default(''),

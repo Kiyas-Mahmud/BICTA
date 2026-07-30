@@ -286,8 +286,13 @@ export const participantAccounts = sqliteTable('participant_accounts', {
   passwordHash: text('password_hash'), // null until the invite is accepted
   fullName: text('full_name').notNull(),
   phone: text('phone'),
-  status: text('status', { enum: ['invited', 'active'] }).notNull().default('invited'),
+  // invited: teammate, no password yet. pending: leader has set a password but
+  // has not clicked the email verification link. active: usable for login.
+  status: text('status', { enum: ['invited', 'pending', 'active'] }).notNull().default('invited'),
   inviteToken: text('invite_token').unique(),
+  inviteExpires: text('invite_expires'),
+  emailVerifyToken: text('email_verify_token').unique(),
+  emailVerifyExpires: text('email_verify_expires'),
   resetToken: text('reset_token').unique(),
   resetExpires: text('reset_expires'),
   // Opaque value the personal QR encodes; never contains PII.

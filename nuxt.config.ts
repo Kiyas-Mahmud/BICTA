@@ -4,6 +4,17 @@ export default defineNuxtConfig({
 
   modules: ['@nuxtjs/tailwindcss', '@nuxt/fonts', '@nuxt/icon', 'nuxt-auth-utils', '@vueuse/motion/nuxt'],
 
+  // One session config covers all three account types (admin/volunteer share
+  // the sealed cookie shape, participants use a separate session key). With no
+  // maxAge the sealed cookie never expires on its own — a stolen or
+  // shared-device session stays valid indefinitely. 30 days balances that
+  // against not logging a participant out mid-event.
+  runtimeConfig: {
+    session: {
+      maxAge: 60 * 60 * 24 * 30,
+    },
+  },
+
   // Cloudflare Workers is the deploy target: D1 for the database, R2 for uploads.
   // `nitro-cloudflare-dev` runs the same bindings locally (miniflare) during
   // `nuxt dev`, so dev and production hit identical APIs.

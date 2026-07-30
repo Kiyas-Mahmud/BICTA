@@ -1,7 +1,10 @@
+import { randomBytes } from 'node:crypto'
 import { eq, and, inArray } from 'drizzle-orm'
 import { useDb, schema } from '../../database/client'
 import { qrDataUrl } from '../../utils/qr'
 import { siteUrl } from '../../utils/email'
+
+const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 // Everything the participant dashboard needs in one payload.
 export default defineEventHandler(async (event) => {
@@ -31,12 +34,14 @@ export default defineEventHandler(async (event) => {
 
     const rosterRows = await db
       .select({
+        accountId: schema.participantAccounts.id,
         memberId: schema.teamMembers.id,
         role: schema.teamMembers.role,
         fullName: schema.participantAccounts.fullName,
         email: schema.participantAccounts.email,
         status: schema.participantAccounts.status,
         inviteToken: schema.participantAccounts.inviteToken,
+        inviteExpires: schema.participantAccounts.inviteExpires,
       })
       .from(schema.teamMembers)
       .innerJoin(schema.participantAccounts, eq(schema.participantAccounts.id, schema.teamMembers.accountId))
@@ -50,14 +55,28 @@ export default defineEventHandler(async (event) => {
     // they can pass it on directly (email delivery is not guaranteed). Scoped
     // deliberately: leaders only, still-invited members only, and the raw token
     // never leaves this branch.
+    //
+    // Invite tokens expire (7 days). Rather than hand the leader a dead link
+    // and make them ask an admin to fix it, an expired one is silently
+    // rotated here — the leader never sees a difference, the link they copy
+    // always works.
     const isLeader = membership.role === 'leader'
-    const roster = rosterRows.map(({ inviteToken, ...m }) => ({
-      ...m,
-      inviteLink:
-        isLeader && m.status === 'invited' && inviteToken
-          ? siteUrl(`/portal/set-password?token=${inviteToken}`)
-          : null,
-    }))
+    const roster = []
+    for (const { accountId, inviteToken, inviteExpires, ...m } of rosterRows) {
+      let link: string | null = null
+      if (isLeader && m.status === 'invited' && inviteToken) {
+        const expired = Boolean(inviteExpires) && new Date(inviteExpires!) < new Date()
+        const token = expired ? randomBytes(32).toString('hex') : inviteToken
+        if (expired) {
+          await db
+            .update(schema.participantAccounts)
+            .set({ inviteToken: token, inviteExpires: new Date(Date.now() + INVITE_TTL_MS).toISOString() })
+            .where(eq(schema.participantAccounts.id, accountId))
+        }
+        link = siteUrl(`/portal/set-password?token=${token}`)
+      }
+      roster.push({ ...m, inviteLink: link })
+    }
 
     teams.push({
       registrationId: registration.id,

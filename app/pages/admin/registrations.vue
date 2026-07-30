@@ -222,19 +222,14 @@ function clearFilters() {
                 </div>
 
                 <Transition name="row">
-                  <dl v-if="expanded === r.id" class="mt-3 space-y-2 rounded-xl bg-mist-1 p-3 text-sm">
-                    <div><dt class="console-label">Phone</dt><dd class="text-ink-soft">{{ r.phone }}</dd></div>
-                    <div><dt class="console-label">Institution</dt><dd class="text-ink-soft">{{ r.institution || '—' }}</dd></div>
-                    <div><dt class="console-label">Notes</dt><dd class="whitespace-pre-wrap text-ink-soft">{{ r.notes || '—' }}</dd></div>
-                    <div v-if="r.teamMembers?.length">
-                      <dt class="console-label">Team members</dt>
-                      <dd class="mt-1 flex flex-wrap gap-1.5">
-                        <span v-for="(m, i) in r.teamMembers" :key="i" class="rounded-lg bg-white px-2 py-1 text-xs text-ink-soft ring-1 ring-line">
-                          {{ m.name }} · {{ m.email }}
-                        </span>
-                      </dd>
-                    </div>
-                  </dl>
+                  <div v-if="expanded === r.id" class="mt-3 space-y-3">
+                    <dl class="space-y-2 rounded-xl bg-mist-1 p-3 text-sm">
+                      <div><dt class="console-label">Phone</dt><dd class="text-ink-soft">{{ r.phone }}</dd></div>
+                      <div><dt class="console-label">Institution</dt><dd class="text-ink-soft">{{ r.institution || '—' }}</dd></div>
+                      <div><dt class="console-label">Notes</dt><dd class="whitespace-pre-wrap text-ink-soft">{{ r.notes || '—' }}</dd></div>
+                    </dl>
+                    <AdminTeamManager :registration-id="r.id" @changed="refresh" />
+                  </div>
                 </Transition>
               </div>
             </div>
@@ -310,13 +305,8 @@ function clearFilters() {
                       <div><p class="console-label">Institution</p><p class="mt-0.5 text-ink-soft">{{ r.institution || '—' }}</p></div>
                       <div class="sm:col-span-2"><p class="console-label">Notes</p><p class="mt-0.5 whitespace-pre-wrap text-ink-soft">{{ r.notes || '—' }}</p></div>
                     </div>
-                    <div v-if="r.teamMembers?.length" class="mt-4">
-                      <p class="console-label">Team members</p>
-                      <ul class="mt-1.5 flex flex-wrap gap-2">
-                        <li v-for="(m, i) in r.teamMembers" :key="i" class="rounded-lg bg-white px-2.5 py-1 text-xs text-ink-soft ring-1 ring-line">
-                          {{ m.name }} · {{ m.email }}
-                        </li>
-                      </ul>
+                    <div class="mt-4">
+                      <AdminTeamManager :registration-id="r.id" @changed="refresh" />
                     </div>
                   </td>
                 </tr>

@@ -137,8 +137,26 @@ export async function inviteEmail(opts: { name: string; teamName: string; compet
   }
 }
 
+export async function leaderVerifyEmail(opts: { name: string; teamName: string; competition: string; verifyToken: string; checkinToken: string }) {
+  const link = siteUrl(`/portal/verify?token=${opts.verifyToken}`)
+  return {
+    subject: `Verify your email — ${opts.competition}`,
+    html: shell({
+      preheader: `Confirm it's you to activate your BICTA account and dashboard.`,
+      body:
+        heading(`One step left, ${opts.name}`) +
+        para(`Your registration for <strong style="color:${C.ink}">${opts.competition}</strong> is almost done. Confirm this is your email address to activate your account and unlock your dashboard.`) +
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 6px;">${infoRow('Competition', opts.competition)}${opts.teamName ? infoRow('Team', opts.teamName) : ''}</table>` +
+        button(link, 'Verify my email') +
+        para(`<span style="font-size:13px;color:${C.faint}">This link works once and expires in 48 hours. Your entry QR is ready below the moment you verify.</span>`) +
+        qrBlock(),
+    }),
+    attachments: [await qrAttachment(opts.checkinToken)],
+  }
+}
+
 export async function leaderConfirmationEmail(opts: { name: string; teamName: string; competition: string; checkinToken: string }) {
-  const link = siteUrl('/portal/login')
+  const link = siteUrl('/login')
   return {
     subject: `Registration received — ${opts.competition}`,
     html: shell({
