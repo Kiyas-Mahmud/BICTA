@@ -10,6 +10,7 @@ const groups = [
       { to: '/admin/events', label: 'Events', icon: 'lucide:calendar-days' },
       { to: '/admin/news', label: 'News', icon: 'lucide:newspaper' },
       { to: '/admin/registrations', label: 'Registrations', icon: 'lucide:clipboard-list' },
+      { to: '/admin/leaderboard', label: 'Leaderboard', icon: 'lucide:trophy' },
       { to: '/admin/gallery', label: 'Gallery', icon: 'lucide:images' },
     ],
   },

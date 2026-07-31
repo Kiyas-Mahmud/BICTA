@@ -41,11 +41,13 @@ const expanded = ref<number | null>(null)
   />
 
   <div v-else class="table-wrap">
-    <table class="console-table min-w-[36rem]">
+    <table class="console-table min-w-[44rem]">
       <thead>
         <tr>
           <th scope="col">Rank</th>
           <th scope="col">Team</th>
+          <th scope="col">Leader</th>
+          <th scope="col">Organisation</th>
           <th scope="col">Score</th>
           <th scope="col">Judging</th>
           <th scope="col" class="text-right">Detail</th>
@@ -55,10 +57,9 @@ const expanded = ref<number | null>(null)
         <template v-for="t in board.teams" :key="t.registrationId">
           <tr>
             <td class="tabular-nums font-semibold text-ink">{{ t.rank ?? '—' }}</td>
-            <td>
-              <p class="font-semibold text-ink">{{ t.teamName || t.fullName }}</p>
-              <p v-if="t.institution" class="text-xs text-ink-faint">{{ t.institution }}</p>
-            </td>
+            <td class="font-semibold text-ink">{{ t.teamName || '—' }}</td>
+            <td class="text-ink-soft">{{ t.fullName }}</td>
+            <td class="text-ink-soft">{{ t.institution || '—' }}</td>
             <td class="tabular-nums text-ink-soft">{{ t.averageScore ?? '—' }}</td>
             <td>
               <span class="status" :class="t.judgesCompleted === t.judgesTotal && t.judgesTotal > 0 ? 'status-ok' : 'status-warn'">
@@ -78,7 +79,7 @@ const expanded = ref<number | null>(null)
             </td>
           </tr>
           <tr v-if="expanded === t.registrationId && t.judgeBreakdown" class="bg-brand-50">
-            <td colspan="5" class="!py-4">
+            <td colspan="7" class="!py-4">
               <div class="table-wrap">
                 <table class="console-table min-w-[30rem]">
                   <thead>
