@@ -7,7 +7,17 @@ const props = defineProps<{ name?: string; address?: string; directions?: string
 // X-Frame-Options: DENY, so putting one in an iframe renders a broken frame.
 // Anything not embeddable is used for the "Open in Google Maps" button instead,
 // and the frame falls back to a query built from the address.
-const raw = computed(() => (props.mapEmbed ?? '').trim())
+//
+// Google's "Embed a map" dialog shows the whole <iframe src="…"> tag to copy,
+// and most people copy all of it rather than picking the src out by hand. If
+// that happens, using the pasted value as-is makes the src attribute literally
+// `<iframe src="https://…">`, which is not a URL — the map silently breaks.
+// Pull the real URL out first so either form works.
+const raw = computed(() => {
+  const v = (props.mapEmbed ?? '').trim()
+  const fromTag = v.match(/\bsrc\s*=\s*["']([^"']+)["']/i)?.[1]
+  return (fromTag ?? v).trim()
+})
 
 const isEmbeddable = computed(() => {
   const v = raw.value

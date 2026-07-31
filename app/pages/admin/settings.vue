@@ -106,6 +106,14 @@ const allTextKeys = groups.flatMap((g) => g.fields.map((f) => f.key))
 const src = (data.value as Record<string, string>) ?? {}
 
 const form = reactive<Record<string, string>>(Object.fromEntries(allTextKeys.map((k) => [k, src[k] ?? ''])))
+
+// Google's "Embed a map" dialog shows the whole <iframe src="…"> tag to copy;
+// pasting all of it (rather than just the URL) silently breaks the map on the
+// public page. Clean it up as soon as the field is left.
+function normalizeMapEmbed() {
+  const fromTag = form.venue_map_embed?.match(/\bsrc\s*=\s*["']([^"']+)["']/i)?.[1]
+  if (fromTag) form.venue_map_embed = fromTag.trim()
+}
 // Toggle defaults to ON unless explicitly '0'.
 const vis = reactive<Record<string, boolean>>(Object.fromEntries(toggles.map((t) => [t.key, src[t.key] !== '0'])))
 
@@ -186,7 +194,14 @@ const hiddenCount = computed(() => toggles.filter((t) => !vis[t.key]).length)
             <div v-for="f in g.fields" :key="f.key" :class="f.type === 'textarea' ? 'sm:col-span-2' : ''">
               <label class="label" :for="`s-${f.key}`">{{ f.label }}</label>
               <textarea v-if="f.type === 'textarea'" :id="`s-${f.key}`" v-model="form[f.key]" class="input" rows="4" maxlength="2000" />
-              <input v-else :id="`s-${f.key}`" v-model="form[f.key]" class="input" maxlength="2000" />
+              <input
+                v-else
+                :id="`s-${f.key}`"
+                v-model="form[f.key]"
+                class="input"
+                maxlength="2000"
+                @blur="f.key === 'venue_map_embed' && normalizeMapEmbed()"
+              />
               <p v-if="f.hint" class="mt-1.5 text-xs text-ink-faint">{{ f.hint }}</p>
             </div>
           </div>

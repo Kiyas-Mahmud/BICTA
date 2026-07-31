@@ -113,6 +113,15 @@ try {
 }
 const hiddenCount = computed(() => SECTION_KEYS.filter((s) => !sectionState[s.key]).length)
 
+// Google's "Embed a map" dialog shows the whole <iframe src="…"> tag to copy;
+// pasting all of it (rather than just the URL) is the natural thing to do and
+// silently breaks the map on the public page. Clean it up as soon as the field
+// is left, so what gets saved is always just the URL.
+function normalizeMapEmbed() {
+  const fromTag = form.mapEmbed.match(/\bsrc\s*=\s*["']([^"']+)["']/i)?.[1]
+  if (fromTag) form.mapEmbed = fromTag.trim()
+}
+
 // Slug preview mirrors the server's slugify so the admin sees the real URL.
 const slugPreview = computed(() => {
   const raw = form.slug || form.title
@@ -316,7 +325,7 @@ const dateWarning = computed(() =>
       </div>
       <div>
         <label class="label" for="ev-map">Google Maps embed URL</label>
-        <input id="ev-map" v-model="form.mapEmbed" class="input font-mono text-xs" maxlength="2000" placeholder="https://www.google.com/maps/embed?pb=…" />
+        <input id="ev-map" v-model="form.mapEmbed" class="input font-mono text-xs" maxlength="2000" placeholder="https://www.google.com/maps/embed?pb=…" @blur="normalizeMapEmbed" />
         <p class="mt-1 text-xs text-ink-faint">
           Use the <strong>src</strong> from Google Maps &gt; Share &gt; <strong>Embed a map</strong>. A short share link
           (maps.app.goo.gl/…) cannot be embedded — Google blocks it — but it still works as the "Open in Google Maps"
