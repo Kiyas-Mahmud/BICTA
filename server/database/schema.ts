@@ -139,9 +139,48 @@ export const registrations = sqliteTable(
     teamMembers: text('team_members', { mode: 'json' }).$type<{ name: string; email: string }[]>(),
     notes: text('notes'),
     status: text('status', { enum: ['pending', 'confirmed', 'rejected'] }).notNull().default('pending'),
+    // Set only when an admin moves status away from 'pending'. decisionNote is
+    // an optional reason shown to the team in the decision email and portal.
+    decisionNote: text('decision_note'),
+    decisionAt: text('decision_at'),
     createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   },
   (t) => [uniqueIndex('registrations_competition_email_unique').on(t.competitionId, t.email)],
+)
+
+// Admin-defined custom fields for a competition's application form. Strictly
+// scoped to one competition (competitionId NOT NULL) — unlike judgingCriteria
+// there's no event-wide concept here, since the user always builds a form
+// "under" one specific competition.
+export const applicationFields = sqliteTable('application_fields', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  competitionId: integer('competition_id').notNull().references(() => competitions.id, { onDelete: 'cascade' }),
+  label: text('label').notNull(),
+  helpText: text('help_text').notNull().default(''),
+  fieldType: text('field_type', { enum: ['text', 'file'] }).notNull().default('text'),
+  required: integer('required', { mode: 'boolean' }).notNull().default(false),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+})
+
+// One row per (registration, field). Editing an answer or replacing a file is
+// an upsert against the unique index below, same idiom as `scores` — no
+// separate answer-history table. Exactly one of textValue / the four file*
+// columns is populated, matching the field's fieldType.
+export const applicationResponses = sqliteTable(
+  'application_responses',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    registrationId: integer('registration_id').notNull().references(() => registrations.id, { onDelete: 'cascade' }),
+    fieldId: integer('field_id').notNull().references(() => applicationFields.id, { onDelete: 'cascade' }),
+    textValue: text('text_value'),
+    fileUrl: text('file_url'),
+    fileName: text('file_name'),
+    fileSize: integer('file_size'),
+    fileMime: text('file_mime'),
+    updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+  },
+  (t) => [uniqueIndex('application_responses_registration_field_unique').on(t.registrationId, t.fieldId)],
 )
 
 export const news = sqliteTable('news', {
@@ -464,3 +503,5 @@ export type Checkpoint = typeof checkpoints.$inferSelect
 export type Checkin = typeof checkins.$inferSelect
 export type JudgeAccount = typeof judgeAccounts.$inferSelect
 export type Score = typeof scores.$inferSelect
+export type ApplicationField = typeof applicationFields.$inferSelect
+export type ApplicationResponse = typeof applicationResponses.$inferSelect

@@ -82,6 +82,8 @@ export default defineEventHandler(async (event) => {
       registrationId: registration.id,
       teamName: registration.teamName,
       status: registration.status,
+      decisionNote: registration.decisionNote,
+      decisionAt: registration.decisionAt,
       myRole: membership.role,
       // Leader may edit the roster until the registration deadline.
       canManage: membership.role === 'leader' && !deadlinePassed,

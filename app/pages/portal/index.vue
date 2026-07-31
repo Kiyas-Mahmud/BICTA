@@ -124,10 +124,17 @@ useSeoMeta({ title: 'My dashboard', robots: 'noindex' })
               </div>
             </div>
 
+            <div v-if="team.status !== 'pending'" class="mt-3 rounded-xl border border-line bg-mist-1/50 p-3.5">
+              <p v-if="team.decisionAt" class="text-xs font-semibold text-ink-faint">Decided {{ formatDate(team.decisionAt) }}</p>
+              <p v-if="team.decisionNote" class="mt-1 text-sm italic text-ink-soft">"{{ team.decisionNote }}"</p>
+            </div>
+
             <p v-if="team.competition?.registrationDeadline" class="mt-3 flex items-center gap-1.5 text-sm text-ink-soft">
               <Icon name="lucide:calendar-clock" />
               Registration deadline: <span class="font-bold text-ink">{{ formatDate(team.competition.registrationDeadline) }}</span>
             </p>
+
+            <PortalApplicationForm :registration-id="team.registrationId" />
 
             <!-- roster -->
             <div class="mt-5">

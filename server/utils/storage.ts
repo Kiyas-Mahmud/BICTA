@@ -6,6 +6,10 @@ import type { H3Event } from 'h3'
 // nuxt.config's routeRules still apply to user-uploaded SVGs.
 
 export const UPLOAD_PREFIX = 'uploads/'
+// Application-answer files live under a separate prefix in the same bucket,
+// served by a different, access-controlled route (server/routes/applications/
+// [key].get.ts) — never the public /uploads/** one.
+export const APPLICATION_PREFIX = 'applications/'
 
 export function useUploads(event: H3Event) {
   const bucket = (event.context as { cloudflare?: { env?: Record<string, any> } })?.cloudflare?.env?.UPLOADS
@@ -23,6 +27,9 @@ const CONTENT_TYPES: Record<string, string> = {
   png: 'image/png',
   webp: 'image/webp',
   svg: 'image/svg+xml',
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 }
 
 export function contentTypeFor(key: string) {
@@ -33,4 +40,9 @@ export function contentTypeFor(key: string) {
 /** Object keys are server-generated UUID filenames — reject anything else. */
 export function isSafeUploadKey(key: string) {
   return /^[0-9a-f-]{36}\.(jpg|png|webp|svg)$/i.test(key)
+}
+
+/** Same idea, scoped to the wider application-file allowlist. */
+export function isSafeApplicationKey(key: string) {
+  return /^[0-9a-f-]{36}\.(pdf|doc|docx|jpg|png|webp)$/i.test(key)
 }

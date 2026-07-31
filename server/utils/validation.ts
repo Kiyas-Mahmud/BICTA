@@ -105,6 +105,15 @@ export const judgingCriterionSchema = z.object({
   sortOrder: z.number().int().min(0).max(1000).default(0),
 })
 
+export const applicationFieldSchema = z.object({
+  competitionId: z.number().int().positive(),
+  label: z.string().trim().min(1).max(200),
+  helpText: z.string().trim().max(500).default(''),
+  fieldType: z.enum(['text', 'file']).default('text'),
+  required: z.boolean().default(false),
+  sortOrder: z.number().int().min(0).max(1000).default(0),
+})
+
 export const prizeSchema = z.object({
   position: z.string().trim().min(1).max(100),
   amount: z.string().trim().min(1).max(100),
@@ -150,6 +159,8 @@ export const settingsSchema = z.record(z.string().max(100), z.string().max(20_00
 
 export const registrationStatusSchema = z.object({
   status: z.enum(['pending', 'confirmed', 'rejected']),
+  // Optional reason shown to the team in the decision email + portal.
+  decisionNote: z.string().trim().max(2000).optional().default('').transform((v) => v || null),
 })
 
 export const passwordChangeSchema = z.object({
@@ -176,6 +187,13 @@ export const registrationSchema = z.object({
     .nullable()
     .optional(),
   notes: z.string().trim().max(1000).nullable().optional(),
+  // Text answers for this competition's custom application fields. File
+  // answers arrive as separate multipart parts, never through this array.
+  answers: z
+    .array(z.object({ fieldId: z.number().int().positive(), value: z.string().trim().max(5000) }))
+    .max(50)
+    .optional()
+    .default([]),
   // Anti-spam: honeypot must stay empty; formToken carries render timestamp.
   website: z.string().max(200).optional().default(''),
   formToken: z.string().max(200).optional().default(''),
@@ -197,6 +215,17 @@ export const setPasswordSchema = z.object({
 
 export const verifyEmailSchema = z.object({
   token: z.string().trim().min(20).max(200),
+})
+
+// Leader edit of already-submitted application answers — same "answers" shape
+// as registrationSchema, but standalone since none of the other registration
+// fields are editable through this endpoint.
+export const applicationEditSchema = z.object({
+  answers: z
+    .array(z.object({ fieldId: z.number().int().positive(), value: z.string().trim().max(5000) }))
+    .max(50)
+    .optional()
+    .default([]),
 })
 
 export const reassignLeaderSchema = z.object({

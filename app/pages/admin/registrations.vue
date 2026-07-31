@@ -57,11 +57,12 @@ const totalPages = computed(() => data.value?.totalPages ?? 1)
 const expanded = ref<number | null>(null)
 const busyId = ref<number | null>(null)
 const toast = useToast()
+const decisionNotes = reactive<Record<number, string>>({})
 
-async function setStatus(id: number, newStatus: string, name: string) {
+async function setStatus(id: number, newStatus: string, name: string, note = '') {
   busyId.value = id
   try {
-    await $fetch(`/api/admin/registrations/${id}`, { method: 'PUT', body: { status: newStatus } })
+    await $fetch(`/api/admin/registrations/${id}`, { method: 'PUT', body: { status: newStatus, decisionNote: note } })
     await Promise.all([refresh(), refreshAdminStats()])
     toast.success(`${name} marked ${newStatus}`)
   } catch {
@@ -229,6 +230,19 @@ function clearFilters() {
                       <div><dt class="console-label">Notes</dt><dd class="whitespace-pre-wrap text-ink-soft">{{ r.notes || '—' }}</dd></div>
                     </dl>
                     <AdminTeamManager :registration-id="r.id" @changed="refresh" />
+                    <AdminApplicationAnswers :registration-id="r.id" />
+                    <div class="rounded-xl border border-line bg-white p-4">
+                      <p class="console-label">Decision note (optional)</p>
+                      <textarea v-model="decisionNotes[r.id]" class="field mt-2 w-full text-sm" rows="2" placeholder="Shown to the team in the decision email" />
+                      <div class="mt-2 flex flex-wrap gap-2">
+                        <button class="btn-ghost !py-2 !text-xs" :disabled="busyId === r.id" @click="setStatus(r.id, 'confirmed', r.fullName, decisionNotes[r.id])">
+                          <Icon name="lucide:check" class="text-green-700" /> Confirm with note
+                        </button>
+                        <button class="btn-ghost !py-2 !text-xs" :disabled="busyId === r.id" @click="setStatus(r.id, 'rejected', r.fullName, decisionNotes[r.id])">
+                          <Icon name="lucide:x" class="text-red-600" /> Reject with note
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </Transition>
               </div>
@@ -305,8 +319,21 @@ function clearFilters() {
                       <div><p class="console-label">Institution</p><p class="mt-0.5 text-ink-soft">{{ r.institution || '—' }}</p></div>
                       <div class="sm:col-span-2"><p class="console-label">Notes</p><p class="mt-0.5 whitespace-pre-wrap text-ink-soft">{{ r.notes || '—' }}</p></div>
                     </div>
-                    <div class="mt-4">
+                    <div class="mt-4 grid gap-4 lg:grid-cols-2">
                       <AdminTeamManager :registration-id="r.id" @changed="refresh" />
+                      <AdminApplicationAnswers :registration-id="r.id" />
+                    </div>
+                    <div class="mt-4 rounded-xl border border-line bg-white p-4">
+                      <p class="console-label">Decision note (optional)</p>
+                      <textarea v-model="decisionNotes[r.id]" class="field mt-2 w-full max-w-xl text-sm" rows="2" placeholder="Shown to the team in the decision email" />
+                      <div class="mt-2 flex flex-wrap gap-2">
+                        <button class="btn-ghost !py-2 !text-xs" :disabled="busyId === r.id" @click="setStatus(r.id, 'confirmed', r.fullName, decisionNotes[r.id])">
+                          <Icon name="lucide:check" class="text-green-700" /> Confirm with note
+                        </button>
+                        <button class="btn-ghost !py-2 !text-xs" :disabled="busyId === r.id" @click="setStatus(r.id, 'rejected', r.fullName, decisionNotes[r.id])">
+                          <Icon name="lucide:x" class="text-red-600" /> Reject with note
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </tr>

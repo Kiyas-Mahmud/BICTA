@@ -187,6 +187,38 @@ export function resetEmail(opts: { name: string; resetToken: string }) {
   }
 }
 
+export function applicationConfirmedEmail(opts: { name: string; teamName: string; competition: string; note?: string | null }) {
+  const link = siteUrl('/portal')
+  return {
+    subject: `You're confirmed — ${opts.competition}`,
+    html: shell({
+      preheader: `Your application for ${opts.competition} was accepted.`,
+      body:
+        heading(`Great news, ${opts.name}!`) +
+        para(`Your application for <strong style="color:${C.ink}">${opts.competition}</strong> has been <strong style="color:${C.ink}">accepted</strong>.`) +
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 6px;">${infoRow('Competition', opts.competition)}${opts.teamName ? infoRow('Team', opts.teamName) : ''}</table>` +
+        (opts.note ? para(`<em>"${opts.note}"</em>`) : '') +
+        button(link, 'Open my dashboard'),
+    }),
+  }
+}
+
+export function applicationRejectedEmail(opts: { name: string; teamName: string; competition: string; note?: string | null }) {
+  const link = siteUrl('/portal')
+  return {
+    subject: `Update on your application — ${opts.competition}`,
+    html: shell({
+      preheader: `An update on your application for ${opts.competition}.`,
+      body:
+        heading(`Hi ${opts.name}`) +
+        para(`Your application for <strong style="color:${C.ink}">${opts.competition}</strong> was not accepted this time.`) +
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 6px;">${infoRow('Competition', opts.competition)}${opts.teamName ? infoRow('Team', opts.teamName) : ''}</table>` +
+        (opts.note ? para(`<em>"${opts.note}"</em>`) : '') +
+        button(link, 'View my dashboard'),
+    }),
+  }
+}
+
 export function judgeInviteEmail(opts: { name: string; inviteToken: string }) {
   const link = siteUrl(`/judge/set-password?token=${opts.inviteToken}`)
   return {

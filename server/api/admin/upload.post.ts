@@ -1,15 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { useUploads, contentTypeFor, UPLOAD_PREFIX } from '../../utils/storage'
+import { detectRasterImage } from '../../utils/fileSniff'
 
 const MAX_SIZE = 5 * 1024 * 1024 // 5 MB
-
-// Magic-byte signatures — extension and client MIME are never trusted.
-function detectRaster(buf: Buffer): 'jpg' | 'png' | 'webp' | null {
-  if (buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'jpg'
-  if (buf.length > 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'png'
-  if (buf.length > 12 && buf.subarray(0, 4).toString('ascii') === 'RIFF' && buf.subarray(8, 12).toString('ascii') === 'WEBP') return 'webp'
-  return null
-}
 
 function looksLikeSvg(buf: Buffer): boolean {
   const head = buf.subarray(0, 1000).toString('utf8').trimStart().toLowerCase()
@@ -44,7 +37,7 @@ export default defineEventHandler(async (event) => {
   let ext: string
   let data: Buffer = file.data
 
-  const raster = detectRaster(file.data)
+  const raster = detectRasterImage(file.data)
   if (raster) {
     ext = raster
   } else if (looksLikeSvg(file.data)) {

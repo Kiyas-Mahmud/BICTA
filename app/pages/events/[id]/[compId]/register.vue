@@ -25,6 +25,21 @@ const { data: me } = await useFetch('/api/participant/me', {
   default: () => null,
 })
 
+interface ApplicationField {
+  id: number
+  label: string
+  helpText: string
+  fieldType: 'text' | 'file'
+  required: boolean
+  sortOrder: number
+}
+const { data: appFields } = await useFetch<ApplicationField[]>(`/api/public/competitions/${ev.id}/application-fields`)
+const answers = reactive<Record<number, string>>({})
+const files = reactive<Record<number, File | null>>({})
+function onFileChange(fieldId: number, e: Event) {
+  files[fieldId] = (e.target as HTMLInputElement).files?.[0] ?? null
+}
+
 // Form state
 const form = reactive({
   fullName: '',
@@ -89,29 +104,54 @@ async function submit() {
     }
   }
 
+  // Custom fields: check required-ness client-side for fast feedback (the
+  // server re-validates regardless — this is UX only, not a security boundary).
+  for (const f of appFields.value ?? []) {
+    if (!f.required) continue
+    const missing = f.fieldType === 'file' ? !files[f.id] : !answers[f.id]?.trim()
+    if (missing) {
+      error.value = `${f.label} is required.`
+      return
+    }
+  }
+
   submitting.value = true
   try {
-    const res = await $fetch('/api/registrations', {
-      method: 'POST',
-      body: {
-        competitionId: Number(ev.id),
-        fullName: form.fullName,
-        email: form.email,
-        phone: form.phone,
-        institution: form.institution,
-        // Signed-in participants keep their existing password; the server
-        // ignores this field when a participant session is present.
-        // .value matters: refs auto-unwrap in the template but not in script.
-        password: isParticipant.value ? undefined : form.password,
-        teamName: form.teamName || null,
-        teamMembers: teamMembers.value
-          .filter((m) => m.name && m.email)
-          .map((m) => ({ name: m.name, email: m.email })),
-        notes: form.notes || null,
-        website: form.website,
-        formToken: formToken.value,
-      },
-    })
+    const payload = {
+      competitionId: Number(ev.id),
+      fullName: form.fullName,
+      email: form.email,
+      phone: form.phone,
+      institution: form.institution,
+      // Signed-in participants keep their existing password; the server
+      // ignores this field when a participant session is present.
+      // .value matters: refs auto-unwrap in the template but not in script.
+      password: isParticipant.value ? undefined : form.password,
+      teamName: form.teamName || null,
+      teamMembers: teamMembers.value
+        .filter((m) => m.name && m.email)
+        .map((m) => ({ name: m.name, email: m.email })),
+      notes: form.notes || null,
+      answers: (appFields.value ?? [])
+        .filter((f) => f.fieldType === 'text' && answers[f.id]?.trim())
+        .map((f) => ({ fieldId: f.id, value: answers[f.id]!.trim() })),
+      website: form.website,
+      formToken: formToken.value,
+    }
+
+    const hasFile = (appFields.value ?? []).some((f) => f.fieldType === 'file' && files[f.id])
+    let res: { ok: boolean; verificationRequired?: boolean }
+    if (hasFile) {
+      const fd = new FormData()
+      fd.append('payload', JSON.stringify(payload))
+      for (const f of appFields.value ?? []) {
+        const file = files[f.id]
+        if (file) fd.append(`file_${f.id}`, file)
+      }
+      res = await $fetch('/api/registrations', { method: 'POST', body: fd })
+    } else {
+      res = await $fetch('/api/registrations', { method: 'POST', body: payload })
+    }
     verificationRequired.value = Boolean(res.verificationRequired)
     submitted.value = true
   } catch (e: any) {
@@ -361,6 +401,40 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
                 >
                   <Icon name="lucide:plus" /> Add Team Member
                 </button>
+              </div>
+
+              <!-- Custom application fields, admin-defined per competition -->
+              <div v-if="appFields?.length" class="col-span-full mt-4">
+                <div class="border-b border-line pb-2 mb-4">
+                  <p class="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">Application</p>
+                </div>
+                <div class="grid grid-cols-1 gap-4">
+                  <div v-for="f in appFields" :key="f.id">
+                    <UiLabel :for="`r-field-${f.id}`" class="font-medium">
+                      {{ f.label }}<span v-if="f.required" class="text-red-500">*</span>
+                    </UiLabel>
+                    <p v-if="f.helpText" class="mt-0.5 text-xs text-ink-soft">{{ f.helpText }}</p>
+                    <UiTextarea
+                      v-if="f.fieldType === 'text'"
+                      :id="`r-field-${f.id}`"
+                      v-model="answers[f.id]"
+                      rows="2"
+                      class="mt-2"
+                      :required="f.required"
+                    />
+                    <template v-else>
+                      <input
+                        :id="`r-field-${f.id}`"
+                        type="file"
+                        class="field mt-2 w-full text-sm"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                        :required="f.required"
+                        @change="onFileChange(f.id, $event)"
+                      />
+                      <p class="mt-1 text-xs text-ink-faint">PDF, DOC, DOCX, JPG, PNG or WEBP — up to 10MB.</p>
+                    </template>
+                  </div>
+                </div>
               </div>
 
               <!-- Notes -->
