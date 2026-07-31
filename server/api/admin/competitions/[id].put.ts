@@ -38,6 +38,7 @@ export default defineEventHandler(async (event) => {
         rules: sanitizeRichText(body.rules),
         registrationOpen: body.registrationOpen,
         registrationDeadline: body.registrationDeadline ?? null,
+        judgingOpen: body.judgingOpen,
         teamBased: body.teamBased,
         maxTeamSize: body.maxTeamSize,
         coverImage: body.coverImage || null,

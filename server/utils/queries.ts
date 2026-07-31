@@ -434,3 +434,129 @@ export async function getCompetitionDetail(slugOrId: string, opts: { includeDraf
     registeredTeams: counts[comp.id] ?? 0,
   }
 }
+
+// ---- Judge portal ----
+
+/**
+ * Criteria a judge scores a competition against: event-wide (competitionId
+ * null) plus that competition's own, regardless of `published`. `published`
+ * only gates the public competition page — decoupled deliberately, so hiding
+ * a criterion from the public page never breaks a judge's ability to keep
+ * scoring against it.
+ */
+export async function getScoringCriteria(competitionId: number) {
+  const db = useDb()
+  const comp = await db.select({ eventId: schema.competitions.eventId }).from(schema.competitions).where(eq(schema.competitions.id, competitionId)).get()
+  if (!comp) return []
+  return db
+    .select()
+    .from(schema.judgingCriteria)
+    .where(or(eq(schema.judgingCriteria.competitionId, competitionId), and(isNull(schema.judgingCriteria.competitionId), eq(schema.judgingCriteria.eventId, comp.eventId))))
+    .orderBy(asc(schema.judgingCriteria.sortOrder))
+}
+
+/**
+ * Ranked standings for one competition. Single source of truth called by both
+ * the judge-facing and admin leaderboard routes so the ranking math never
+ * drifts between the two.
+ *
+ * A team's score from one judge = sum of (rating/10 * criterion.weight) across
+ * every in-scope criterion; that judge counts "complete" for a team only once
+ * they've scored every criterion. A team's averageScore is the mean across
+ * complete judges only (null if none). Both the "M" in "N of M" and which
+ * judges' rows are even considered come from *current* judgeAssignments — a
+ * since-unassigned judge's old rows never count, so the denominator can't get
+ * permanently stuck.
+ */
+export async function getLeaderboard(competitionId: number) {
+  const db = useDb()
+  const criteria = await getScoringCriteria(competitionId)
+  const criteriaIds = criteria.map((c) => c.id)
+  const weightById = Object.fromEntries(criteria.map((c) => [c.id, c.weight]))
+
+  const currentJudges = await db
+    .select({ judgeId: schema.judgeAccounts.id, judgeName: schema.judgeAccounts.fullName })
+    .from(schema.judgeAssignments)
+    .innerJoin(schema.people, eq(schema.people.id, schema.judgeAssignments.personId))
+    .innerJoin(schema.judgeAccounts, and(eq(schema.judgeAccounts.personId, schema.people.id), eq(schema.judgeAccounts.status, 'active')))
+    .where(eq(schema.judgeAssignments.competitionId, competitionId))
+  const judgeIds = currentJudges.map((j) => j.judgeId)
+  const judgeNameById = Object.fromEntries(currentJudges.map((j) => [j.judgeId, j.judgeName]))
+
+  const teams = await db
+    .select({ id: schema.registrations.id, teamName: schema.registrations.teamName, fullName: schema.registrations.fullName, institution: schema.registrations.institution })
+    .from(schema.registrations)
+    .where(and(eq(schema.registrations.competitionId, competitionId), eq(schema.registrations.status, 'confirmed')))
+
+  const rows =
+    criteriaIds.length && judgeIds.length && teams.length
+      ? await db
+          .select()
+          .from(schema.scores)
+          .where(and(eq(schema.scores.competitionId, competitionId), inArray(schema.scores.criterionId, criteriaIds), inArray(schema.scores.judgeId, judgeIds)))
+      : []
+
+  const results = teams.map((team) => {
+    const teamRows = rows.filter((r) => r.registrationId === team.id)
+    const perJudge: { judgeId: number; total: number; complete: boolean }[] = []
+    const perCriterionSum: Record<number, { sum: number; n: number }> = {}
+
+    for (const judgeId of judgeIds) {
+      const judgeRows = teamRows.filter((r) => r.judgeId === judgeId)
+      const complete = judgeRows.length === criteriaIds.length
+      const total = judgeRows.reduce((acc, r) => acc + (r.value / 10) * (weightById[r.criterionId] ?? 0), 0)
+      if (complete) {
+        perJudge.push({ judgeId, total, complete })
+        for (const r of judgeRows) {
+          const contribution = (r.value / 10) * (weightById[r.criterionId] ?? 0)
+          const bucket = (perCriterionSum[r.criterionId] ??= { sum: 0, n: 0 })
+          bucket.sum += contribution
+          bucket.n += 1
+        }
+      }
+    }
+
+    const judgesCompleted = perJudge.length
+    const averageScore = judgesCompleted ? Math.round((perJudge.reduce((a, j) => a + j.total, 0) / judgesCompleted) * 10) / 10 : null
+    const perCriterion = Object.fromEntries(Object.entries(perCriterionSum).map(([id, { sum, n }]) => [id, Math.round((sum / n) * 10) / 10]))
+
+    return {
+      registrationId: team.id,
+      teamName: team.teamName,
+      fullName: team.fullName,
+      institution: team.institution,
+      averageScore,
+      judgesCompleted,
+      judgesTotal: judgeIds.length,
+      perCriterion,
+      // Raw per-judge breakdown for the admin drill-down; the judge-facing
+      // route strips this before returning.
+      judgeBreakdown: judgeIds.map((judgeId) => {
+        const judgeRows = teamRows.filter((r) => r.judgeId === judgeId)
+        return {
+          judgeId,
+          judgeName: judgeNameById[judgeId],
+          complete: judgeRows.length === criteriaIds.length,
+          scores: Object.fromEntries(judgeRows.map((r) => [r.criterionId, r.value])),
+        }
+      }),
+    }
+  })
+
+  results.sort((a, b) => {
+    if (a.averageScore === null && b.averageScore === null) return 0
+    if (a.averageScore === null) return 1
+    if (b.averageScore === null) return -1
+    return b.averageScore - a.averageScore
+  })
+
+  let nextRank = 1
+  const ranked = results.map((r) => ({ ...r, rank: r.averageScore === null ? null : nextRank++ }))
+
+  return {
+    competitionId,
+    criteria: criteria.map((c) => ({ id: c.id, name: c.name, weight: c.weight })),
+    judgesTotal: judgeIds.length,
+    teams: ranked,
+  }
+}

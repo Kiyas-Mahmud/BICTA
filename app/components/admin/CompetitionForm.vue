@@ -10,6 +10,7 @@ export interface CompetitionFormData {
   rules: string
   registrationOpen: boolean
   registrationDeadline: string | null
+  judgingOpen: boolean
   teamBased: boolean
   maxTeamSize: number
   coverImage: string | null
@@ -29,6 +30,7 @@ const form = reactive<CompetitionFormData>({
   rules: props.initial?.rules ?? '',
   registrationOpen: props.initial?.registrationOpen ?? false,
   registrationDeadline: props.initial?.registrationDeadline ?? null,
+  judgingOpen: props.initial?.judgingOpen ?? true,
   teamBased: props.initial?.teamBased ?? false,
   maxTeamSize: props.initial?.maxTeamSize ?? 1,
   coverImage: props.initial?.coverImage ?? null,
@@ -91,6 +93,10 @@ function submit() {
 
     <AdminFormSection title="Rules" description="Full rules and judging criteria." icon="lucide:scale">
       <AdminRichText v-model="form.rules" />
+    </AdminFormSection>
+
+    <AdminFormSection title="Judging" description="Controls whether judges can save scores for this competition." icon="lucide:gavel">
+      <AdminSwitch v-model="form.judgingOpen" label="Judging open" hint="Judges can still view teams and the leaderboard when off; only saving new scores is blocked." />
     </AdminFormSection>
 
     <AdminFormSection title="Prizes" description="Listed in order on the public page." icon="lucide:banknote">

@@ -14,6 +14,8 @@ interface Person {
   phone: string
   expertise: string
   sortOrder: number
+  // null for speakers (no login concept) and for judges never invited.
+  judgeStatus: 'invited' | 'active' | null
 }
 
 // People are reusable across editions, so filtering by event means "assigned to
@@ -94,6 +96,32 @@ async function remove(p: Person) {
   if (editing.value?.id === p.id) editing.value = null
   await Promise.all([refresh(), refreshAdminStats()])
   toast.success('Removed')
+}
+
+// Judge portal invites — a small dedicated dialog, not useConfirm() (yes/no
+// only, no input slot).
+const inviteTarget = ref<Person | null>(null)
+const inviteSending = ref(false)
+const inviteError = ref('')
+
+function openInvite(p: Person) {
+  inviteTarget.value = p
+  inviteError.value = ''
+}
+async function sendInvite(email: string) {
+  if (!inviteTarget.value) return
+  inviteSending.value = true
+  inviteError.value = ''
+  try {
+    await $fetch(`/api/admin/people/${inviteTarget.value.id}/judge-invite`, { method: 'POST', body: { email } })
+    toast.success(inviteTarget.value.judgeStatus === 'invited' ? 'Invite resent' : 'Invite sent')
+    inviteTarget.value = null
+    await refresh()
+  } catch (e: any) {
+    inviteError.value = e?.data?.statusMessage ?? 'Could not send the invite.'
+  } finally {
+    inviteSending.value = false
+  }
 }
 
 const roleFilter = ref('all')
@@ -249,11 +277,26 @@ const roleOptions = computed(() => [
                   </div>
                 </div>
               </td>
-              <td><span class="status" :class="p.role === 'judge' ? 'status-brand' : 'status-neutral'">{{ p.role }}</span></td>
+              <td>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="status" :class="p.role === 'judge' ? 'status-brand' : 'status-neutral'">{{ p.role }}</span>
+                  <span v-if="p.role === 'judge' && p.judgeStatus === 'active'" class="status status-ok" title="Has an active judge portal login">Active</span>
+                  <span v-else-if="p.role === 'judge' && p.judgeStatus === 'invited'" class="status status-warn" title="Invited, has not set a password yet">Invited</span>
+                </div>
+              </td>
               <td class="text-ink-soft">{{ p.organization || '—' }}</td>
               <td class="text-ink-soft">{{ p.expertise || '—' }}</td>
               <td>
                 <div class="row-actions">
+                  <button
+                    v-if="p.role === 'judge' && p.judgeStatus !== 'active'"
+                    class="icon-btn-sm icon-btn-brand"
+                    :aria-label="`${p.judgeStatus === 'invited' ? 'Resend invite to' : 'Invite'} ${p.name}`"
+                    :title="p.judgeStatus === 'invited' ? 'Resend judge portal invite' : 'Invite to judge portal'"
+                    @click="openInvite(p)"
+                  >
+                    <Icon name="lucide:send" />
+                  </button>
                   <button class="icon-btn-sm icon-btn-brand" :aria-label="`Edit ${p.name}`" title="Edit" @click="startEdit(p)">
                     <Icon name="lucide:pencil" />
                   </button>
@@ -274,5 +317,16 @@ const roleOptions = computed(() => [
         </table>
       </div>
     </section>
+
+    <AdminJudgeInviteDialog
+      :open="Boolean(inviteTarget)"
+      :person-name="inviteTarget?.name ?? ''"
+      :person-email="inviteTarget?.email ?? ''"
+      :judge-status="inviteTarget?.judgeStatus ?? null"
+      :sending="inviteSending"
+      :error="inviteError"
+      @close="inviteTarget = null"
+      @send="sendInvite"
+    />
   </div>
 </template>

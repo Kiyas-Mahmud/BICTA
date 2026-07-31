@@ -120,6 +120,8 @@ export const competitionSchema = z.object({
   rules: z.string().max(50_000).default(''),
   registrationOpen: z.boolean().default(false),
   registrationDeadline: isoDate.nullable().optional(),
+  // Freezes judge score-writes; reading scores/leaderboard is unaffected.
+  judgingOpen: z.boolean().default(true),
   teamBased: z.boolean().default(false),
   maxTeamSize: z.number().int().min(1).max(20).default(1),
   coverImage: imagePath.nullable().optional(),
@@ -200,6 +202,22 @@ export const verifyEmailSchema = z.object({
 export const reassignLeaderSchema = z.object({
   accountId: z.number().int().positive(),
 })
+
+// ---- Judge portal ----
+
+export const judgeInviteSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+})
+
+// setPasswordSchema (above) is reused as-is for /api/judge/set-password —
+// identical { token, password } shape.
+
+export const judgeScoreEntrySchema = z.object({
+  criterionId: z.number().int().positive(),
+  value: z.number().int().min(1).max(10),
+  note: z.string().trim().max(1000).nullable().optional(),
+})
+export const judgeScoreBatchSchema = z.array(judgeScoreEntrySchema).min(1).max(50)
 
 export const forgotSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),

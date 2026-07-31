@@ -22,6 +22,7 @@ const tabs = [
   { id: 'timeline', label: 'Timeline', icon: 'lucide:milestone' },
   { id: 'schedule', label: 'Schedule', icon: 'lucide:clock' },
   { id: 'criteria', label: 'Judging', icon: 'lucide:list-checks' },
+  { id: 'leaderboard', label: 'Leaderboard', icon: 'lucide:bar-chart-3' },
   { id: 'announcements', label: 'Announcements', icon: 'lucide:megaphone' },
 ]
 // Kept in the URL so a refresh, or a link shared with a colleague, lands on the
@@ -124,6 +125,26 @@ const timelineFields: Field[] = [
   { key: 'note', label: 'Note', type: 'textarea', colSpan: 2 },
   { key: 'sortOrder', label: 'Sort order', type: 'number', hint: 'Lower numbers appear first.' },
 ]
+// Leaderboard is per-competition, not per-event, so the tab needs its own
+// sub-picker; default to the first competition when the tab is opened.
+const leaderboardCompId = ref<number | null>(null)
+watch(competitionOptions, (opts) => {
+  if (!leaderboardCompId.value && opts.length) leaderboardCompId.value = opts[0]!.value
+}, { immediate: true })
+
+const leaderboard = ref<any>(null)
+const leaderboardPending = ref(false)
+async function refreshLeaderboard() {
+  if (!leaderboardCompId.value) return
+  leaderboardPending.value = true
+  try {
+    leaderboard.value = await $fetch(`/api/admin/competitions/${leaderboardCompId.value}/leaderboard`)
+  } finally {
+    leaderboardPending.value = false
+  }
+}
+watch(leaderboardCompId, refreshLeaderboard, { immediate: true })
+
 const announcementFields: Field[] = [
   { key: 'title', label: 'Headline', colSpan: 2, placeholder: 'Submission deadline extended' },
   { key: 'body', label: 'Details', type: 'rich' },
@@ -340,6 +361,29 @@ const announcementFields: Field[] = [
       :defaults="{ eventId: id, competitionId: null, published: true }"
       empty-text="No criteria yet. Add the ones judges will score against."
     />
+
+    <!-- LEADERBOARD -->
+    <AdminPanel
+      v-else-if="tab === 'leaderboard'"
+      title="Leaderboard"
+      subtitle="Live standings from judge marks. Read-only — a judge's score can only be changed by that judge."
+      icon="lucide:bar-chart-3"
+      flush
+      class="fade-up"
+    >
+      <template #actions>
+        <select v-if="competitionOptions.length" v-model="leaderboardCompId" class="input !w-auto">
+          <option v-for="o in competitionOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </select>
+      </template>
+      <AdminEmptyState
+        v-if="!competitionOptions.length"
+        icon="lucide:trophy"
+        title="No competitions yet"
+        body="Add a competition first, then judges' marks will appear here as standings."
+      />
+      <AdminLeaderboard v-else :board="leaderboard" :pending="leaderboardPending" />
+    </AdminPanel>
 
     <!-- ANNOUNCEMENTS -->
     <AdminCollection

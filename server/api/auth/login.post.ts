@@ -3,14 +3,13 @@ import bcrypt from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import { useDb, schema } from '../../database/client'
 
-// Single sign-in door for all three account types (admin, volunteer,
-// participant). One email can only ever exist in one of the two tables, so
-// looking both up and resolving to whichever matched is unambiguous.
+// Single sign-in door for all four account types (admin, volunteer,
+// participant, judge). Each email can only ever be usable in one of the
+// tables, so looking all up and resolving to whichever matched is unambiguous.
 //
 // Anti-enumeration: exactly one bcrypt.compare runs per request, against
 // whichever hash is relevant (or a dummy hash if nothing matched), so
-// response time never reveals which table — or whether either — has the
-// email. Same contract the two endpoints this replaces already used.
+// response time never reveals which table — or whether any — has the email.
 const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
   password: z.string().min(1).max(200),
@@ -24,17 +23,27 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, loginSchema.parse)
   const db = useDb()
 
-  const [admin, participant] = await Promise.all([
+  const [admin, participant, judge] = await Promise.all([
     db.select().from(schema.admins).where(eq(schema.admins.email, body.email)).get(),
     db.select().from(schema.participantAccounts).where(eq(schema.participantAccounts.email, body.email)).get(),
+    db.select().from(schema.judgeAccounts).where(eq(schema.judgeAccounts.email, body.email)).get(),
   ])
 
   const participantUsable = participant && participant.status === 'active' && participant.passwordHash
+  const judgeUsable = judge && judge.status === 'active' && judge.passwordHash
 
-  const hash = admin?.passwordHash ?? (participantUsable ? participant!.passwordHash! : DUMMY_HASH)
+  // Precedence when picking the one hash to compare is arbitrary but must be
+  // deterministic — admin, then judge, then participant. A real email
+  // collision across tables shouldn't happen in practice (each is invited by
+  // an admin who controls the address), so the order has no real product impact.
+  const hash =
+    admin?.passwordHash ??
+    (judgeUsable ? judge!.passwordHash! : undefined) ??
+    (participantUsable ? participant!.passwordHash! : undefined) ??
+    DUMMY_HASH
   const valid = await bcrypt.compare(body.password, hash)
 
-  if (!valid || (!admin && !participantUsable)) {
+  if (!valid || (!admin && !judgeUsable && !participantUsable)) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid credentials' })
   }
 
@@ -44,6 +53,14 @@ export default defineEventHandler(async (event) => {
     })
     // Client routes volunteers to the scanner, admins to the panel.
     return { ok: true, kind: 'staff' as const, role: admin.role }
+  }
+
+  if (judgeUsable) {
+    // Merge into the session under its own key; never touches `user` or `participant`.
+    await setUserSession(event, {
+      judge: { id: judge!.id, personId: judge!.personId, fullName: judge!.fullName, email: judge!.email },
+    })
+    return { ok: true, kind: 'judge' as const }
   }
 
   // Merge into the session under a separate key; never touches `user` (staff).

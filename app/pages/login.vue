@@ -1,15 +1,18 @@
 <script setup lang="ts">
-// Single sign-in door for admins, volunteers and participants. The server
-// resolves which account table matched (server/api/auth/login.post.ts) and
-// tells the client where home is; this page never guesses the role itself.
+// Single sign-in door for admins, volunteers, participants and judges. The
+// server resolves which account table matched (server/api/auth/login.post.ts)
+// and tells the client where home is; this page never guesses the role itself.
 definePageMeta({ layout: false })
 
 const { session, fetch: refreshSession } = useUserSession()
 
 const staffUser = computed(() => (session.value as any)?.user)
 const participant = computed(() => (session.value as any)?.participant)
+const judge = computed(() => (session.value as any)?.judge)
 if (staffUser.value) {
   await navigateTo(staffUser.value.role === 'volunteer' ? '/staff/scan' : '/admin')
+} else if (judge.value) {
+  await navigateTo('/judge')
 } else if (participant.value) {
   await navigateTo('/portal')
 }
@@ -36,6 +39,8 @@ async function submit() {
     await refreshSession()
     if (res.kind === 'participant') {
       await navigateTo('/portal')
+    } else if (res.kind === 'judge') {
+      await navigateTo('/judge')
     } else {
       await navigateTo(res.role === 'volunteer' ? '/staff/scan' : '/admin')
     }

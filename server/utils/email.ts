@@ -186,3 +186,18 @@ export function resetEmail(opts: { name: string; resetToken: string }) {
     }),
   }
 }
+
+export function judgeInviteEmail(opts: { name: string; inviteToken: string }) {
+  const link = siteUrl(`/judge/set-password?token=${opts.inviteToken}`)
+  return {
+    subject: "You've been invited to judge on BICTA",
+    html: shell({
+      preheader: 'Set your password to access the judge portal.',
+      body:
+        heading(`Welcome, ${opts.name}!`) +
+        para('You have been invited to score competitions on BICTA. Set a password to access the judge portal, see your assigned competitions and enter marks for each team.') +
+        button(link, 'Set my password') +
+        para(`<span style="font-size:13px;color:${C.faint}">This link works once and expires in 7 days.</span>`),
+    }),
+  }
+}

@@ -102,6 +102,9 @@ export const competitions = sqliteTable('competitions', {
   rules: text('rules').notNull().default(''),
   registrationOpen: integer('registration_open', { mode: 'boolean' }).notNull().default(false),
   registrationDeadline: text('registration_deadline'),
+  // Freezes judge score-writes when off, mirroring registrationOpen. Reading
+  // scores/leaderboard is never gated by this — only the write endpoint checks it.
+  judgingOpen: integer('judging_open', { mode: 'boolean' }).notNull().default(true),
   teamBased: integer('team_based', { mode: 'boolean' }).notNull().default(false),
   maxTeamSize: integer('max_team_size').notNull().default(1),
   coverImage: text('cover_image'),
@@ -370,6 +373,54 @@ export const judgeAssignments = sqliteTable(
   (t) => [uniqueIndex('judge_assignments_unique').on(t.personId, t.competitionId)],
 )
 
+// Login credentials for a judge, 1:1 with a `people` row. Kept separate from
+// `people` rather than adding passwordHash there directly: people.email is
+// shared with non-authenticating speaker rows and isn't unique, so retrofitting
+// a login-shaped constraint onto it would be messy. Admin-invited only (no
+// self-registration), so there's no "prove you own this inbox before a
+// stranger controls it" risk the participant invite flow guards against —
+// hence no separate 'pending'/email-verify status, just invited -> active.
+export const judgeAccounts = sqliteTable('judge_accounts', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  personId: integer('person_id').notNull().unique().references(() => people.id, { onDelete: 'cascade' }),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash'), // null until invite accepted
+  // Denormalised from people.name at invite time, deliberately: the session
+  // payload doesn't need a join to render "Hi, {name}", and renaming the
+  // people row later doesn't retroactively relabel an already-issued login.
+  fullName: text('full_name').notNull(),
+  status: text('status', { enum: ['invited', 'active'] }).notNull().default('invited'),
+  inviteToken: text('invite_token').unique(),
+  inviteExpires: text('invite_expires'),
+  resetToken: text('reset_token').unique(),
+  resetExpires: text('reset_expires'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+})
+
+// One row per (team, criterion, judge). Re-scoring the same team/criterion by
+// the same judge is an upsert against the unique index below, not a new row —
+// that's what makes marks editable without a separate history table.
+export const scores = sqliteTable(
+  'scores',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    registrationId: integer('registration_id').notNull().references(() => registrations.id, { onDelete: 'cascade' }),
+    criterionId: integer('criterion_id').notNull().references(() => judgingCriteria.id, { onDelete: 'cascade' }),
+    judgeId: integer('judge_id').notNull().references(() => judgeAccounts.id, { onDelete: 'cascade' }),
+    // Denormalised from the registration, same rationale as
+    // team_members.competitionId: lets scope checks and the leaderboard query
+    // filter on a real column instead of joining through registrations.
+    competitionId: integer('competition_id').notNull().references(() => competitions.id, { onDelete: 'cascade' }),
+    // Raw 1-10 rating. The weighted contribution (value/10 * criterion.weight)
+    // is computed at read time, never stored.
+    value: integer('value').notNull(),
+    note: text('note'),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+  },
+  (t) => [uniqueIndex('scores_registration_criterion_judge_unique').on(t.registrationId, t.criterionId, t.judgeId)],
+)
+
 export const checkins = sqliteTable(
   'checkins',
   {
@@ -411,3 +462,5 @@ export type ParticipantAccount = typeof participantAccounts.$inferSelect
 export type TeamMember = typeof teamMembers.$inferSelect
 export type Checkpoint = typeof checkpoints.$inferSelect
 export type Checkin = typeof checkins.$inferSelect
+export type JudgeAccount = typeof judgeAccounts.$inferSelect
+export type Score = typeof scores.$inferSelect
