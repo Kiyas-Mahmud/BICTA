@@ -8,7 +8,7 @@ export interface NavItem {
   icon: string
 }
 
-const props = defineProps<{ items: NavItem[] }>()
+const props = defineProps<{ items: NavItem[]; logoUrl?: string | null }>()
 
 const route = useRoute()
 
@@ -64,8 +64,9 @@ onBeforeUnmount(() => {
   <!-- ===== Mobile: slim top bar (brand + account actions) ===== -->
   <header class="nav-top-mobile sm:hidden">
     <div class="flex h-14 items-center justify-between gap-3 px-4">
-      <NuxtLink to="/" class="text-lg font-extrabold tracking-tight text-ink" aria-label="BICTA home">
-        BICTA<span class="text-brand-600">.</span>
+      <NuxtLink to="/" class="flex items-center gap-2" aria-label="BICTA home">
+        <img v-if="logoUrl" :src="logoUrl" alt="BICTA" class="h-8 w-8 rounded-lg object-contain" />
+        <span v-else class="text-lg font-extrabold tracking-tight text-ink">BICTA<span class="text-brand-600">.</span></span>
       </NuxtLink>
       <div class="flex items-center gap-1.5">
         <NuxtLink
@@ -98,6 +99,17 @@ onBeforeUnmount(() => {
       </li>
     </ul>
   </nav>
+
+  <!-- ===== Desktop: floating logo badge ===== -->
+  <div v-if="logoUrl" class="fixed top-6 left-6 z-50 hidden sm:flex">
+    <NuxtLink
+      to="/"
+      class="flex h-12 w-12 items-center justify-center rounded-2xl border border-line/70 bg-white/90 shadow-2xl backdrop-blur-2xl"
+      aria-label="BICTA home"
+    >
+      <img :src="logoUrl" alt="BICTA" class="h-8 w-8 rounded-lg object-contain" />
+    </NuxtLink>
+  </div>
 
   <!-- ===== Desktop: floating top pill ===== -->
   <div class="fixed top-6 left-1/2 z-50 hidden -translate-x-1/2 justify-center sm:flex">

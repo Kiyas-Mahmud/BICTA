@@ -18,7 +18,7 @@ const year = new Date().getFullYear()
 <template>
   <div class="flex min-h-screen flex-col bg-paper">
     <!-- Tubelight Navbar -->
-    <UiTubelightNavbar :items="navItems" />
+    <UiTubelightNavbar :items="navItems" :logo-url="settings?.site_logo_url" />
 
     <main class="flex-1">
       <slot />

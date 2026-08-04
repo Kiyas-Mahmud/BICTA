@@ -6,12 +6,21 @@ const { data } = await useFetch('/api/admin/settings')
 interface SettingField {
   key: string
   label: string
-  type?: 'text' | 'textarea'
+  type?: 'text' | 'textarea' | 'image'
   hint?: string
 }
 
 // Text settings grouped for the form.
 const groups: { id: string; title: string; icon: string; description: string; fields: SettingField[] }[] = [
+  {
+    id: 'branding',
+    title: 'Branding',
+    icon: 'lucide:image',
+    description: 'The logo shown in the site navigation.',
+    fields: [
+      { key: 'site_logo_url', label: 'Site logo', type: 'image', hint: 'Shown in the navbar. Falls back to the "BICTA" wordmark when empty.' },
+    ],
+  },
   {
     id: 'hero',
     title: 'Hero',
@@ -19,6 +28,7 @@ const groups: { id: string; title: string; icon: string; description: string; fi
     description: 'The first thing visitors read on the home page.',
     fields: [
       { key: 'hero_eyebrow', label: 'Hero eyebrow (small label)' },
+      { key: 'hero_full_name', label: 'Full name (shown under the BICTA title)', hint: 'e.g. Bangladesh ICT Alliance' },
       { key: 'hero_tagline', label: 'Hero tagline' },
       { key: 'hero_blurb', label: 'Hero blurb (description)', type: 'textarea' },
     ],
@@ -128,7 +138,9 @@ const toast = useToast()
 async function save() {
   saving.value = true
   try {
-    const payload: Record<string, string> = { ...form }
+    // AdminImageUploader's "Remove" sets its bound field to null; the
+    // settings payload is string-only.
+    const payload: Record<string, string> = Object.fromEntries(Object.entries(form).map(([k, v]) => [k, v ?? '']))
     for (const t of toggles) payload[t.key] = vis[t.key] ? '1' : '0'
     await $fetch('/api/admin/settings', { method: 'PUT', body: payload })
     savedAt.value = new Date().toLocaleTimeString()
@@ -191,9 +203,10 @@ const hiddenCount = computed(() => toggles.filter((t) => !vis[t.key]).length)
           :class="`stagger-${Math.min(gi + 1, 4)}`"
         >
           <div class="grid max-w-3xl gap-4" :class="g.fields.length > 4 ? 'sm:grid-cols-2' : ''">
-            <div v-for="f in g.fields" :key="f.key" :class="f.type === 'textarea' ? 'sm:col-span-2' : ''">
+            <div v-for="f in g.fields" :key="f.key" :class="f.type === 'textarea' || f.type === 'image' ? 'sm:col-span-2' : ''">
               <label class="label" :for="`s-${f.key}`">{{ f.label }}</label>
-              <textarea v-if="f.type === 'textarea'" :id="`s-${f.key}`" v-model="form[f.key]" class="input" rows="4" maxlength="2000" />
+              <AdminImageUploader v-if="f.type === 'image'" v-model="form[f.key]" />
+              <textarea v-else-if="f.type === 'textarea'" :id="`s-${f.key}`" v-model="form[f.key]" class="input" rows="4" maxlength="2000" />
               <input
                 v-else
                 :id="`s-${f.key}`"

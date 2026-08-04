@@ -9,6 +9,7 @@ function s(key: string, fallback = '') { return settings.value[key] || fallback 
 function visible(name: string) { return settings.value[`section_${name}_visible`] !== '0' }
 
 const tagline = computed(() => s('hero_tagline', 'Innovate. Code. Compete. Inspire.'))
+const fullName = computed(() => s('hero_full_name', 'Bangladesh ICT Alliance'))
 
 // Hero title: split trailing year so it can be colored.
 const titleParts = computed(() => {
@@ -79,6 +80,7 @@ useSeoMeta({
             {{ titleParts.main }}
             <span v-if="titleParts.year" class="text-brand-600">{{ titleParts.year }}</span>
           </h1>
+          <p v-if="fullName" class="rise rise-2 mt-1 text-sm font-semibold text-ink-faint sm:text-base">{{ fullName }}</p>
           <p class="rise rise-2 mt-3 text-base font-bold text-ink-soft sm:mt-4 sm:text-xl sm:text-ink">{{ tagline }}</p>
           <p class="rise rise-3 mt-2.5 max-w-md text-sm text-ink-soft sm:mt-3 sm:text-base">
             {{ s('hero_blurb', 'The biggest national ICT programming festival with three tracks, a bigger prize pool, and a national stage for innovators.') }}
