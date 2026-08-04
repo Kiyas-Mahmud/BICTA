@@ -35,9 +35,32 @@ const busy = ref(false)
 let lastToken = ''
 let lastAt = 0
 
+// Web Audio beep for scan feedback. Created (not just resumed) inside the
+// "Start camera" click so iOS's autoplay gate is satisfied once per camera
+// session — beep() itself always runs outside a user gesture.
+let audioCtx: AudioContext | null = null
+function primeAudio() {
+  try {
+    audioCtx ??= new (window.AudioContext || (window as any).webkitAudioContext)()
+    if (audioCtx.state === 'suspended') audioCtx.resume()
+  } catch {}
+}
+function beep(freq: number) {
+  if (!audioCtx) return
+  const osc = audioCtx.createOscillator()
+  const gain = audioCtx.createGain()
+  osc.connect(gain)
+  gain.connect(audioCtx.destination)
+  osc.frequency.value = freq
+  gain.gain.setValueAtTime(0.18, audioCtx.currentTime)
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18)
+  osc.start()
+  osc.stop(audioCtx.currentTime + 0.2)
+}
+
 async function handleToken(token: string) {
   const now = Date.now()
-  if (token === lastToken && now - lastAt < 2500) return
+  if (busy.value || (token === lastToken && now - lastAt < 2500)) return
   lastToken = token
   lastAt = now
   if (!activeCheckpoint.value) {
@@ -57,14 +80,20 @@ async function handleToken(token: string) {
       tone: res.result === 'collected' ? 'ok' : 'already',
       name: info.account.fullName,
       team: info.memberships[0]?.teamName ?? info.memberships[0]?.competition ?? '',
-      message: res.result === 'collected' ? `${cpName} collected` : `Already collected ${cpName}`,
+      message: res.result === 'collected' ? `${cpName} collected` : `${cpName} already collected`,
       at: now,
       collected: [...new Set([...already, activeCheckpoint.value])],
     }
     if (navigator.vibrate) navigator.vibrate(res.result === 'collected' ? 60 : [40, 40, 40])
+    beep(res.result === 'collected' ? 880 : 660)
+    // Valid QR recognised (new or repeat collection) — stop so the next
+    // person needs a deliberate "Start camera" tap rather than the feed
+    // immediately re-scanning whatever is still in frame.
+    await stopCamera()
   } catch (e: any) {
     last.value = { tone: 'error', message: e?.data?.statusMessage ?? 'Unknown QR code', at: now }
     if (navigator.vibrate) navigator.vibrate([80, 60, 80])
+    beep(220)
   } finally {
     busy.value = false
     history.value = [last.value!, ...history.value].slice(0, 12)
@@ -98,17 +127,31 @@ const cameraError = ref('')
 
 async function startCamera() {
   cameraError.value = ''
+  primeAudio()
+  // Reveal the container (and let Vue paint it) before the library measures
+  // parentElement.clientWidth — it hard-sets the video's pixel width from
+  // that single reading, so starting while the container is still
+  // display:none pins the preview at 0px width forever (permission granted,
+  // stream running, nothing visible).
+  scanning.value = true
+  await nextTick()
   try {
     const { Html5Qrcode } = await import('html5-qrcode')
     scanner = new Html5Qrcode(readerId)
     await scanner.start(
       { facingMode: 'environment' },
-      { fps: 10, qrbox: { width: 240, height: 240 } },
+      {
+        fps: 15,
+        qrbox: { width: 240, height: 240 },
+        // Falls back to the JS scanner automatically where unsupported;
+        // the native decoder is both faster and more accurate.
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+      },
       (decoded: string) => handleToken(decoded),
       () => {},
     )
-    scanning.value = true
   } catch {
+    scanning.value = false
     cameraError.value = 'Camera unavailable. Allow camera access, or type the code under the QR instead.'
     last.value = { tone: 'error', message: 'Camera unavailable — use manual entry below.', at: Date.now() }
   }
