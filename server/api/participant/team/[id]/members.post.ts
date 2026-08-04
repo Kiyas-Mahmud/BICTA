@@ -63,10 +63,10 @@ export default defineEventHandler(async (event) => {
 
   await syncLegacyRoster(registrationId)
 
-  const build = account!.inviteToken
-    ? inviteEmail({ name: body.name, teamName: registration.teamName ?? '', competition: comp.name, inviteToken: account!.inviteToken, checkinToken: account!.checkinToken })
-    : leaderConfirmationEmail({ name: body.name, teamName: registration.teamName ?? '', competition: comp.name, checkinToken: account!.checkinToken })
-  build.then((mail) => sendMail({ to: account!.email, ...mail })).catch(() => {})
+  const mail = account!.inviteToken
+    ? await inviteEmail({ name: body.name, teamName: registration.teamName ?? '', competition: comp.name, inviteToken: account!.inviteToken, checkinToken: account!.checkinToken })
+    : await leaderConfirmationEmail({ name: body.name, teamName: registration.teamName ?? '', competition: comp.name, checkinToken: account!.checkinToken })
+  await sendMail({ to: account!.email, ...mail }).catch(() => {})
 
   return { ok: true }
 })

@@ -289,20 +289,22 @@ export default defineEventHandler(async (event) => {
   }
 
   // ---- Emails (console transport in dev; Resend when key is set). Failures
-  // are logged inside sendMail and never break the registration. ----
+  // are logged inside sendMail and never break the registration. Awaited (not
+  // fire-and-forget): Workers can kill unawaited work once the response is
+  // sent, which silently dropped these sends in production. ----
   const teamName = registration!.teamName ?? ''
   const leaderMail = newlyPending
-    ? leaderVerifyEmail({ name: leader!.fullName, teamName, competition: comp.name, verifyToken: leader!.emailVerifyToken!, checkinToken: leader!.checkinToken })
-    : leaderConfirmationEmail({ name: leader!.fullName, teamName, competition: comp.name, checkinToken: leader!.checkinToken })
-  leaderMail.then((mail) => sendMail({ to: leader!.email, ...mail })).catch(() => {})
+    ? await leaderVerifyEmail({ name: leader!.fullName, teamName, competition: comp.name, verifyToken: leader!.emailVerifyToken!, checkinToken: leader!.checkinToken })
+    : await leaderConfirmationEmail({ name: leader!.fullName, teamName, competition: comp.name, checkinToken: leader!.checkinToken })
+  await sendMail({ to: leader!.email, ...leaderMail }).catch(() => {})
 
   for (const { account, name } of invites) {
     if (!account) continue
-    const build = account.inviteToken
-      ? inviteEmail({ name, teamName, competition: comp.name, inviteToken: account.inviteToken, checkinToken: account.checkinToken })
+    const mail = account.inviteToken
+      ? await inviteEmail({ name, teamName, competition: comp.name, inviteToken: account.inviteToken, checkinToken: account.checkinToken })
       : // Existing active account added to a new team: no invite link needed.
-        leaderConfirmationEmail({ name, teamName, competition: comp.name, checkinToken: account.checkinToken })
-    build.then((mail) => sendMail({ to: account!.email, ...mail })).catch(() => {})
+        await leaderConfirmationEmail({ name, teamName, competition: comp.name, checkinToken: account.checkinToken })
+    await sendMail({ to: account!.email, ...mail }).catch(() => {})
   }
 
   // The client needs to know whether the leader must verify before they can

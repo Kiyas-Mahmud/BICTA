@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
     const comp = await db.select({ name: schema.competitions.name }).from(schema.competitions).where(eq(schema.competitions.id, row.competitionId)).get()
     const opts = { name: row.fullName, teamName: row.teamName ?? '', competition: comp?.name ?? '', note: row.decisionNote }
     const mail = row.status === 'confirmed' ? applicationConfirmedEmail(opts) : applicationRejectedEmail(opts)
-    sendMail({ to: row.email, ...mail }).catch(() => {})
+    await sendMail({ to: row.email, ...mail }).catch(() => {})
   }
 
   return row

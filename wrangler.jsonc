@@ -14,7 +14,7 @@
 
   "vars": {
     "PUBLIC_SITE_URL": "https://bicta.23-51134-1.workers.dev",
-    "MAIL_FROM": "BICTA <onboarding@resend.dev>"
+    "MAIL_FROM": "BICTA <no-reply@bytearo.online>"
   },
 
   "d1_databases": [
