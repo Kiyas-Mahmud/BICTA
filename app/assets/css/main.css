@@ -250,6 +250,9 @@
     transition: border-color 150ms ease, box-shadow 150ms ease;
   }
   .input:focus { box-shadow: 0 0 0 3px rgba(94, 111, 84, 0.18); }
+  /* Edge/IE inject their own reveal-password glyph inside type=password
+     inputs; it sits on top of our custom eye button and eats the click. */
+  .input::-ms-reveal, .input::-ms-clear { display: none; }
   .label {
     @apply mb-1.5 block text-sm font-semibold text-ink;
   }
