@@ -2,6 +2,17 @@
 const { data: settings } = await useFetch('/api/public/settings', { key: 'site-settings' })
 function s(key: string, fallback = '') { return (settings.value as any)?.[key] || fallback }
 
+// Only rows the admin has filled in. These used to fall back to a placeholder
+// email and city, so a site with no contact details configured still published
+// a fake address as though it were genuine.
+const contactInfo = computed(() =>
+  [
+    { icon: 'lucide:mail', label: 'Email', value: s('contact_email') },
+    { icon: 'lucide:map-pin', label: 'Venue', value: s('venue_name') },
+    { icon: 'lucide:navigation', label: 'Address', value: s('venue_address'), className: 'sm:col-span-2 md:col-span-1 xl:col-span-2' },
+  ].filter((row) => Boolean(row.value)),
+)
+
 useSeoMeta({ title: 'Contact', description: 'Get in touch with the BICTA team.' })
 </script>
 
@@ -13,11 +24,7 @@ useSeoMeta({ title: 'Contact', description: 'Get in touch with the BICTA team.' 
       <UiContactCard
         title="Get in touch"
         description="Questions about the festival, sponsorship, or partnerships? Fill out the form and we will respond within one business day."
-        :contact-info="[
-          { icon: 'lucide:mail', label: 'Email', value: s('contact_email', 'hello@bicta.example') },
-          { icon: 'lucide:map-pin', label: 'Venue', value: s('venue_name', 'Dhaka, Bangladesh') },
-          { icon: 'lucide:navigation', label: 'Address', value: s('venue_address', 'Dhaka, Bangladesh'), className: 'sm:col-span-2 md:col-span-1 xl:col-span-2' },
-        ]"
+        :contact-info="contactInfo"
       >
         <SiteContactForm />
       </UiContactCard>

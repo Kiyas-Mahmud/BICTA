@@ -11,6 +11,16 @@ function visible(name: string) { return settings.value[`section_${name}_visible`
 const tagline = computed(() => s('hero_tagline', 'Innovate. Code. Compete. Inspire.'))
 const fullName = computed(() => s('hero_full_name', 'Bangladesh ICT Alliance'))
 
+// Only rows the admin has actually filled in. These previously fell back to a
+// placeholder email and city, which meant a fresh install published a fake
+// contact address as if it were real.
+const contactInfo = computed(() =>
+  [
+    { icon: 'lucide:mail', label: 'Email', value: s('contact_email') },
+    { icon: 'lucide:map-pin', label: 'Venue', value: s('venue_name'), className: 'sm:col-span-1 xl:col-span-2' },
+  ].filter((row) => Boolean(row.value)),
+)
+
 // Hero title: the admin-set brand name wins; otherwise fall back to the
 // current event's title with any trailing year stripped ("BICTA 2026" ->
 // "BICTA"), since the full name line below carries the edition context.
@@ -150,8 +160,9 @@ useSeoMeta({
             </div>
           </div>
 
-          <!-- participants chip -->
-          <div class="floating-slow card absolute -bottom-10 right-6 flex items-center gap-3 p-4 shadow-lift">
+          <!-- participants chip — hidden until there are real participants,
+               rather than advertising "0" on a site that has not opened yet -->
+          <div v-if="eventStats.participants > 0" class="floating-slow card absolute -bottom-10 right-6 flex items-center gap-3 p-4 shadow-lift">
             <div class="flex -space-x-2.5">
               <span
                 v-for="(p, i) in marqueePeople.slice(0, 3)"
@@ -163,7 +174,10 @@ useSeoMeta({
               </span>
             </div>
             <div>
-              <p class="text-base font-extrabold tracking-tight">{{ s('stat_participants', '2,340+') }}</p>
+              <!-- Real count. This used to fall back to a hardcoded "2,340+"
+                   via a stat_participants setting that no longer exists, so it
+                   showed an invented number on every fresh install. -->
+              <p class="text-base font-extrabold tracking-tight">{{ eventStats.participants }}</p>
               <p class="text-[11px] font-bold uppercase tracking-wide text-ink-faint">Participants</p>
             </div>
           </div>
@@ -506,10 +520,7 @@ useSeoMeta({
           <UiContactCard
             title="Get in touch"
             description="Questions about the festival, sponsorship, or partnerships? Fill out the form and we will respond within one business day."
-            :contact-info="[
-              { icon: 'lucide:mail', label: 'Email', value: s('contact_email', 'hello@bicta.example') },
-              { icon: 'lucide:map-pin', label: 'Venue', value: s('venue_name', 'Dhaka, Bangladesh'), className: 'sm:col-span-1 xl:col-span-2' },
-            ]"
+            :contact-info="contactInfo"
           >
             <SiteContactForm />
           </UiContactCard>
