@@ -17,6 +17,10 @@ export default defineEventHandler(async (event) => {
   const rows = await db
     .select({
       id: schema.competitions.id,
+      // Both slugs are what the dashboard builds its register link from
+      // (/events/<eventSlug>/<slug>/register) — without them the link
+      // resolves to /events/undefined/undefined/register and 404s.
+      slug: schema.competitions.slug,
       name: schema.competitions.name,
       type: schema.competitions.type,
       teamBased: schema.competitions.teamBased,
@@ -24,6 +28,7 @@ export default defineEventHandler(async (event) => {
       registrationDeadline: schema.competitions.registrationDeadline,
       coverImage: schema.competitions.coverImage,
       eventId: schema.events.id,
+      eventSlug: schema.events.slug,
       eventTitle: schema.events.title,
       eventVenue: schema.events.venue,
     })

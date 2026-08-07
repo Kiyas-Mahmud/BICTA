@@ -14,7 +14,7 @@ useSeoMeta({
 </script>
 
 <template>
-  <article v-if="article" class="container-site section">
+  <article v-if="article" class="container-site section pt-header-safe">
     <div class="mx-auto max-w-3xl">
       <SiteBackButton to="/news" label="All news" />
       <p class="mt-8 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-ink-faint">

@@ -9,7 +9,7 @@ useSeoMeta({ title: 'Terms & Conditions', robots: 'noindex' })
 </script>
 
 <template>
-  <section class="container-site section">
+  <section class="container-site section pt-header-safe">
     <SiteBackButton to="/" label="Back to home" />
     <div class="mx-auto mt-6 max-w-3xl">
       <h1 class="text-display">Terms & Conditions</h1>

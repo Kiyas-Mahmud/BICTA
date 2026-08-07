@@ -131,24 +131,28 @@ export async function inviteEmail(opts: { name: string; teamName: string; compet
         para(`You've been added to <strong style="color:${C.ink}">${opts.teamName || 'a team'}</strong> for <strong style="color:${C.ink}">${opts.competition}</strong>.`) +
         para('Set a password to activate your account. Your dashboard shows your team, event details and your personal entry QR.') +
         button(link, 'Set my password') +
+        para(`<span style="font-size:13px;color:${C.faint}">This link works once and expires in 24 hours. After that your place on the team is released.</span>`) +
         qrBlock(),
     }),
     attachments: [await qrAttachment(opts.checkinToken)],
   }
 }
 
-export async function leaderVerifyEmail(opts: { name: string; teamName: string; competition: string; verifyToken: string; checkinToken: string }) {
-  const link = siteUrl(`/portal/verify?token=${opts.verifyToken}`)
+// Leader's post-registration mail. Setting the password through this link is
+// both the activation step and the proof they own the address, so there is no
+// separate "verify your email" round trip.
+export async function leaderSetPasswordEmail(opts: { name: string; teamName: string; competition: string; inviteToken: string; checkinToken: string }) {
+  const link = siteUrl(`/portal/set-password?token=${opts.inviteToken}`)
   return {
-    subject: `Verify your email — ${opts.competition}`,
+    subject: `Set your password — ${opts.competition}`,
     html: shell({
-      preheader: `Confirm it's you to activate your BICTA account and dashboard.`,
+      preheader: `Choose a password to activate your BICTA account and dashboard.`,
       body:
         heading(`One step left, ${opts.name}`) +
-        para(`Your registration for <strong style="color:${C.ink}">${opts.competition}</strong> is almost done. Confirm this is your email address to activate your account and unlock your dashboard.`) +
+        para(`Your registration for <strong style="color:${C.ink}">${opts.competition}</strong> is almost done. Choose a password to activate your account and unlock your dashboard.`) +
         `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 6px;">${infoRow('Competition', opts.competition)}${opts.teamName ? infoRow('Team', opts.teamName) : ''}</table>` +
-        button(link, 'Verify my email') +
-        para(`<span style="font-size:13px;color:${C.faint}">This link works once and expires in 48 hours. Your entry QR is ready below the moment you verify.</span>`) +
+        button(link, 'Set my password') +
+        para(`<span style="font-size:13px;color:${C.faint}">This link works once and expires in 24 hours. After that your place is released and you will need to register again.</span>`) +
         qrBlock(),
     }),
     attachments: [await qrAttachment(opts.checkinToken)],
@@ -215,6 +219,29 @@ export function applicationRejectedEmail(opts: { name: string; teamName: string;
         `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 6px;">${infoRow('Competition', opts.competition)}${opts.teamName ? infoRow('Team', opts.teamName) : ''}</table>` +
         (opts.note ? para(`<em>"${opts.note}"</em>`) : '') +
         button(link, 'View my dashboard'),
+    }),
+  }
+}
+
+// Volunteer / moderator console invite. Nobody hands out a password: the
+// person sets their own through this link, which is also what proves they own
+// the address.
+export function staffInviteEmail(opts: { name: string; inviteToken: string; role: 'volunteer' | 'moderator' }) {
+  const link = siteUrl(`/staff/set-password?token=${opts.inviteToken}`)
+  const isVolunteer = opts.role === 'volunteer'
+  return {
+    subject: isVolunteer ? "You're on the BICTA event-day team" : 'You have been added as a BICTA moderator',
+    html: shell({
+      preheader: 'Set your password to activate your BICTA staff account.',
+      body:
+        heading(`Welcome, ${opts.name}!`) +
+        para(
+          isVolunteer
+            ? 'You have been added as a BICTA event-day volunteer. Set a password to activate your account, then use the scanner to check participants in at the kit, food and snack desks.'
+            : 'You have been added as a BICTA moderator. Set a password to activate your account and open the admin console.',
+        ) +
+        button(link, 'Set my password') +
+        para(`<span style="font-size:13px;color:${C.faint}">This link works once and expires in 7 days. Until you use it you cannot sign in.</span>`),
     }),
   }
 }

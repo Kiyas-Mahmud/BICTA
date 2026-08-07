@@ -29,7 +29,11 @@ const groups = computed(() => {
         <span class="h-px flex-1 bg-line" />
       </div>
 
-      <div class="mt-5 grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))">
+      <!-- Tracks are bounded rather than 1fr: columns that stretch to fill the
+           row leave no free space, so the group could never be centred. auto-fit
+           also collapses the empty tracks, which is what lets a single card
+           centre instead of sitting in the first column. -->
+      <div class="mt-5 grid justify-center gap-4" style="grid-template-columns: repeat(auto-fit, minmax(180px, 220px))">
         <component
           :is="s.websiteUrl ? 'a' : 'div'"
           v-for="s in g.items"
