@@ -10,3 +10,7 @@ dist
 public/uploads/*
 !public/uploads/.gitkeep
 *.log
+
+# Internal docs and agent memory: kept on disk, not published to the repo.
+*.md
+!README.md
