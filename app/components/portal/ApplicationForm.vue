@@ -14,10 +14,28 @@ interface Field {
   fileUrl: string | null
   fileName: string | null
 }
-interface Data { canEdit: boolean; fields: Field[] }
+interface Data {
+  canEdit: boolean
+  required: boolean
+  window: { state: 'open' | 'upcoming' | 'closed'; opensAt: string | null; closesAt: string | null }
+  fields: Field[]
+}
 
 const { data, refresh, pending } = await useFetch<Data>(`/api/participant/team/${props.registrationId}/application`)
 const toast = useToast()
+
+// One line telling the team exactly where they stand in the window.
+const windowNote = computed(() => {
+  const w = data.value?.window
+  if (!w) return null
+  if (w.state === 'upcoming') return { tone: 'badge-blue', text: `Opens ${formatDate(w.opensAt!)}` }
+  if (w.state === 'closed') return { tone: 'badge-gray', text: 'Submissions closed' }
+  if (w.closesAt) return { tone: 'badge-amber', text: `Open until ${formatDate(w.closesAt)}` }
+  return { tone: 'badge-green', text: 'Open' }
+})
+const unanswered = computed(
+  () => (data.value?.fields ?? []).filter((f) => f.required && !f.textValue && !f.fileUrl).length,
+)
 
 const editing = ref(false)
 const draftAnswers = reactive<Record<number, string>>({})
@@ -68,12 +86,38 @@ async function save() {
 
 <template>
   <div v-if="!pending && data?.fields.length" class="mt-5">
-    <div class="flex items-center justify-between">
-      <p class="text-xs font-bold uppercase tracking-wide text-ink-faint">Application</p>
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <p class="text-xs font-bold uppercase tracking-wide text-ink-faint">Application</p>
+        <span v-if="windowNote" class="badge" :class="windowNote.tone">{{ windowNote.text }}</span>
+        <span v-if="data.required" class="badge badge-gray">Required</span>
+      </div>
       <button v-if="data.canEdit && !editing" type="button" class="text-xs font-bold text-brand-600 hover:underline" @click="startEdit">
         Edit answers
       </button>
     </div>
+
+    <p
+      v-if="data.window.state === 'upcoming'"
+      class="mt-2.5 flex items-start gap-2 rounded-xl bg-mist-1 px-3.5 py-2.5 text-xs text-ink-soft"
+    >
+      <Icon name="lucide:clock" class="mt-0.5 shrink-0 text-brand-600" />
+      <span>Submissions open on <strong class="text-ink">{{ formatDate(data.window.opensAt) }}</strong>. You can review the questions now and answer them from here once the window opens.</span>
+    </p>
+    <p
+      v-else-if="data.window.state === 'closed'"
+      class="mt-2.5 flex items-start gap-2 rounded-xl bg-mist-1 px-3.5 py-2.5 text-xs text-ink-soft"
+    >
+      <Icon name="lucide:lock" class="mt-0.5 shrink-0 text-ink-faint" />
+      <span>The submission window closed<template v-if="data.window.closesAt"> on <strong class="text-ink">{{ formatDate(data.window.closesAt) }}</strong></template>. Your answers are final.</span>
+    </p>
+    <p
+      v-else-if="unanswered && data.canEdit"
+      class="mt-2.5 flex items-start gap-2 rounded-xl bg-amber-50 px-3.5 py-2.5 text-xs font-semibold text-amber-800"
+    >
+      <Icon name="lucide:triangle-alert" class="mt-0.5 shrink-0" />
+      <span>{{ unanswered }} required {{ unanswered === 1 ? 'question is' : 'questions are' }} still unanswered.</span>
+    </p>
 
     <!-- read-only -->
     <dl v-if="!editing" class="mt-3 space-y-2.5">

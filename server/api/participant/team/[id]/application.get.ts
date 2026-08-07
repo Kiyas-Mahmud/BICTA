@@ -1,6 +1,7 @@
 import { eq, and, asc } from 'drizzle-orm'
 import { useDb, schema } from '../../../../database/client'
 import { idParam } from '../../../../utils/validation'
+import { applicationWindow } from '../../../../utils/application'
 
 // Any team member (leader or ordinary member) may view the submitted
 // application — editing is leader-only, enforced separately in the PUT route.
@@ -19,7 +20,8 @@ export default defineEventHandler(async (event) => {
   const registration = await db.select().from(schema.registrations).where(eq(schema.registrations.id, registrationId)).get()
   if (!registration) throw createError({ statusCode: 404, statusMessage: 'Team not found' })
 
-  const [fields, responses] = await Promise.all([
+  const [comp, fields, responses] = await Promise.all([
+    db.select().from(schema.competitions).where(eq(schema.competitions.id, registration.competitionId)).get(),
     db
       .select()
       .from(schema.applicationFields)
@@ -28,9 +30,14 @@ export default defineEventHandler(async (event) => {
     db.select().from(schema.applicationResponses).where(eq(schema.applicationResponses.registrationId, registrationId)),
   ])
   const byField = new Map(responses.map((r) => [r.fieldId, r]))
+  const window = comp ? applicationWindow(comp) : { state: 'open' as const, opensAt: null, closesAt: null }
 
   return {
-    canEdit: membership.role === 'leader' && registration.status === 'pending',
+    // Editing needs all three: the leader, an undecided application, and an
+    // open submission window. The PUT route re-checks every one of them.
+    canEdit: membership.role === 'leader' && registration.status === 'pending' && window.state === 'open',
+    required: comp?.applicationRequired ?? false,
+    window,
     fields: fields.map((f) => {
       const r = byField.get(f.id)
       return {

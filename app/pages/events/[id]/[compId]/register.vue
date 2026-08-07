@@ -33,7 +33,17 @@ interface ApplicationField {
   required: boolean
   sortOrder: number
 }
-const { data: appFields } = await useFetch<ApplicationField[]>(`/api/public/competitions/${ev.id}/application-fields`)
+interface ApplicationConfig {
+  fields: ApplicationField[]
+  required: boolean
+  window: { state: 'open' | 'upcoming' | 'closed'; opensAt: string | null; closesAt: string | null }
+}
+const { data: application } = await useFetch<ApplicationConfig>(`/api/public/competitions/${ev.id}/application-fields`)
+// Only show the form while it can actually be submitted; outside the window
+// the team registers now and fills it in from their dashboard later.
+const appWindow = computed(() => application.value?.window)
+const appFields = computed(() => (appWindow.value?.state === 'open' ? application.value?.fields ?? [] : []))
+const appRequired = computed(() => application.value?.required ?? false)
 const answers = reactive<Record<number, string>>({})
 const files = reactive<Record<number, File | null>>({})
 function onFileChange(fieldId: number, e: Event) {
@@ -48,7 +58,6 @@ const form = reactive({
   institution: '',
   teamName: '',
   notes: '',
-  password: '', // leader's portal password (min 8 chars)
   website: '', // honeypot
 })
 
@@ -91,22 +100,10 @@ const error = ref('')
 async function submit() {
   error.value = ''
 
-  // New participants must choose a password; signed-in ones already have one.
-  if (!isParticipant.value) {
-    const pw = form.password.trim()
-    if (!pw) {
-      error.value = 'Choose a dashboard password so you can log in later.'
-      return
-    }
-    if (pw.length < 8) {
-      error.value = 'Your dashboard password needs at least 8 characters.'
-      return
-    }
-  }
-
   // Custom fields: check required-ness client-side for fast feedback (the
   // server re-validates regardless — this is UX only, not a security boundary).
-  for (const f of appFields.value ?? []) {
+  // Skipped entirely when the form is optional, matching the server rule.
+  for (const f of appRequired.value ? appFields.value : []) {
     if (!f.required) continue
     const missing = f.fieldType === 'file' ? !files[f.id] : !answers[f.id]?.trim()
     if (missing) {
@@ -123,10 +120,6 @@ async function submit() {
       email: form.email,
       phone: form.phone,
       institution: form.institution,
-      // Signed-in participants keep their existing password; the server
-      // ignores this field when a participant session is present.
-      // .value matters: refs auto-unwrap in the template but not in script.
-      password: isParticipant.value ? undefined : form.password,
       teamName: form.teamName || null,
       teamMembers: teamMembers.value
         .filter((m) => m.name && m.email)
@@ -168,7 +161,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
 
 <template>
   <div class="relative min-h-screen">
-    <section class="container-site section relative z-10">
+    <section class="container-site section pt-header-safe relative z-10">
     <div class="mx-auto max-w-5xl">
       <SiteBackButton :to="`/events/${ev.eventSlug}/${ev.slug}`" label="Back to competition" />
 
@@ -182,8 +175,8 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
             {{ verificationRequired ? 'Almost there — check your email' : 'Registration received' }}
           </h1>
           <p v-if="verificationRequired" class="mx-auto mt-4 max-w-sm text-ink-soft">
-            You're in for <span class="font-bold text-ink">{{ ev.title }}</span>. We've sent a verification link to
-            <span class="font-bold text-ink">{{ form.email }}</span> — click it to activate your dashboard.
+            You're in for <span class="font-bold text-ink">{{ ev.title }}</span>. We've sent a link to
+            <span class="font-bold text-ink">{{ form.email }}</span> — open it to set your password and activate your dashboard.
             Teammates get their own invite separately.
           </p>
           <p v-else class="mx-auto mt-4 max-w-sm text-ink-soft">
@@ -327,23 +320,15 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
                 />
               </div>
 
-              <!-- Only new participants pick a password; a signed-in one keeps theirs. -->
+              <!-- No password here: a signed-in participant keeps theirs, and
+                   a new one sets it through the emailed activation link. -->
               <div v-if="!isParticipant" class="col-span-full">
-                <UiLabel for="r-password" class="font-medium">
-                  Dashboard password<span class="text-red-500">*</span>
-                </UiLabel>
-                <UiInput
-                  type="password"
-                  id="r-password"
-                  v-model="form.password"
-                  required
-                  minlength="8"
-                  autocomplete="new-password"
-                  placeholder="Min 8 characters"
-                  class="mt-2"
-                />
-                <p class="mt-1.5 text-xs text-ink-soft">
-                  Creates your participant account — log in anytime to see your team, status and your personal QR code for event-day check-in.
+                <p class="flex items-start gap-2.5 rounded-xl bg-mist-1 px-4 py-3 text-sm text-ink-soft">
+                  <Icon name="lucide:mail-check" class="mt-0.5 shrink-0 text-brand-600" />
+                  <span>
+                    We'll email <strong class="text-ink">{{ form.email || 'your address' }}</strong> a link to set your password.
+                    That activates your dashboard, where you can see your team, status and your personal QR code for event-day check-in.
+                  </span>
                 </p>
               </div>
 
@@ -404,14 +389,16 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
               </div>
 
               <!-- Custom application fields, admin-defined per competition -->
-              <div v-if="appFields?.length" class="col-span-full mt-4">
-                <div class="border-b border-line pb-2 mb-4">
+              <div v-if="appFields.length" class="col-span-full mt-4">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
                   <p class="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">Application</p>
+                  <span v-if="!appRequired" class="badge badge-gray">Optional — you can finish this later</span>
+                  <span v-else-if="appWindow?.closesAt" class="badge badge-amber">Closes {{ formatDate(appWindow.closesAt) }}</span>
                 </div>
                 <div class="grid grid-cols-1 gap-4">
                   <div v-for="f in appFields" :key="f.id">
                     <UiLabel :for="`r-field-${f.id}`" class="font-medium">
-                      {{ f.label }}<span v-if="f.required" class="text-red-500">*</span>
+                      {{ f.label }}<span v-if="f.required && appRequired" class="text-red-500">*</span>
                     </UiLabel>
                     <p v-if="f.helpText" class="mt-0.5 text-xs text-ink-soft">{{ f.helpText }}</p>
                     <UiTextarea
@@ -420,7 +407,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
                       v-model="answers[f.id]"
                       rows="2"
                       class="mt-2"
-                      :required="f.required"
+                      :required="f.required && appRequired"
                     />
                     <template v-else>
                       <input
@@ -428,7 +415,7 @@ useSeoMeta({ title: `Register: ${ev.title}`, robots: 'noindex' })
                         type="file"
                         class="field mt-2 w-full text-sm"
                         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
-                        :required="f.required"
+                        :required="f.required && appRequired"
                         @change="onFileChange(f.id, $event)"
                       />
                       <p class="mt-1 text-xs text-ink-faint">PDF, DOC, DOCX, JPG, PNG or WEBP — up to 10MB.</p>

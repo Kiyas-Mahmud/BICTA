@@ -51,26 +51,15 @@ async function save(data: any) {
       <AdminCompetitionForm :key="String(comp.id)" :initial="comp" :event-id="comp.eventId" :saving="saving" @submit="save" />
     </div>
 
-    <div class="surface fade-up stagger-2 p-5 sm:p-6">
-      <AdminCollection
-        title="Application form"
-        subtitle="Custom fields teams fill out when registering for this competition."
-        icon="lucide:list-checks"
-        endpoint="/api/admin/application-fields"
-        :query="{ competitionId: comp.id }"
-        :defaults="{ competitionId: comp.id }"
-        new-label="Add field"
-        flush
-        :fields="[
-          { key: 'label', label: 'Field label', type: 'text', colSpan: 2 },
-          { key: 'helpText', label: 'Help text', type: 'textarea', colSpan: 2 },
-          { key: 'fieldType', label: 'Type', type: 'select', options: [
-              { value: 'text', label: 'Text answer' }, { value: 'file', label: 'File upload' } ] },
-          { key: 'required', label: 'Required', type: 'toggle' },
-          { key: 'sortOrder', label: 'Order', type: 'number' },
-        ]"
-        :columns="[{ key: 'label', label: 'Field' }, { key: 'fieldType', label: 'Type' }, { key: 'required', label: 'Required' }]"
-        empty-text="No custom fields yet — applicants only see the standard registration form."
+    <div class="fade-up stagger-2">
+      <AdminApplicationFormBuilder
+        :key="String(comp.id)"
+        :competition-id="comp.id"
+        :required="comp.applicationRequired"
+        :opens-at="comp.applicationOpensAt"
+        :closes-at="comp.applicationClosesAt"
+        :registration-deadline="comp.registrationDeadline"
+        @saved="refresh()"
       />
     </div>
   </div>

@@ -5,6 +5,7 @@ import { idParam, applicationEditSchema } from '../../../../utils/validation'
 import { requireTeamLeader } from '../../../../utils/team'
 import { useUploads, contentTypeFor, APPLICATION_PREFIX } from '../../../../utils/storage'
 import { sniffApplicationFile, APPLICATION_MAX_SIZE } from '../../../../utils/fileSniff'
+import { applicationWindow } from '../../../../utils/application'
 
 // Leader-only, and only while the application is still 'pending' — once an
 // admin decides (confirmed/rejected), or the registration deadline passes
@@ -14,6 +15,14 @@ export default defineEventHandler(async (event) => {
   const { registration, comp } = await requireTeamLeader(event, registrationId)
   if (registration.status !== 'pending') {
     throw createError({ statusCode: 403, statusMessage: 'An admin has already decided this application — it can no longer be edited.' })
+  }
+
+  const window = applicationWindow(comp)
+  if (window.state === 'upcoming') {
+    throw createError({ statusCode: 403, statusMessage: `Submissions open on ${window.opensAt}.` })
+  }
+  if (window.state === 'closed') {
+    throw createError({ statusCode: 403, statusMessage: 'The submission window for this competition has closed.' })
   }
 
   const contentType = getHeader(event, 'content-type') ?? ''
