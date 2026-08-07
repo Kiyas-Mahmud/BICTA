@@ -11,17 +11,18 @@ function visible(name: string) { return settings.value[`section_${name}_visible`
 const tagline = computed(() => s('hero_tagline', 'Innovate. Code. Compete. Inspire.'))
 const fullName = computed(() => s('hero_full_name', 'Bangladesh ICT Alliance'))
 
-// Hero title: split trailing year so it can be colored.
-const titleParts = computed(() => {
-  const t = current.value?.title ?? 'BICTA'
-  const m = t.match(/^(.*?)(\d{4})\s*$/)
-  return m ? { main: m[1].trim(), year: m[2] } : { main: t, year: '' }
-})
+// Hero title: the admin-set brand name wins; otherwise fall back to the
+// current event's title with any trailing year stripped ("BICTA 2026" ->
+// "BICTA"), since the full name line below carries the edition context.
+const heroTitle = computed(() => s('brand_name') || (current.value?.title ?? 'BICTA').replace(/\s*\d{4}\s*$/, ''))
 
+// Real counts from the DB (server/utils/queries.ts#getEventStats) — no
+// admin-editable placeholder numbers.
+const eventStats = computed(() => data.value?.stats ?? { participants: 0, teams: 0, universities: 0 })
 const stats = computed(() => [
-  { icon: 'lucide:users', value: s('stat_participants', '2,340+'), label: 'Participants', tile: 'tile-blue' },
-  { icon: 'lucide:users-round', value: s('stat_teams', '420+'), label: 'Teams', tile: 'tile-purple' },
-  { icon: 'lucide:graduation-cap', value: s('stat_universities', '65+'), label: 'Universities', tile: 'tile-green' },
+  { icon: 'lucide:users', value: eventStats.value.participants.toLocaleString(), label: 'Participants', tile: 'tile-blue' },
+  { icon: 'lucide:users-round', value: eventStats.value.teams.toLocaleString(), label: 'Teams', tile: 'tile-purple' },
+  { icon: 'lucide:graduation-cap', value: eventStats.value.universities.toLocaleString(), label: 'Universities', tile: 'tile-green' },
   { icon: 'lucide:trophy', value: String(current.value?.competitions.length ?? 0), label: 'Competitions', tile: 'tile-orange' },
 ])
 
@@ -58,9 +59,14 @@ const registrationLive = computed(() => (current.value?.competitions ?? []).some
 const featuredArticle = computed(() => data.value?.news?.[0])
 const restArticles = computed(() => (data.value?.news ?? []).slice(1, 5))
 
+// No title here on purpose: the root titleTemplate then renders the bare brand
+// name, so the tab reads "BICTA" rather than the event's own headline. og:title
+// is likewise inherited from app.vue. The description is echoed into
+// og:description so link previews carry the same line the page already had.
 useSeoMeta({
-  title: current.value ? `${current.value.title}, the national ICT programming festival` : undefined,
-  description: tagline.value,
+  description: () => tagline.value,
+  ogDescription: () => tagline.value,
+  twitterDescription: () => tagline.value,
 })
 </script>
 
@@ -77,10 +83,9 @@ useSeoMeta({
         <div>
           <span class="eyebrow rise rise-1">{{ s('hero_eyebrow', 'National ICT Programming Festival') }}</span>
           <h1 class="text-display rise rise-2 mt-3.5 sm:mt-5">
-            {{ titleParts.main }}
-            <span v-if="titleParts.year" class="text-brand-600">{{ titleParts.year }}</span>
+            {{ heroTitle }}
           </h1>
-          <p v-if="fullName" class="rise rise-2 mt-1 text-sm font-semibold text-ink-faint sm:text-base">{{ fullName }}</p>
+          <p v-if="fullName" class="rise rise-2 mt-1.5 text-xl font-extrabold text-ink-soft sm:text-2xl">{{ fullName }}</p>
           <p class="rise rise-2 mt-3 text-base font-bold text-ink-soft sm:mt-4 sm:text-xl sm:text-ink">{{ tagline }}</p>
           <p class="rise rise-3 mt-2.5 max-w-md text-sm text-ink-soft sm:mt-3 sm:text-base">
             {{ s('hero_blurb', 'The biggest national ICT programming festival with three tracks, a bigger prize pool, and a national stage for innovators.') }}
@@ -171,7 +176,7 @@ useSeoMeta({
       <div class="card flex flex-col gap-6 p-4 shadow-soft sm:gap-8 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
         <div v-if="current?.startDate" class="w-full lg:w-auto">
           <p class="mb-3 text-center text-[0.7rem] font-bold uppercase tracking-[0.16em] text-ink-faint sm:text-xs lg:text-left">
-            Event starts in
+            {{ current.title }} starts in
           </p>
           <UiAnimatedNumberCountdown :end-date="current.startDate" />
         </div>

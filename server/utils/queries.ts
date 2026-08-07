@@ -29,6 +29,35 @@ export async function getCurrentEventFull() {
   }
 }
 
+// Real counts for the home-page stat row — no admin-editable placeholder
+// numbers. "Participants" = every roster row (leader + members, so solo
+// entries count as one) across non-rejected registrations for the event's
+// competitions; "Teams" = one per such registration; "Universities" =
+// distinct non-blank institutions among them.
+export async function getEventStats(eventId: number) {
+  const db = useDb()
+  const comps = await db.select({ id: schema.competitions.id }).from(schema.competitions).where(eq(schema.competitions.eventId, eventId))
+  const compIds = comps.map((c) => c.id)
+  if (!compIds.length) return { participants: 0, teams: 0, universities: 0 }
+
+  const notRejected = and(inArray(schema.registrations.competitionId, compIds), ne(schema.registrations.status, 'rejected'))
+
+  const [{ n: teams }] = await db.select({ n: count() }).from(schema.registrations).where(notRejected)
+
+  const [{ n: participants }] = await db
+    .select({ n: count() })
+    .from(schema.teamMembers)
+    .innerJoin(schema.registrations, eq(schema.teamMembers.registrationId, schema.registrations.id))
+    .where(notRejected)
+
+  const [{ n: universities }] = await db
+    .select({ n: countDistinct(schema.registrations.institution) })
+    .from(schema.registrations)
+    .where(and(notRejected, ne(schema.registrations.institution, '')))
+
+  return { participants, teams, universities }
+}
+
 export async function getCompetitionBySlug(slug: string) {
   const db = useDb()
   const comp = await db.select().from(schema.competitions).where(eq(schema.competitions.slug, slug)).get()

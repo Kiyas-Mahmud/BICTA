@@ -10,6 +10,7 @@ import {
   getFaqs,
   getEventGallery,
   getHowItWorksSteps,
+  getEventStats,
 } from '../../utils/queries'
 
 export default defineEventHandler(async () => {
@@ -25,12 +26,13 @@ export default defineEventHandler(async () => {
       getHowItWorksSteps(),
     ])
 
-  // Sponsors, timeline and gallery all hang off the current event, so they
-  // wait for it rather than joining the first batch.
-  const [timeline, gallery, sponsors] = await Promise.all([
+  // Sponsors, timeline, gallery and stats all hang off the current event, so
+  // they wait for it rather than joining the first batch.
+  const [timeline, gallery, sponsors, stats] = await Promise.all([
     current ? getTimeline(current.id) : [],
     current ? getEventGallery(current.id) : [],
     getSponsors(current?.id),
+    current ? getEventStats(current.id) : { participants: 0, teams: 0, universities: 0 },
   ])
   const judges = people.filter((p) => p.role === 'judge')
   const speakers = people.filter((p) => p.role === 'speaker')
@@ -48,5 +50,6 @@ export default defineEventHandler(async () => {
     faqs,
     gallery,
     steps,
+    stats,
   }
 })
