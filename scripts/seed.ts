@@ -2,9 +2,22 @@ import bcrypt from 'bcryptjs'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as schema from '../server/database/schema'
 
-// Seed content lives here; scripts/seed-d1.ts runs it against a throwaway local
-// SQLite file, dumps the resulting rows as SQL, and pushes that to D1 (which is
-// only reachable through a Worker binding, never from a plain node script).
+// Creates the first administrator, and nothing else.
+//
+// This deliberately seeds NO sample content. Everything the site shows —
+// events, competitions, judges, sponsors, news, gallery, FAQs, venue, section
+// headings — is created by the operator through the admin console, so a fresh
+// install starts empty rather than shipping someone else's placeholder data
+// that has to be hunted down and deleted before launch.
+//
+// It also no longer creates demo volunteer/participant logins. Those had
+// hardcoded passwords and were created even in production, which is an open
+// door on a live deployment. Staff are invited by email from the console, and
+// participants register themselves.
+//
+// scripts/seed-d1.ts runs this against a throwaway local SQLite file, dumps
+// the resulting rows as SQL, and pushes that to D1 (which is only reachable
+// through a Worker binding, never from a plain node script).
 
 const WEAK_PASSWORDS = new Set(['admin', 'password', 'change-me-min-12-chars', 'changeme'])
 
@@ -23,306 +36,16 @@ export async function seed(db: BetterSQLite3Database<typeof schema>) {
     throw new Error('Refusing to seed example.com admin email in production')
   }
 
-  // 1. Admin (upsert by email)
+  // Upsert by email, so re-running is safe and doubles as a password reset.
   const passwordHash = await bcrypt.hash(password, 12)
   await db
     .insert(schema.admins)
-    .values({ name, email, passwordHash, role: 'admin' })
-    .onConflictDoUpdate({ target: schema.admins.email, set: { name, passwordHash, role: 'admin' } })
-  console.log(`Admin ready: ${email}`)
-
-  // 2. Volunteer / Event Staff (upsert by email)
-  const volunteerPass = 'volunteer-pass-2026'
-  const volunteerHash = await bcrypt.hash(volunteerPass, 12)
-  await db
-    .insert(schema.admins)
-    .values({ name: 'Volunteer Staff', email: 'volunteer@bicta.local', passwordHash: volunteerHash, role: 'volunteer' })
-    .onConflictDoUpdate({ target: schema.admins.email, set: { name: 'Volunteer Staff', passwordHash: volunteerHash, role: 'volunteer' } })
-  console.log('Volunteer ready: volunteer@bicta.local')
-
-  // 3. Participant (upsert by email)
-  const participantPass = 'participant-pass-2026'
-  const participantHash = await bcrypt.hash(participantPass, 12)
-  await db
-    .insert(schema.participantAccounts)
-    .values({
-      fullName: 'Demo Participant',
-      email: 'participant@bicta.local',
-      passwordHash: participantHash,
-      phone: '+8801700000000',
-      status: 'active',
-      checkinToken: 'chk_demo_participant_2026',
-    })
+    .values({ name, email, passwordHash, role: 'admin', status: 'active', createdAt: new Date().toISOString() })
     .onConflictDoUpdate({
-      target: schema.participantAccounts.email,
-      set: { fullName: 'Demo Participant', passwordHash: participantHash, status: 'active' },
+      target: schema.admins.email,
+      set: { name, passwordHash, role: 'admin', status: 'active' },
     })
-  console.log('Participant ready: participant@bicta.local')
 
-  if (process.env.NODE_ENV === 'production') {
-    console.log('Production mode: skipping sample data.')
-    return
-  }
-
-  // Sample data (dev only, idempotent via slug checks)
-  const existing = await db.select({ id: schema.events.id }).from(schema.events).limit(1)
-  if (existing.length > 0) {
-    console.log('Events already exist: skipping sample data.')
-    return
-  }
-
-  const [current] = await db
-    .insert(schema.events)
-    .values({
-      title: 'BICTA 2026',
-      year: 2026,
-      slug: 'bicta-2026',
-      description:
-        '<p>The biggest edition of BICTA yet — three tracks, bigger prize pool, and a national stage for innovators.</p>',
-      startDate: '2026-09-10',
-      endDate: '2026-09-12',
-      venue: 'Dhaka, Bangladesh',
-      status: 'upcoming',
-      isCurrent: true,
-    })
-    .returning()
-
-  const [past] = await db
-    .insert(schema.events)
-    .values({
-      title: 'BICTA 2025',
-      year: 2025,
-      slug: 'bicta-2025',
-      description: '<p>Our 2025 edition brought together 400+ participants across two tracks.</p>',
-      startDate: '2025-09-11',
-      endDate: '2025-09-13',
-      venue: 'Dhaka, Bangladesh',
-      status: 'past',
-      isCurrent: false,
-    })
-    .returning()
-
-  const competitionRows = await db
-    .insert(schema.competitions)
-    .values([
-      {
-        eventId: current!.id,
-        name: 'Project Showcase',
-        slug: 'project-showcase-2026',
-        type: 'Showcase',
-        description: '<p>Present your finished project to a judging panel of industry experts.</p>',
-        rules: '<ul><li>Open to teams of 1–4.</li><li>Project must be original work.</li></ul>',
-        registrationOpen: true,
-        registrationDeadline: '2026-08-31',
-        teamBased: true,
-        maxTeamSize: 4,
-        sortOrder: 1,
-      },
-      {
-        eventId: current!.id,
-        name: 'Datathon',
-        slug: 'datathon-2026',
-        type: 'Data Science',
-        description: '<p>48 hours. One dataset. Build the best model and tell the best story.</p>',
-        rules: '<ul><li>Teams of up to 3.</li><li>External data allowed if public.</li></ul>',
-        registrationOpen: true,
-        registrationDeadline: '2026-08-25',
-        teamBased: true,
-        maxTeamSize: 3,
-        sortOrder: 2,
-      },
-      {
-        eventId: current!.id,
-        name: 'Hackathon',
-        slug: 'hackathon-2026',
-        type: 'Hackathon',
-        description: '<p>Build a working prototype around this year’s theme in 36 hours.</p>',
-        rules: '<ul><li>Teams of up to 5.</li><li>Code must be written during the event.</li></ul>',
-        registrationOpen: false,
-        teamBased: true,
-        maxTeamSize: 5,
-        sortOrder: 3,
-      },
-    ])
-    .returning()
-
-  const prizeRows = competitionRows.flatMap((c, i) => [
-    { competitionId: c.id, position: 'Champion', amount: `${100 - i * 20}000 BDT`, sortOrder: 1 },
-    { competitionId: c.id, position: '1st Runner-up', amount: `${60 - i * 10}000 BDT`, sortOrder: 2 },
-    { competitionId: c.id, position: '2nd Runner-up', amount: `${30 - i * 5}000 BDT`, sortOrder: 3 },
-  ])
-  await db.insert(schema.prizes).values(prizeRows)
-
-  const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString()
-  await db.insert(schema.news).values([
-    {
-      title: 'BICTA 2026 announced: registration now open',
-      slug: 'bicta-2026-announced',
-      excerpt: 'Three tracks, a bigger prize pool, and a new venue. Here is everything you need to know.',
-      content:
-        '<p>We are thrilled to announce BICTA 2026, taking place September 10 to 12 in Dhaka. This edition brings three competition tracks, a bigger prize pool, and a national stage for innovators.</p><p>Registration is open now. Pick your track, form your team, and submit before the deadline.</p>',
-      coverImage: '/gallery-images/hackathons.jpg',
-      status: 'published',
-      publishedAt: daysAgo(1),
-    },
-    {
-      title: 'Prize pool grows to 465,000 BDT for 2026',
-      slug: 'prize-pool-2026',
-      excerpt: 'Bigger rewards across all three tracks, with the Champion of each competition taking home a record prize.',
-      content:
-        '<p>Thanks to our sponsors, the total prize pool for BICTA 2026 has grown to 465,000 BDT across Project Showcase, Datathon, and Hackathon.</p><p>Full prize breakdowns are listed on each competition page.</p>',
-      coverImage: '/gallery-images/images (1).jpg',
-      status: 'published',
-      publishedAt: daysAgo(4),
-    },
-    {
-      title: 'Meet the judges: industry leaders join BICTA 2026',
-      slug: 'meet-the-judges-2026',
-      excerpt: 'Founders, engineers, and researchers from the country’s top tech companies will score this year’s entries.',
-      content:
-        '<p>Our judging panel brings decades of experience from AI research, large-scale data platforms, and cloud engineering.</p><p>Meet them all on the home page, then bring work worth judging.</p>',
-      coverImage: '/gallery-images/images (2).jpg',
-      status: 'published',
-      publishedAt: daysAgo(8),
-    },
-    {
-      title: 'BICTA 2025 highlights: 400+ builders, three champions',
-      slug: 'bicta-2025-highlights',
-      excerpt: 'Relive the best moments from last year’s edition, from the opening keynote to the final awards night.',
-      content:
-        '<p>BICTA 2025 hosted more than 400 participants across two tracks. Team Quantum, Team Nexus, and Team Vertex took home the crowns.</p><p>Browse the gallery for photos from the event.</p>',
-      coverImage: '/gallery-images/images (3).jpg',
-      status: 'published',
-      publishedAt: daysAgo(15),
-    },
-    {
-      title: 'Campus roadshow: BICTA comes to 12 universities',
-      slug: 'campus-roadshow-2026',
-      excerpt: 'Our team is visiting campuses across the country with workshops, demos, and on-the-spot registration help.',
-      content:
-        '<p>Throughout July and August, the BICTA crew will run info sessions and mini workshops at 12 universities.</p><p>Follow our social channels for the schedule and venue details.</p>',
-      coverImage: '/gallery-images/images (4).jpg',
-      status: 'published',
-      publishedAt: daysAgo(21),
-    },
-    {
-      title: 'Judges panel reveal (draft)',
-      slug: 'judges-panel-reveal',
-      excerpt: 'Meet the experts scoring this year’s competitions.',
-      content: '<p>Draft article. Judge bios coming soon.</p>',
-      status: 'draft',
-    },
-  ])
-
-  await db.insert(schema.homeFeatures).values([
-    { title: 'National stage', body: 'Compete against the best builders in the country and get noticed by industry leaders.', icon: 'trophy', sortOrder: 1 },
-    { title: 'Real prize money', body: 'A prize pool worth lakhs of taka across every competition track.', icon: 'banknote', sortOrder: 2 },
-    { title: 'Mentorship', body: 'Learn directly from judges and speakers who have built and scaled real products.', icon: 'compass', sortOrder: 3 },
-    { title: 'Career launchpad', body: 'Top performers get internship and hiring conversations with our partners.', icon: 'rocket', sortOrder: 4 },
-  ])
-
-  await db.insert(schema.timelineMilestones).values([
-    { eventId: current!.id, label: 'Registration opens', date: '2026-07-01', note: 'Sign up for any track.', sortOrder: 1 },
-    { eventId: current!.id, label: 'Registration deadline', date: '2026-08-31', note: 'Last day to register.', sortOrder: 2 },
-    { eventId: current!.id, label: 'Opening ceremony', date: '2026-09-10', note: 'Kickoff in Dhaka.', sortOrder: 3 },
-    { eventId: current!.id, label: 'Finals & awards', date: '2026-09-12', note: 'Winners announced.', sortOrder: 4 },
-  ])
-
-  await db.insert(schema.sponsors).values([
-    { name: 'TechCorp', tier: 'Platinum', websiteUrl: 'https://example.com', sortOrder: 1 },
-    { name: 'DataWorks', tier: 'Gold', websiteUrl: 'https://example.com', sortOrder: 2 },
-    { name: 'CloudBD', tier: 'Gold', websiteUrl: 'https://example.com', sortOrder: 3 },
-    { name: 'StartupHub', tier: 'Partner', websiteUrl: 'https://example.com', sortOrder: 4 },
-  ])
-
-  await db.insert(schema.people).values([
-    { name: 'Dr. Ayesha Rahman', title: 'Head of AI', organization: 'TechCorp', bio: 'Leads applied ML research and has judged national hackathons for a decade.', role: 'judge', sortOrder: 1 },
-    { name: 'Tanvir Hasan', title: 'Founder & CEO', organization: 'DataWorks', bio: 'Built and scaled one of the country’s largest data platforms.', role: 'judge', sortOrder: 2 },
-    { name: 'Nadia Islam', title: 'Principal Engineer', organization: 'CloudBD', bio: 'Speaks on distributed systems and developer experience.', role: 'speaker', sortOrder: 3 },
-  ])
-
-  await db.insert(schema.winners).values([
-    { name: 'Team Quantum', competitionName: 'Datathon', position: 'Champion', year: 2025, projectTitle: 'Flood prediction model', sortOrder: 1 },
-    { name: 'Team Nexus', competitionName: 'Hackathon', position: 'Champion', year: 2025, projectTitle: 'Rural telemedicine app', sortOrder: 2 },
-    { name: 'Team Vertex', competitionName: 'Project Showcase', position: 'Champion', year: 2025, projectTitle: 'Smart agriculture sensors', sortOrder: 3 },
-  ])
-
-  await db.insert(schema.faqs).values([
-    { question: 'Who can participate?', answer: '<p>Any student or early-career builder in Bangladesh. Some tracks are team-based, some are solo.</p>', sortOrder: 1 },
-    { question: 'Is there a registration fee?', answer: '<p>No. Registration is completely free for all competitions.</p>', sortOrder: 2 },
-    { question: 'Can I join more than one competition?', answer: '<p>Yes, as long as the schedules do not clash. Register for each separately.</p>', sortOrder: 3 },
-    { question: 'How are winners selected?', answer: '<p>A panel of industry judges scores each submission against published criteria.</p>', sortOrder: 4 },
-  ])
-
-  // Gallery photos for the current event (files shipped in public/gallery-images).
-  await db.insert(schema.galleryImages).values(
-    [
-      '/gallery-images/hackathons.jpg',
-      '/gallery-images/images (1).jpg',
-      '/gallery-images/images (2).jpg',
-      '/gallery-images/images (3).jpg',
-      '/gallery-images/images (4).jpg',
-      '/gallery-images/images.jpg',
-      '/gallery-images/photo-1624996752380-8ec242e0f85d.avif',
-      '/gallery-images/photo-1688733720228-4f7a18681c4f.avif',
-    ].map((url, i) => ({ eventId: current!.id, url, sortOrder: i + 1 })),
-  )
-
-  await db.insert(schema.howItWorksSteps).values([
-    { title: 'Pick your track', body: 'Browse the competitions and choose the arena that fits your skills.', icon: 'list-checks', sortOrder: 1 },
-    { title: 'Register your team', body: 'Fill in the two-minute form, solo or with teammates.', icon: 'user-plus', sortOrder: 2 },
-    { title: 'Build and submit', body: 'Work on your project and submit before the deadline.', icon: 'rocket', sortOrder: 3 },
-    { title: 'Get judged and win', body: 'Present to the panel. Winners take prizes and recognition.', icon: 'trophy', sortOrder: 4 },
-  ])
-
-  // Event-day collection checkpoints (QR scan targets).
-  await db.insert(schema.checkpoints).values([
-    { eventId: current!.id, name: 'Welcome Kit', icon: 'package', sortOrder: 1 },
-    { eventId: current!.id, name: 'Lunch', icon: 'utensils', sortOrder: 2 },
-    { eventId: current!.id, name: 'Snacks', icon: 'coffee', sortOrder: 3 },
-  ])
-
-  // Sample volunteer (scanner-only staff login) for dev.
-  if (process.env.NODE_ENV !== 'production') {
-    const volunteerHash = await bcrypt.hash('bicta-volunteer-2026', 12)
-    await db
-      .insert(schema.admins)
-      .values({ name: 'Gate Volunteer', email: 'volunteer@bicta.local', passwordHash: volunteerHash, role: 'volunteer' })
-      .onConflictDoNothing()
-  }
-
-  await db.insert(schema.siteSettings).values([
-    { key: 'hero_eyebrow', value: 'National ICT Programming Festival' },
-    { key: 'hero_tagline', value: 'Innovate. Code. Compete. Inspire.' },
-    { key: 'hero_blurb', value: 'The biggest national ICT programming festival with three tracks, a bigger prize pool, and a national stage for innovators.' },
-    { key: 'stat_participants', value: '2,340+' },
-    { key: 'stat_teams', value: '420+' },
-    { key: 'stat_universities', value: '65+' },
-    { key: 'contact_email', value: 'hello@bicta.example' },
-    { key: 'facebook_url', value: 'https://facebook.com' },
-    { key: 'linkedin_url', value: 'https://linkedin.com' },
-    { key: 'footer_text', value: 'The national ICT programming festival. Innovate. Code. Compete.' },
-    // Section headings
-    { key: 'why_heading', value: 'Why join BICTA' },
-    { key: 'why_subtext', value: 'More than a competition. A launchpad.' },
-    { key: 'timeline_heading', value: 'Important dates' },
-    { key: 'sponsors_heading', value: 'Sponsors & partners' },
-    { key: 'people_heading', value: 'Judges & speakers' },
-    { key: 'gallery_heading', value: 'Media gallery' },
-    { key: 'winners_heading', value: 'Previous winners' },
-    { key: 'faq_heading', value: 'Frequently asked questions' },
-    { key: 'venue_heading', value: 'Venue & location' },
-    { key: 'newsletter_heading', value: 'Stay in the loop' },
-    { key: 'newsletter_subtext', value: 'Get announcements and deadlines in your inbox.' },
-    // Venue
-    { key: 'venue_name', value: 'Bangabandhu International Conference Center' },
-    { key: 'venue_address', value: 'Agargaon, Dhaka 1207, Bangladesh' },
-    { key: 'venue_directions', value: 'Near the National Parliament, accessible by metro and bus.' },
-    { key: 'venue_map_embed', value: 'https://www.google.com/maps?q=Bangabandhu+International+Conference+Center&output=embed' },
-  ])
-
-  console.log(
-    `Sample data: 2 events, ${competitionRows.length} competitions, ${prizeRows.length} prizes, 2 news, 4 features, 4 milestones, 4 sponsors, 3 people, 3 winners, 4 faqs, settings. Past event id: ${past!.id}`,
-  )
+  console.log(`Admin ready: ${email}`)
+  console.log('No sample content seeded — build the site from the admin console.')
 }
-
