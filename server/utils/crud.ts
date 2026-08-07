@@ -27,6 +27,17 @@ interface Opts {
 const labelOf = (opts: Opts, row: any) =>
   opts.label?.(row) ?? row?.name ?? row?.title ?? row?.label ?? row?.question ?? `#${row?.id}`
 
+/**
+ * Event scope for the audit line, derived generically: any table that carries
+ * an eventId column (announcements, schedule, criteria, event-prizes,
+ * timeline, gallery) is scoped automatically, so no per-route edit is needed
+ * and a new event-scoped collection is covered the day it is added.
+ */
+const eventIdOf = (row: any, body?: any): number | null =>
+  (typeof row?.eventId === 'number' ? row.eventId : undefined) ??
+  (typeof body?.eventId === 'number' ? body.eventId : undefined) ??
+  null
+
 export function listHandler(table: any, orderCol: any) {
   return defineEventHandler(async (event) => {
     await requireAdmin(event)
@@ -41,7 +52,7 @@ export function createHandler(table: any, schema: ZodSchema, opts: Opts = {}) {
     for (const f of opts.richFields ?? []) if (body[f]) body[f] = sanitizeRichText(body[f])
     const [row] = await useDb().insert(table).values(body).returning()
     if (opts.entity) {
-      await recordAudit(actor, { action: 'create', entity: opts.entity, entityId: row?.id, summary: `Added ${opts.entity} "${labelOf(opts, row)}"` })
+      await recordAudit(actor, { action: 'create', entity: opts.entity, entityId: row?.id, eventId: eventIdOf(row, body), summary: `Added ${opts.entity} "${labelOf(opts, row)}"` })
     }
     return row
   })
@@ -56,7 +67,7 @@ export function updateHandler(table: any, idCol: any, schema: ZodSchema, opts: O
     const [row] = await useDb().update(table).set(body).where(eq(idCol, id)).returning()
     if (!row) throw createError({ statusCode: 404, statusMessage: 'Not found' })
     if (opts.entity) {
-      await recordAudit(actor, { action: 'update', entity: opts.entity, entityId: id, summary: `Edited ${opts.entity} "${labelOf(opts, row)}"` })
+      await recordAudit(actor, { action: 'update', entity: opts.entity, entityId: id, eventId: eventIdOf(row, body), summary: `Edited ${opts.entity} "${labelOf(opts, row)}"` })
     }
     return row
   })
@@ -70,7 +81,7 @@ export function deleteHandler(table: any, idCol: any, opts: Opts = {}) {
     const existing = opts.entity ? await useDb().select().from(table).where(eq(idCol, id)).get() : null
     await useDb().delete(table).where(eq(idCol, id))
     if (opts.entity) {
-      await recordAudit(actor, { action: 'delete', entity: opts.entity, entityId: id, summary: `Deleted ${opts.entity} "${labelOf(opts, existing)}"` })
+      await recordAudit(actor, { action: 'delete', entity: opts.entity, entityId: id, eventId: eventIdOf(existing), summary: `Deleted ${opts.entity} "${labelOf(opts, existing)}"` })
     }
     return { ok: true }
   })

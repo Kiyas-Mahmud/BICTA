@@ -53,6 +53,6 @@ export default defineEventHandler(async (event) => {
     })
     .returning()
 
-  await recordAudit(actor, { action: 'create', entity: 'event', entityId: row!.id, summary: `Created event "${row!.title}"` })
+  await recordAudit(actor, { action: 'create', entity: 'event', entityId: row!.id, eventId: row!.id, summary: `Created event "${row!.title}"` })
   return row
 })

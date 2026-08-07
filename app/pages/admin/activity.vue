@@ -19,15 +19,17 @@ interface LogPayload {
   hasMore: boolean
   actors: { id: number | null; name: string; role: string }[]
   entities: string[]
+  events: { id: number; title: string }[]
 }
 
-const filters = reactive({ actorId: '', entity: '', action: '', q: '' })
+const filters = reactive({ actorId: '', entity: '', action: '', eventId: '', q: '' })
 const limit = ref(100)
 
 const params = computed(() => ({
   actorId: filters.actorId || undefined,
   entity: filters.entity || undefined,
   action: filters.action || undefined,
+  eventId: filters.eventId || undefined,
   q: filters.q || undefined,
   limit: limit.value,
 }))
@@ -51,10 +53,10 @@ function stamp(iso: string) {
 }
 
 function reset() {
-  Object.assign(filters, { actorId: '', entity: '', action: '', q: '' })
+  Object.assign(filters, { actorId: '', entity: '', action: '', eventId: '', q: '' })
   limit.value = 100
 }
-const filtered = computed(() => Boolean(filters.actorId || filters.entity || filters.action || filters.q))
+const filtered = computed(() => Boolean(filters.actorId || filters.entity || filters.action || filters.eventId || filters.q))
 
 useSeoMeta({ title: 'Activity log', robots: 'noindex' })
 </script>
@@ -72,7 +74,7 @@ useSeoMeta({ title: 'Activity log', robots: 'noindex' })
     </AdminPageHeader>
 
     <AdminPanel title="Filter" icon="lucide:filter" class="fade-up">
-      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <div>
           <label class="label" for="f-actor">Person</label>
           <select id="f-actor" v-model="filters.actorId" class="input">
@@ -98,6 +100,13 @@ useSeoMeta({ title: 'Activity log', robots: 'noindex' })
             <option value="delete">Deleted</option>
             <option value="decide">Decided</option>
             <option value="notify">Notified</option>
+          </select>
+        </div>
+        <div>
+          <label class="label" for="f-event">Event</label>
+          <select id="f-event" v-model="filters.eventId" class="input">
+            <option value="">Any event</option>
+            <option v-for="e in data?.events ?? []" :key="e.id" :value="String(e.id)">{{ e.title }}</option>
           </select>
         </div>
         <div>

@@ -1,5 +1,6 @@
 import { eq, desc, asc, and, or, isNull, inArray, count, countDistinct, ne } from 'drizzle-orm'
 import { useDb, schema } from '../database/client'
+import { eventHeadcount } from './dashboard/scope'
 
 export async function getCurrentEventFull() {
   const db = useDb()
@@ -34,28 +35,26 @@ export async function getCurrentEventFull() {
 // entries count as one) across non-rejected registrations for the event's
 // competitions; "Teams" = one per such registration; "Universities" =
 // distinct non-blank institutions among them.
+/**
+ * Public-facing event counters.
+ *
+ * `participants` now counts DISTINCT PEOPLE, not roster rows. It previously
+ * counted team_members rows, so anyone entered in two competitions was counted
+ * twice and the public figure ran high. Delegating to eventHeadcount() means
+ * this and the admin dashboard read from one definition and cannot drift —
+ * which is the whole reason that helper exists.
+ */
 export async function getEventStats(eventId: number) {
   const db = useDb()
-  const comps = await db.select({ id: schema.competitions.id }).from(schema.competitions).where(eq(schema.competitions.eventId, eventId))
-  const compIds = comps.map((c) => c.id)
-  if (!compIds.length) return { participants: 0, teams: 0, universities: 0 }
+  const { people, institutions } = await eventHeadcount(eventId)
 
-  const notRejected = and(inArray(schema.registrations.competitionId, compIds), ne(schema.registrations.status, 'rejected'))
-
-  const [{ n: teams }] = await db.select({ n: count() }).from(schema.registrations).where(notRejected)
-
-  const [{ n: participants }] = await db
+  const [teams] = await db
     .select({ n: count() })
-    .from(schema.teamMembers)
-    .innerJoin(schema.registrations, eq(schema.teamMembers.registrationId, schema.registrations.id))
-    .where(notRejected)
-
-  const [{ n: universities }] = await db
-    .select({ n: countDistinct(schema.registrations.institution) })
     .from(schema.registrations)
-    .where(and(notRejected, ne(schema.registrations.institution, '')))
+    .innerJoin(schema.competitions, eq(schema.competitions.id, schema.registrations.competitionId))
+    .where(and(eq(schema.competitions.eventId, eventId), ne(schema.registrations.status, 'rejected')))
 
-  return { participants, teams, universities }
+  return { participants: people, teams: teams?.n ?? 0, universities: institutions }
 }
 
 export async function getCompetitionBySlug(slug: string) {
@@ -383,11 +382,14 @@ export async function getEventDetail(slugOrId: string, opts: { includeDrafts?: b
         .where(and(eq(schema.judgingCriteria.eventId, event.id), eq(schema.judgingCriteria.published, true)))
         .orderBy(asc(schema.judgingCriteria.sortOrder)),
       // Distinct people on this edition's rosters, for the hero counter.
+      // Excludes rejected teams — they are not attending, and counting them
+      // made this figure disagree with getEventStats for the same event.
       compIds.length
         ? db
             .select({ n: countDistinct(schema.teamMembers.accountId) })
             .from(schema.teamMembers)
-            .where(inArray(schema.teamMembers.competitionId, compIds))
+            .innerJoin(schema.registrations, eq(schema.registrations.id, schema.teamMembers.registrationId))
+            .where(and(inArray(schema.teamMembers.competitionId, compIds), ne(schema.registrations.status, 'rejected')))
         : Promise.resolve([{ n: 0 }]),
     ])
 

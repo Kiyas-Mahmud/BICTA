@@ -81,7 +81,7 @@ const isDetail = computed(() => current.value && !current.value.exact && route.p
 const initials = computed(() => initialsOf((user.value as any)?.name || (user.value as any)?.email || 'Admin'))
 
 // Lightweight badge counts for the top bar (pending registrations + new messages).
-const { data: badge } = useFetch('/api/admin/stats', { key: 'admin-stats', lazy: true })
+const { data: badge } = useFetch('/api/admin/badges', { key: ADMIN_STATS_KEY, lazy: true })
 const alerts = computed(() => (badge.value?.pendingRegistrations ?? 0) + (badge.value?.unreadMessages ?? 0))
 const alertLabel = computed(() =>
   alerts.value

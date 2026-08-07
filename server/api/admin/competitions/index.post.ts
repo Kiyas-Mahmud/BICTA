@@ -54,6 +54,6 @@ export default defineEventHandler(async (event) => {
       .values(body.prizes.map((p, i) => ({ competitionId: comp!.id, position: p.position, amount: p.amount, note: p.note ?? null, sortOrder: i })))
   }
 
-  await recordAudit(actor, { action: 'create', entity: 'competition', entityId: comp!.id, summary: `Created competition "${comp!.name}"` })
+  await recordAudit(actor, { action: 'create', entity: 'competition', entityId: comp!.id, eventId: comp!.eventId, summary: `Created competition "${comp!.name}"` })
   return comp!
 })

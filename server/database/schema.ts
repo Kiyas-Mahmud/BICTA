@@ -368,6 +368,10 @@ export const auditLogs = sqliteTable(
     // Subject type, e.g. 'competition', 'judge', 'registration', 'moderator'.
     entity: text('entity').notNull(),
     entityId: integer('entity_id'),
+    // Recorded at write time, because (entity, entityId) is a loose pointer
+    // with no FK — a deleted row's event cannot be resolved afterwards. NULL
+    // means the action genuinely had no event (settings, moderators, login).
+    eventId: integer('event_id').references(() => events.id, { onDelete: 'set null' }),
     // Human-readable one-liner, already safe to render (never raw PII bodies).
     summary: text('summary').notNull().default(''),
     createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),

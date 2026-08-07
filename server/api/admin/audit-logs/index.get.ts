@@ -8,6 +8,7 @@ const query = z.object({
   actorId: z.coerce.number().int().positive().optional(),
   entity: z.string().trim().max(40).optional(),
   action: z.string().trim().max(20).optional(),
+  eventId: z.coerce.number().int().positive().optional(),
   q: z.string().trim().max(120).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(100),
   offset: z.coerce.number().int().min(0).default(0),
@@ -15,7 +16,7 @@ const query = z.object({
 
 export default defineEventHandler(async (event) => {
   await requireMainAdmin(event)
-  const { actorId, entity, action, q, limit, offset } = await getValidatedQuery(event, query.parse)
+  const { actorId, entity, action, eventId, q, limit, offset } = await getValidatedQuery(event, query.parse)
   const db = useDb()
 
   const rows = await db
@@ -26,6 +27,10 @@ export default defineEventHandler(async (event) => {
         actorId ? eq(schema.auditLogs.actorId, actorId) : undefined,
         entity ? eq(schema.auditLogs.entity, entity) : undefined,
         action ? eq(schema.auditLogs.action, action) : undefined,
+        // Only rows recorded with an event; entries with a null eventId are
+        // genuinely console-wide (settings, moderators, login) and are not
+        // hidden behind an event filter by accident.
+        eventId ? eq(schema.auditLogs.eventId, eventId) : undefined,
         q
           ? or(
               like(schema.auditLogs.summary, `%${q}%`),
@@ -45,6 +50,12 @@ export default defineEventHandler(async (event) => {
     .selectDistinct({ id: schema.auditLogs.actorId, name: schema.auditLogs.actorName, role: schema.auditLogs.actorRole })
     .from(schema.auditLogs)
   const entities = await db.selectDistinct({ entity: schema.auditLogs.entity }).from(schema.auditLogs)
+  // Events that actually have entries, so the filter never offers a choice
+  // that yields nothing.
+  const events = await db
+    .selectDistinct({ id: schema.events.id, title: schema.events.title })
+    .from(schema.auditLogs)
+    .innerJoin(schema.events, eq(schema.events.id, schema.auditLogs.eventId))
 
   return {
     rows,
@@ -52,5 +63,6 @@ export default defineEventHandler(async (event) => {
     hasMore: rows.length === limit,
     actors: actors.filter((a) => a.id !== null),
     entities: entities.map((e) => e.entity).sort(),
+    events,
   }
 })

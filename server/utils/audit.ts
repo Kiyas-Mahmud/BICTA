@@ -9,6 +9,13 @@ interface AuditInput {
   /** Subject type: 'competition' | 'event' | 'judge' | 'registration' | … */
   entity: string
   entityId?: number | null
+  /**
+   * Which event this action belonged to, when the caller knows. Captured here
+   * rather than derived on read: entity/entityId is a loose pointer with no
+   * FK, so after a delete the event is unrecoverable. Omit for genuinely
+   * event-less actions (settings, moderators, login).
+   */
+  eventId?: number | null
   /** One readable line. Never put PII bodies or credentials in here. */
   summary?: string
 }
@@ -35,6 +42,7 @@ export async function recordAudit(actor: StaffSessionUser, input: AuditInput): P
         action: input.action,
         entity: input.entity,
         entityId: input.entityId ?? null,
+        eventId: input.eventId ?? null,
         summary: input.summary ?? '',
       })
   } catch (err: any) {
