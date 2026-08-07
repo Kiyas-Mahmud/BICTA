@@ -8,9 +8,24 @@ export interface NavItem {
   icon: string
 }
 
-const props = defineProps<{ items: NavItem[]; logoUrl?: string | null }>()
+const props = withDefaults(
+  defineProps<{ items: NavItem[]; logoUrl?: string | null; brandName?: string | null }>(),
+  { logoUrl: null, brandName: 'BICTA' },
+)
 
 const route = useRoute()
+
+// Signed-in visitors get a single "Dashboard" button instead of Log in +
+// Register. Which console that points at depends on which session key is set
+// — the same precedence the login endpoint uses when it resolves an account.
+const { session } = useUserSession()
+const dashboard = computed(() => {
+  const s = session.value as any
+  if (s?.user) return s.user.role === 'volunteer' ? '/staff/scan' : '/admin'
+  if (s?.judge) return '/judge'
+  if (s?.participant) return '/portal'
+  return null
+})
 
 // Derived from the route, so the active tab is already correct in the SSR
 // markup instead of popping in after hydration.
@@ -36,27 +51,44 @@ function updateIndicator() {
     return
   }
   const el = navItemRefs.value[idx]
-  const container = navContainerRef.value
-  const elRect = el.getBoundingClientRect()
-  const containerRect = container.getBoundingClientRect()
 
+  // offsetLeft/offsetTop are measured against the same box absolute
+  // positioning resolves against (the container's padding box), so they stay
+  // correct without hand-correcting for its border. getBoundingClientRect
+  // deltas do not: they include the border, and a hardcoded `top` ignores
+  // that the links are vertically centred against the taller brand badge
+  // rather than sitting flush at the container's padding edge.
   indicatorStyle.value = {
     opacity: '1',
-    transform: `translateX(${elRect.left - containerRect.left}px)`,
-    width: `${elRect.width}px`,
-    height: `${elRect.height}px`,
+    transform: `translateX(${el.offsetLeft}px)`,
+    top: `${el.offsetTop}px`,
+    width: `${el.offsetWidth}px`,
+    height: `${el.offsetHeight}px`,
   }
 }
 
 watch(activeIndex, () => nextTick(updateIndicator))
 
+let resizeObserver: ResizeObserver | undefined
+
 onMounted(() => {
   nextTick(updateIndicator)
+  // A single post-mount measurement can land before the web font swaps in
+  // (Schibsted Grotesk vs. the fallback) or before @nuxt/icon's SVGs finish
+  // rendering, both of which reflow the label width after the fact and leave
+  // the pill sized for the wrong text. ResizeObserver keeps it honest
+  // whenever the actual content box changes, not just on window resize.
+  document.fonts?.ready?.then(updateIndicator)
+  if (navContainerRef.value && 'ResizeObserver' in window) {
+    resizeObserver = new ResizeObserver(() => updateIndicator())
+    resizeObserver.observe(navContainerRef.value)
+  }
   window.addEventListener('resize', updateIndicator)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateIndicator)
+  resizeObserver?.disconnect()
 })
 </script>
 
@@ -64,20 +96,25 @@ onBeforeUnmount(() => {
   <!-- ===== Mobile: slim top bar (brand + account actions) ===== -->
   <header class="nav-top-mobile sm:hidden">
     <div class="flex h-14 items-center justify-between gap-3 px-4">
-      <NuxtLink to="/" class="flex items-center gap-2" aria-label="BICTA home">
-        <img v-if="logoUrl" :src="logoUrl" alt="BICTA" class="h-8 w-8 rounded-lg object-contain" />
-        <span v-else class="text-lg font-extrabold tracking-tight text-ink">BICTA<span class="text-brand-600">.</span></span>
+      <NuxtLink to="/" class="flex items-center gap-2" :aria-label="`${brandName} home`">
+        <img v-if="logoUrl" :src="logoUrl" :alt="brandName ?? ''" class="h-8 w-auto max-w-[7rem] object-contain" />
+        <span v-else class="text-lg font-extrabold tracking-tight text-ink">{{ brandName }}<span class="text-brand-600">.</span></span>
       </NuxtLink>
       <div class="flex items-center gap-1.5">
-        <NuxtLink
-          to="/login"
-          class="flex h-10 min-w-[2.5rem] items-center justify-center gap-1.5 rounded-xl px-3 text-sm font-bold text-ink-soft transition-colors active:bg-mist-1"
-        >
-          Log in
+        <NuxtLink v-if="dashboard" :to="dashboard" class="btn-primary !px-4 !py-2.5 !text-sm">
+          Dashboard
         </NuxtLink>
-        <NuxtLink to="/events" class="btn-primary !px-4 !py-2.5 !text-sm">
-          Register
-        </NuxtLink>
+        <template v-else>
+          <NuxtLink
+            to="/login"
+            class="flex h-10 min-w-[2.5rem] items-center justify-center gap-1.5 rounded-xl px-3 text-sm font-bold text-ink-soft transition-colors active:bg-mist-1"
+          >
+            Log in
+          </NuxtLink>
+          <NuxtLink to="/events" class="btn-primary !px-4 !py-2.5 !text-sm">
+            Register
+          </NuxtLink>
+        </template>
       </div>
     </div>
   </header>
@@ -93,65 +130,83 @@ onBeforeUnmount(() => {
         >
           <!-- indicator sits behind the content, animates between tabs -->
           <span class="nav-tab-pill" aria-hidden="true" />
-          <Icon :name="item.icon" class="nav-tab-icon" />
+          <img v-if="logoUrl && item.url === '/'" :src="logoUrl" alt="" class="nav-tab-icon h-5 w-auto max-w-[3rem] object-contain" />
+          <Icon v-else :name="item.icon" class="nav-tab-icon" />
           <span class="nav-tab-label">{{ item.name }}</span>
         </NuxtLink>
       </li>
     </ul>
   </nav>
 
-  <!-- ===== Desktop: floating logo badge ===== -->
-  <div v-if="logoUrl" class="fixed top-6 left-6 z-50 hidden sm:flex">
-    <NuxtLink
-      to="/"
-      class="flex h-12 w-12 items-center justify-center rounded-2xl border border-line/70 bg-white/90 shadow-2xl backdrop-blur-2xl"
-      aria-label="BICTA home"
-    >
-      <img :src="logoUrl" alt="BICTA" class="h-8 w-8 rounded-lg object-contain" />
-    </NuxtLink>
-  </div>
-
   <!-- ===== Desktop: floating top pill ===== -->
   <div class="fixed top-6 left-1/2 z-50 hidden -translate-x-1/2 justify-center sm:flex">
-    <nav ref="navContainerRef" class="relative flex items-center gap-1.5 overflow-hidden rounded-full border border-line/70 bg-white/90 p-2 pl-3 pr-3.5 shadow-2xl backdrop-blur-2xl">
+    <!-- No overflow-hidden: the Register button carries a drop shadow and a
+         -2px hover lift, both of which get sheared off by clipping and read
+         as the button sitting outside the bar. The active indicator is
+         self-contained, so nothing needs clipping anyway. -->
+    <nav ref="navContainerRef" class="relative flex items-center gap-1.5 rounded-full border border-line/70 bg-white/90 p-2 shadow-2xl backdrop-blur-2xl">
       <NuxtLink
-        v-for="(item, i) in items"
-        :key="item.name"
-        :ref="(el: any) => { if (el?.$el) navItemRefs[i] = el.$el; else if (el) navItemRefs[i] = el as HTMLElement }"
-        :to="item.url"
-        class="relative z-10 flex shrink-0 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-extrabold transition-colors"
-        :class="activeIndex === i ? 'text-brand-700' : 'text-ink-soft hover:bg-mist-1 hover:text-ink'"
-        :title="item.name"
+        to="/"
+        class="relative z-10 flex shrink-0 items-center gap-2 rounded-full pr-2 text-sm font-extrabold text-ink"
+        :aria-label="`${brandName} home`"
       >
-        <Icon :name="item.icon" class="shrink-0 text-lg" />
-        <span class="whitespace-nowrap">{{ item.name }}</span>
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink">
+          <img v-if="logoUrl" :src="logoUrl" alt="" class="h-full w-full object-cover" />
+          <Icon v-else name="lucide:command" class="text-lg text-white" />
+        </span>
+        <span class="whitespace-nowrap">{{ brandName }}</span>
       </NuxtLink>
+
+      <template v-for="(item, i) in items" :key="item.name">
+        <NuxtLink
+          v-if="item.url !== '/'"
+          :ref="(el: any) => { if (el?.$el) navItemRefs[i] = el.$el; else if (el) navItemRefs[i] = el as HTMLElement }"
+          :to="item.url"
+          class="relative z-10 flex h-10 shrink-0 items-center justify-center gap-2 rounded-full px-4 text-sm font-extrabold transition-colors"
+          :class="activeIndex === i ? 'text-brand-700' : 'text-ink-soft hover:bg-mist-1 hover:text-ink'"
+          :title="item.name"
+        >
+          <Icon :name="item.icon" class="shrink-0 text-lg" />
+          <span class="whitespace-nowrap">{{ item.name }}</span>
+        </NuxtLink>
+      </template>
 
       <!-- Active indicator: fully self-contained, so nothing can paint outside
            the pill (the old version leaned on overflow clipping, which is
            unreliable on an element that also carries a backdrop-filter). -->
       <div
-        class="nav-desktop-indicator pointer-events-none absolute top-2 z-0"
+        class="nav-desktop-indicator pointer-events-none absolute left-0 top-0 z-0"
         :style="indicatorStyle"
       />
 
       <div class="ml-1.5 flex shrink-0 items-center gap-1.5 border-l border-line/60 pl-2.5">
         <NuxtLink
-          to="/login"
-          class="flex items-center justify-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-extrabold text-ink-soft transition-colors hover:bg-mist-1 hover:text-ink"
-          title="Participant login"
+          v-if="dashboard"
+          :to="dashboard"
+          class="btn-primary !h-10 !rounded-full !px-5 !py-0 text-sm font-bold"
+          title="Go to my dashboard"
         >
-          <Icon name="lucide:log-in" class="text-lg" />
-          <span>Log in</span>
+          <Icon name="lucide:layout-dashboard" class="text-base" />
+          <span>Dashboard</span>
         </NuxtLink>
-        <NuxtLink
-          to="/events"
-          class="btn-primary !rounded-full !px-5 !py-2 text-sm font-bold"
-          title="Register"
-        >
-          <span>Register</span>
-          <Icon name="lucide:arrow-right" class="ml-0.5 text-xs" />
-        </NuxtLink>
+        <template v-else>
+          <NuxtLink
+            to="/login"
+            class="flex h-10 items-center justify-center gap-2 rounded-full px-4 text-sm font-extrabold text-ink-soft transition-colors hover:bg-mist-1 hover:text-ink"
+            title="Participant login"
+          >
+            <Icon name="lucide:log-in" class="text-lg" />
+            <span>Log in</span>
+          </NuxtLink>
+          <NuxtLink
+            to="/events"
+            class="btn-primary !h-10 !rounded-full !px-5 !py-0 text-sm font-bold"
+            title="Register"
+          >
+            <span>Register</span>
+            <Icon name="lucide:arrow-right" class="ml-0.5 text-xs" />
+          </NuxtLink>
+        </template>
       </div>
     </nav>
   </div>

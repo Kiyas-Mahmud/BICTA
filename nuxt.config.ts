@@ -63,12 +63,14 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'en' },
-      titleTemplate: (title) => (title ? `${title} — BICTA` : 'BICTA — Annual Tech Competition'),
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'BICTA — the annual technology competition. Project Showcase, Datathon, Hackathon and more.' },
       ],
-      link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+      // titleTemplate and the favicon link are set in app/app.vue instead:
+      // both depend on the admin-configured brand name and primary logo, which
+      // this static config cannot read. Declaring them here as well would
+      // leave two competing sources and a duplicate <link rel="icon">.
     },
     pageTransition: { name: 'page', mode: 'out-in' },
   },

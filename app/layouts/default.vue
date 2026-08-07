@@ -18,7 +18,11 @@ const year = new Date().getFullYear()
 <template>
   <div class="flex min-h-screen flex-col bg-paper">
     <!-- Tubelight Navbar -->
-    <UiTubelightNavbar :items="navItems" :logo-url="settings?.site_logo_url" />
+    <UiTubelightNavbar
+      :items="navItems"
+      :logo-url="settings?.site_logo_url"
+      :brand-name="settings?.brand_name || 'BICTA'"
+    />
 
     <main class="flex-1">
       <slot />

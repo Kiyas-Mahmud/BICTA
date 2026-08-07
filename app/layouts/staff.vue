@@ -3,6 +3,7 @@
 // phone, at a booth, often in bright light.
 const { session } = useUserSession()
 const staff = computed(() => (session.value as any)?.user as { name: string; email?: string; role?: string } | undefined)
+const { data: settings } = await useFetch('/api/public/settings', { key: 'site-settings' })
 
 const { runBeforeLogout } = useStaffShell()
 const loggingOut = ref(false)
@@ -38,7 +39,8 @@ async function logout() {
     <header class="sticky top-0 z-40 border-b border-white/10 bg-black/20 backdrop-blur-md">
       <div class="mx-auto flex h-14 w-full max-w-2xl items-center gap-3 px-4">
         <p class="flex items-center gap-2 font-extrabold tracking-tight">
-          <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500/25 text-brand-300">
+          <img v-if="settings?.site_logo_url" :src="settings.site_logo_url" alt="BICTA" class="h-7 w-auto max-w-[2.5rem] object-contain" />
+          <span v-else class="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500/25 text-brand-300">
             <Icon name="lucide:scan-line" />
           </span>
           BICTA <span class="text-white/50">Scanner</span>

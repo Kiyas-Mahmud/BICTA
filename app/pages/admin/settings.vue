@@ -16,9 +16,10 @@ const groups: { id: string; title: string; icon: string; description: string; fi
     id: 'branding',
     title: 'Branding',
     icon: 'lucide:image',
-    description: 'The logo shown in the site navigation.',
+    description: 'The name and logo shown in the navbar and home-page hero.',
     fields: [
-      { key: 'site_logo_url', label: 'Site logo', type: 'image', hint: 'Shown in the navbar. Falls back to the "BICTA" wordmark when empty.' },
+      { key: 'brand_name', label: 'Brand name', hint: 'The big title on the home page hero and the wordmark next to the navbar logo. Defaults to "BICTA".' },
+      { key: 'site_logo_url', label: 'Site logo', type: 'image', hint: 'Shown in the navbar. Falls back to the brand name wordmark when empty.' },
     ],
   },
   {
@@ -31,17 +32,6 @@ const groups: { id: string; title: string; icon: string; description: string; fi
       { key: 'hero_full_name', label: 'Full name (shown under the BICTA title)', hint: 'e.g. Bangladesh ICT Alliance' },
       { key: 'hero_tagline', label: 'Hero tagline' },
       { key: 'hero_blurb', label: 'Hero blurb (description)', type: 'textarea' },
-    ],
-  },
-  {
-    id: 'stats',
-    title: 'Hero stats',
-    icon: 'lucide:bar-chart-3',
-    description: 'Three numbers shown under the hero.',
-    fields: [
-      { key: 'stat_participants', label: 'Participants' },
-      { key: 'stat_teams', label: 'Teams' },
-      { key: 'stat_universities', label: 'Universities' },
     ],
   },
   {
