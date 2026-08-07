@@ -21,9 +21,30 @@ const { data, pending } = await useFetch('/api/admin/dashboard', {
   key: computed(() => `admin-dashboard-${eventId.value ?? 'current'}`) as any,
 })
 
+// Selecting the current event drops the query param entirely, so /admin keeps
+// meaning "whatever is current" rather than pinning to today's id — otherwise
+// a bookmarked dashboard would silently keep showing last year's event once
+// the current one moves on.
 function selectEvent(id: number) {
-  router.replace({ query: { ...route.query, event: String(id) } })
+  const query = { ...route.query }
+  if (id === currentEventId.value) delete query.event
+  else query.event = String(id)
+  router.replace({ query })
 }
+
+const currentEventId = computed(() => data.value?.events.find((e) => e.isCurrent)?.id ?? null)
+
+// Grouped so the list stays navigable once there are many editions. Server
+// order (newest year first) is preserved inside each group.
+const eventGroups = computed(() => {
+  const all = data.value?.events ?? []
+  return [
+    { label: 'Current', events: all.filter((e) => e.isCurrent) },
+    { label: 'Upcoming', events: all.filter((e) => !e.isCurrent && e.status === 'upcoming') },
+    { label: 'Running', events: all.filter((e) => !e.isCurrent && e.status === 'ongoing') },
+    { label: 'Past', events: all.filter((e) => !e.isCurrent && e.status === 'past') },
+  ].filter((g) => g.events.length > 0)
+})
 
 const greeting = computed(() => {
   const h = new Date().getHours()
@@ -107,26 +128,38 @@ useSeoMeta({ title: 'Dashboard', robots: 'noindex' })
 
 <template>
   <div class="space-y-5">
-    <!-- Event switcher: the scope for everything below. -->
-    <div v-if="(data?.events.length ?? 0) > 1" class="-mx-1 overflow-x-auto px-1">
-      <div class="flex w-max gap-2" role="tablist" aria-label="Choose an event">
-        <button
-          v-for="e in data?.events"
-          :key="e.id"
-          type="button"
-          role="tab"
-          :aria-selected="e.id === ev?.id"
-          class="flex shrink-0 items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-bold transition-colors"
-          :class="e.id === ev?.id
-            ? 'border-brand-500 bg-brand-600 text-white shadow-soft'
-            : 'border-line bg-white text-ink-soft hover:border-brand-300 hover:text-ink'"
-          @click="selectEvent(e.id)"
+    <!-- Event switcher: the scope for everything below.
+         A dropdown rather than a row of buttons, because editions accumulate
+         every year and a button row stops fitting after a handful. Grouped by
+         status so the list stays navigable once there are many. -->
+    <div v-if="(data?.events.length ?? 0) > 1" class="flex flex-wrap items-center gap-3">
+      <label class="console-label shrink-0" for="dash-event">Viewing</label>
+      <div class="relative min-w-0 flex-1 sm:max-w-sm">
+        <Icon
+          name="lucide:calendar-days"
+          class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint"
+        />
+        <select
+          id="dash-event"
+          class="input !py-2.5 !pl-9 font-bold"
+          :value="String(ev?.id ?? '')"
+          @change="selectEvent(Number(($event.target as HTMLSelectElement).value))"
         >
-          {{ e.title }}
-          <span v-if="e.isCurrent" class="rounded-md px-1.5 py-0.5 text-[0.6rem] uppercase tracking-wide"
-            :class="e.id === ev?.id ? 'bg-white/20' : 'bg-mist-1'">Current</span>
-        </button>
+          <optgroup v-for="g in eventGroups" :key="g.label" :label="g.label">
+            <option v-for="e in g.events" :key="e.id" :value="String(e.id)">
+              {{ e.title }}{{ e.isCurrent ? ' · Current' : '' }}{{ e.published ? '' : ' · Draft' }}
+            </option>
+          </optgroup>
+        </select>
       </div>
+      <button
+        v-if="ev && !ev.isCurrent && currentEventId"
+        type="button"
+        class="btn-secondary !py-2 text-sm"
+        @click="selectEvent(currentEventId)"
+      >
+        <Icon name="lucide:rotate-ccw" /> Back to current
+      </button>
     </div>
 
     <!-- Header + the single hero figure -->
