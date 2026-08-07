@@ -2,6 +2,7 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import { useDb, schema } from '../../database/client'
+import { staffCanSignIn, staffBlockedReason } from '../../utils/staff'
 
 // Single sign-in door for all four account types (admin, volunteer,
 // participant, judge). Each email can only ever be usable in one of the
@@ -29,6 +30,10 @@ export default defineEventHandler(async (event) => {
     db.select().from(schema.judgeAccounts).where(eq(schema.judgeAccounts.email, body.email)).get(),
   ])
 
+  // Staff go through the same gate as the other two: invited (no password set
+  // yet) and banned accounts are refused. Without this a banned volunteer
+  // would keep working, since their row still holds a valid hash.
+  const adminUsable = staffCanSignIn(admin)
   const participantUsable = participant && participant.status === 'active' && participant.passwordHash
   const judgeUsable = judge && judge.status === 'active' && judge.passwordHash
 
@@ -37,17 +42,25 @@ export default defineEventHandler(async (event) => {
   // collision across tables shouldn't happen in practice (each is invited by
   // an admin who controls the address), so the order has no real product impact.
   const hash =
-    admin?.passwordHash ??
+    (adminUsable ? admin!.passwordHash : undefined) ??
     (judgeUsable ? judge!.passwordHash! : undefined) ??
     (participantUsable ? participant!.passwordHash! : undefined) ??
     DUMMY_HASH
   const valid = await bcrypt.compare(body.password, hash)
 
-  if (!valid || (!admin && !judgeUsable && !participantUsable)) {
+  // A staff account that exists but cannot sign in gets the specific reason
+  // rather than "invalid credentials" — the address is already known to
+  // whoever invited them, so there is nothing to leak, and being told to
+  // check your invitation email is far more useful than a generic failure.
+  if (admin && !adminUsable && !judgeUsable && !participantUsable) {
+    throw createError({ statusCode: 403, statusMessage: staffBlockedReason(admin.status) })
+  }
+
+  if (!valid || (!adminUsable && !judgeUsable && !participantUsable)) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid credentials' })
   }
 
-  if (admin) {
+  if (adminUsable && admin) {
     await setUserSession(event, {
       user: { id: admin.id, name: admin.name, email: admin.email, role: admin.role },
     })

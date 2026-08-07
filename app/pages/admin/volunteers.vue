@@ -4,7 +4,7 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 const { data: volunteers, refresh } = await useFetch<{ id: number; name: string; email: string }[]>('/api/admin/volunteers')
 const { data: tree } = await useFetch('/api/admin/event-tree', { key: 'admin-event-tree' })
 
-const form = reactive({ name: '', email: '', password: '' })
+const form = reactive({ name: '', email: '' })
 const adding = ref(false)
 const error = ref('')
 const toast = useToast()
@@ -100,17 +100,85 @@ async function add() {
   error.value = ''
   adding.value = true
   try {
-    await $fetch('/api/admin/volunteers', { method: 'POST', body: { ...form } })
-    toast.success(`${form.name || 'Volunteer'} can now sign in`, 'Share the password with them — it is not shown again.')
+    await $fetch('/api/admin/volunteers', { method: 'POST', body: { name: form.name, email: form.email } })
+    toast.success(`Invitation sent to ${form.email}`, 'They set their own password from the emailed link.')
     form.name = ''
     form.email = ''
-    form.password = ''
     await Promise.all([refresh(), refreshAdminStats()])
   } catch (e: any) {
-    error.value = e?.data?.statusMessage ?? 'Could not create volunteer.'
+    error.value = e?.data?.statusMessage ?? 'Could not invite volunteer.'
   } finally {
     adding.value = false
   }
+}
+
+// ---- edit / ban / re-invite -------------------------------------------
+const editing = ref<{ id: number; name: string; email: string } | null>(null)
+const savingEdit = ref(false)
+
+function startEdit(v: { id: number; name: string; email: string }) {
+  editing.value = { id: v.id, name: v.name, email: v.email }
+  error.value = ''
+}
+
+async function saveEdit() {
+  const e = editing.value
+  if (!e) return
+  savingEdit.value = true
+  try {
+    await $fetch(`/api/admin/volunteers/${e.id}`, { method: 'PUT', body: { name: e.name, email: e.email } })
+    editing.value = null
+    await refresh()
+    toast.success('Volunteer updated')
+  } catch (err: any) {
+    error.value = err?.data?.statusMessage ?? 'Could not save.'
+  } finally {
+    savingEdit.value = false
+  }
+}
+
+async function setBanned(v: { id: number; name: string; email: string; status: string }, banned: boolean) {
+  const ok = await confirm({
+    title: banned ? `Ban ${v.name}?` : `Restore ${v.name}?`,
+    body: banned
+      ? 'They are signed out and refused at login straight away. Their record and past check-ins are kept.'
+      : 'They can sign in again with their existing password.',
+    confirmLabel: banned ? 'Ban volunteer' : 'Restore',
+    tone: banned ? 'danger' : 'brand',
+  })
+  if (!ok) return
+  try {
+    await $fetch(`/api/admin/volunteers/${v.id}`, {
+      method: 'PUT',
+      body: { name: v.name, email: v.email, status: banned ? 'banned' : 'active' },
+    })
+    await refresh()
+    toast.success(banned ? `${v.name} banned` : `${v.name} restored`)
+  } catch (err: any) {
+    toast.error('Could not update', err?.data?.statusMessage ?? 'Try again in a moment.')
+  }
+}
+
+async function resendInvite(v: { id: number; name: string; email: string }) {
+  const ok = await confirm({
+    title: `Send a new invitation to ${v.name}?`,
+    body: 'Any earlier link stops working, and their current password (if they set one) is cleared until they use the new link.',
+    confirmLabel: 'Send invitation',
+  })
+  if (!ok) return
+  try {
+    await $fetch(`/api/admin/volunteers/${v.id}/resend-invite`, { method: 'POST' })
+    await refresh()
+    toast.success(`Invitation sent to ${v.email}`)
+  } catch (err: any) {
+    toast.error('Could not send', err?.data?.statusMessage ?? 'Try again in a moment.')
+  }
+}
+
+function statusOf(v: { status?: string }) {
+  if (v.status === 'banned') return { label: 'Banned', cls: 'badge badge-orange' }
+  if (v.status === 'invited') return { label: 'Invited', cls: 'badge badge-amber' }
+  return { label: 'Active', cls: 'badge badge-green' }
 }
 
 async function remove(id: number, name: string) {
@@ -124,13 +192,6 @@ async function remove(id: number, name: string) {
   await Promise.all([refresh(), refreshAdminStats()])
   await loadSummary()
   toast.success(`${name} removed`)
-}
-
-// Readable throwaway password so nobody invents "123456" on event morning.
-function suggestPassword() {
-  const words = ['sage', 'scan', 'booth', 'kit', 'team', 'gate', 'badge', 'crew']
-  const pick = () => words[Math.floor(Math.random() * words.length)]
-  form.password = `${pick()}-${pick()}-${Math.floor(1000 + Math.random() * 9000)}`
 }
 
 async function copyEmail(email: string) {
@@ -167,6 +228,7 @@ async function copyEmail(email: string) {
             <thead>
               <tr>
                 <th scope="col">Volunteer</th>
+                <th scope="col">Status</th>
                 <th scope="col">Email</th>
                 <th scope="col">Assigned competitions</th>
                 <th scope="col" class="text-right">Actions</th>
@@ -180,6 +242,7 @@ async function copyEmail(email: string) {
                     <span class="font-semibold text-ink">{{ v.name }}</span>
                   </div>
                 </td>
+                <td><span :class="statusOf(v).cls">{{ statusOf(v).label }}</span></td>
                 <td class="text-ink-soft">{{ v.email }}</td>
                 <td>
                   <div v-if="summary[v.id]?.length" class="flex flex-wrap gap-1.5">
@@ -194,8 +257,29 @@ async function copyEmail(email: string) {
                     <button class="icon-btn-sm icon-btn-brand" :aria-label="`Assign ${v.name}`" title="Assign competitions" @click="startAssign(v)">
                       <Icon name="lucide:list-checks" />
                     </button>
-                    <button class="icon-btn-sm icon-btn-brand" :aria-label="`Copy ${v.name}'s email`" title="Copy email" @click="copyEmail(v.email)">
-                      <Icon name="lucide:copy" />
+                    <button class="icon-btn-sm icon-btn-brand" :aria-label="`Edit ${v.name}`" title="Edit" @click="startEdit(v)">
+                      <Icon name="lucide:pencil" />
+                    </button>
+                    <button class="icon-btn-sm icon-btn-brand" :aria-label="`Re-invite ${v.name}`" title="Send a new invitation" @click="resendInvite(v)">
+                      <Icon name="lucide:mail" />
+                    </button>
+                    <button
+                      v-if="v.status !== 'banned'"
+                      class="icon-btn-sm icon-btn-danger"
+                      :aria-label="`Ban ${v.name}`"
+                      title="Ban"
+                      @click="setBanned(v, true)"
+                    >
+                      <Icon name="lucide:ban" />
+                    </button>
+                    <button
+                      v-else
+                      class="icon-btn-sm icon-btn-brand"
+                      :aria-label="`Restore ${v.name}`"
+                      title="Restore"
+                      @click="setBanned(v, false)"
+                    >
+                      <Icon name="lucide:rotate-ccw" />
                     </button>
                     <button class="icon-btn-sm icon-btn-danger" :aria-label="`Remove ${v.name}`" title="Remove" @click="remove(v.id, v.name)">
                       <Icon name="lucide:trash-2" />
@@ -204,7 +288,7 @@ async function copyEmail(email: string) {
                 </td>
               </tr>
               <tr v-if="!volunteers?.length">
-                <td colspan="4" class="!p-0">
+                <td colspan="5" class="!p-0">
                   <AdminEmptyState
                     icon="lucide:scan-line"
                     title="No volunteers yet"
@@ -218,7 +302,31 @@ async function copyEmail(email: string) {
       </AdminPanel>
 
       <!-- add form -->
-      <AdminPanel title="Add volunteer" icon="lucide:user-plus" class="fade-up stagger-2 h-fit">
+      <AdminPanel v-if="editing" title="Edit volunteer" icon="lucide:pencil" class="fade-up h-fit">
+        <div class="space-y-4">
+          <div>
+            <label class="label" for="ev-name">Name</label>
+            <input id="ev-name" v-model="editing.name" class="input" maxlength="150" />
+          </div>
+          <div>
+            <label class="label" for="ev-email">Email</label>
+            <input id="ev-email" v-model="editing.email" type="email" class="input" maxlength="254" />
+          </div>
+          <p v-if="error" class="form-error" role="alert">{{ error }}</p>
+          <div class="flex gap-2">
+            <button type="button" class="btn-primary !py-2 text-sm" :disabled="savingEdit" @click="saveEdit">
+              <Icon :name="savingEdit ? 'lucide:loader-2' : 'lucide:check'" :class="{ 'animate-spin': savingEdit }" />
+              {{ savingEdit ? 'Saving…' : 'Save changes' }}
+            </button>
+            <button type="button" class="btn-secondary !py-2 text-sm" :disabled="savingEdit" @click="editing = null">Cancel</button>
+          </div>
+          <p class="text-xs text-ink-faint">
+            To reset their password, use the mail icon in the table to send a fresh invitation.
+          </p>
+        </div>
+      </AdminPanel>
+
+      <AdminPanel v-else title="Invite volunteer" icon="lucide:user-plus" class="fade-up stagger-2 h-fit">
         <form class="space-y-4" @submit.prevent="add">
           <div>
             <label class="label" for="vol-name">Name</label>
@@ -228,28 +336,18 @@ async function copyEmail(email: string) {
             <label class="label" for="vol-email">Email</label>
             <input id="vol-email" v-model="form.email" type="email" class="input" maxlength="254" required autocomplete="off" />
           </div>
-          <div>
-            <div class="flex items-baseline justify-between gap-2">
-              <label class="label" for="vol-pass">Password <span class="font-normal text-ink-faint">(min 8)</span></label>
-              <button type="button" class="text-xs font-bold text-brand-700 transition-colors hover:text-brand-800" @click="suggestPassword">
-                Suggest
-              </button>
-            </div>
-            <input id="vol-pass" v-model="form.password" type="text" class="input font-mono" minlength="8" required placeholder="Share this with them" autocomplete="off" />
-            <p class="mt-1.5 text-xs text-ink-faint">Shown once here — copy it before saving.</p>
-          </div>
-
           <p v-if="error" class="form-error" role="alert">{{ error }}</p>
 
           <button type="submit" class="btn-primary w-full" :disabled="adding">
             <Icon v-if="adding" name="lucide:loader-2" class="animate-spin" />
-            {{ adding ? 'Adding…' : 'Add volunteer' }}
+            {{ adding ? 'Sending…' : 'Send invitation' }}
           </button>
         </form>
 
         <p class="mt-4 flex items-start gap-2 rounded-xl bg-mist-1 p-3 text-xs leading-relaxed text-ink-soft">
           <Icon name="lucide:info" class="mt-0.5 shrink-0 text-brand-700" />
-          Volunteers can only reach the scanner. Everything else in this console stays admin-only.
+          They receive an email and choose their own password. Until they do, the account shows as
+          <strong>Invited</strong> and cannot sign in. Volunteers only ever reach the scanner.
         </p>
       </AdminPanel>
     </div>

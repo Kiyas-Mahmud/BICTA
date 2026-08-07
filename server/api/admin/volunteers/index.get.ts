@@ -1,10 +1,18 @@
-import { eq } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import { useDb, schema } from '../../../database/client'
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event)
   return useDb()
-    .select({ id: schema.admins.id, name: schema.admins.name, email: schema.admins.email })
+    .select({
+      id: schema.admins.id,
+      name: schema.admins.name,
+      email: schema.admins.email,
+      status: schema.admins.status,
+      inviteExpires: schema.admins.inviteExpires,
+      createdAt: schema.admins.createdAt,
+    })
     .from(schema.admins)
     .where(eq(schema.admins.role, 'volunteer'))
+    .orderBy(asc(schema.admins.name))
 })
