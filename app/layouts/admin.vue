@@ -1,15 +1,24 @@
 <script setup lang="ts">
 const { user } = useUserSession()
 const route = useRoute()
+const { data: settings } = await useFetch('/api/public/settings', { key: 'site-settings' })
 
-const groups = [
+// Main admins see everything; moderators do the same content work but never
+// site settings, moderator management or the activity log. Links marked
+// mainAdmin are filtered out below — the real boundary is requireMainAdmin()
+// on those endpoints, this just avoids showing a door that would 403.
+const isMainAdmin = computed(() => ((user.value as any)?.role ?? 'admin') === 'admin')
+
+const allGroups = [
   {
     label: 'Main',
     links: [
       { to: '/admin', label: 'Dashboard', icon: 'lucide:layout-dashboard', exact: true },
       { to: '/admin/events', label: 'Events', icon: 'lucide:calendar-days' },
       { to: '/admin/news', label: 'News', icon: 'lucide:newspaper' },
+      { to: '/admin/application-center', label: 'Application Center', icon: 'lucide:clipboard-check' },
       { to: '/admin/registrations', label: 'Registrations', icon: 'lucide:clipboard-list' },
+      { to: '/admin/participants', label: 'Participants', icon: 'lucide:users' },
       { to: '/admin/leaderboard', label: 'Leaderboard', icon: 'lucide:trophy' },
       { to: '/admin/gallery', label: 'Gallery', icon: 'lucide:images' },
     ],
@@ -41,22 +50,31 @@ const groups = [
   {
     label: 'System',
     links: [
-      { to: '/admin/settings', label: 'Settings', icon: 'lucide:settings' },
+      { to: '/admin/settings', label: 'Settings', icon: 'lucide:settings', mainAdmin: true },
+      { to: '/admin/moderators', label: 'Moderators', icon: 'lucide:shield', mainAdmin: true },
+      { to: '/admin/activity', label: 'Activity Log', icon: 'lucide:history', mainAdmin: true },
       { to: '/admin/account', label: 'Account', icon: 'lucide:user-cog' },
     ],
   },
-]
+] as { label: string; links: { to: string; label: string; icon: string; exact?: boolean; mainAdmin?: boolean }[] }[]
 
-const allLinks = groups.flatMap((g) => g.links)
+const groups = computed(() =>
+  allGroups
+    .map((g) => ({ ...g, links: g.links.filter((l) => !l.mainAdmin || isMainAdmin.value) }))
+    .filter((g) => g.links.length > 0),
+)
+
+const allLinks = computed(() => groups.value.flatMap((g) => g.links))
 function isActive(link: { to: string; exact?: boolean }) {
   return link.exact ? route.path === link.to : route.path.startsWith(link.to)
 }
 // Longest-prefix match so /admin/events/3 still lights up "Events".
 const current = computed(() => {
-  const matches = allLinks.filter((l) => (l.exact ? route.path === l.to : route.path.startsWith(l.to)))
-  return matches.sort((a, b) => b.to.length - a.to.length)[0] ?? allLinks[0]
+  const links = allLinks.value
+  const matches = links.filter((l) => (l.exact ? route.path === l.to : route.path.startsWith(l.to)))
+  return matches.sort((a, b) => b.to.length - a.to.length)[0] ?? links[0]
 })
-const currentGroup = computed(() => groups.find((g) => g.links.some((l) => l.to === current.value?.to))?.label ?? '')
+const currentGroup = computed(() => groups.value.find((g) => g.links.some((l) => l.to === current.value?.to))?.label ?? '')
 // Deeper routes (e.g. /admin/events/3) get a third crumb so the user knows the level.
 const isDetail = computed(() => current.value && !current.value.exact && route.path !== current.value.to)
 
@@ -113,7 +131,8 @@ async function logout() {
       :class="sidebarOpen ? 'translate-x-0 shadow-lift' : '-translate-x-full'"
     >
       <div class="flex h-16 shrink-0 items-center gap-2.5 border-b border-line px-5">
-        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-soft">
+        <img v-if="settings?.site_logo_url" :src="settings.site_logo_url" alt="BICTA" class="h-9 w-auto max-w-[3rem] shrink-0 object-contain" />
+        <span v-else class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-soft">
           <Icon name="lucide:command" class="text-lg" />
         </span>
         <div class="min-w-0 leading-tight">

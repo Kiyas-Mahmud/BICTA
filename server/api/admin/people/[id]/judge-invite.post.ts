@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { useDb, schema } from '../../../../database/client'
 import { judgeInviteSchema, idParam } from '../../../../utils/validation'
 import { sendMail, judgeInviteEmail } from '../../../../utils/email'
+import { recordAudit } from '../../../../utils/audit'
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000 // matches participant invite window
 
@@ -11,7 +12,7 @@ const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000 // matches participant invite wind
 // doubles as the only "reset" mechanism for a small, admin-curated judge pool
 // (no self-service forgot-password in v1).
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+  const actor = await requireAdmin(event)
   const personId = idParam.parse(getRouterParam(event, 'id'))
   const body = await readValidatedBody(event, judgeInviteSchema.parse)
   const db = useDb()
@@ -53,5 +54,6 @@ export default defineEventHandler(async (event) => {
 
   await sendMail({ to: account!.email, ...judgeInviteEmail({ name: person.name, inviteToken }) })
 
+  await recordAudit(actor, { action: 'create', entity: 'judge', entityId: personId, summary: `Invited ${person.name} as a judge (${body.email})` })
   return { ok: true, status: 'invited' as const }
 })

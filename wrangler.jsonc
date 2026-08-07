@@ -12,8 +12,14 @@
     "binding": "ASSETS"
   },
 
+  // Serve only on the custom domain. workers_dev:false retires the
+  // bicta.<subdomain>.workers.dev URL so the site has exactly one address —
+  // PUBLIC_SITE_URL is what every emailed link and invite link is built from,
+  // so the two must always name the same host.
+  "workers_dev": false,
+
   "vars": {
-    "PUBLIC_SITE_URL": "https://bicta.23-51134-1.workers.dev",
+    "PUBLIC_SITE_URL": "https://bytearo.online",
     "MAIL_FROM": "BICTA <no-reply@bytearo.online>"
   },
 
@@ -33,6 +39,13 @@
       "bucket_name": "bicta-uploads"
     }
   ],
+
+  // Hourly sweep that releases selection results whose announcement date has
+  // arrived (server/plugins/scheduled.ts). Hourly rather than by-the-minute
+  // because the schedule is a date, not a time of day.
+  "triggers": {
+    "crons": ["0 * * * *"]
+  },
 
   "observability": {
     "enabled": true

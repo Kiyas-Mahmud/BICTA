@@ -2,7 +2,7 @@ import { useDb, schema } from '../../database/client'
 import { settingsSchema } from '../../utils/validation'
 
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+  await requireMainAdmin(event)
   const body = await readValidatedBody(event, settingsSchema.parse)
   const db = useDb()
 

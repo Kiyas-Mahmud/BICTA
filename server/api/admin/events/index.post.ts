@@ -3,9 +3,10 @@ import { useDb, schema } from '../../../database/client'
 import { eventSchema } from '../../../utils/validation'
 import { slugify, uniqueSlug } from '../../../utils/slug'
 import { sanitizeRichText } from '../../../utils/sanitize'
+import { recordAudit } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+  const actor = await requireAdmin(event)
   const body = await readValidatedBody(event, eventSchema.parse)
   const db = useDb()
 
@@ -52,5 +53,6 @@ export default defineEventHandler(async (event) => {
     })
     .returning()
 
+  await recordAudit(actor, { action: 'create', entity: 'event', entityId: row!.id, summary: `Created event "${row!.title}"` })
   return row
 })
