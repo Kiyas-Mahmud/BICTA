@@ -66,7 +66,7 @@ useSeoMeta({ title: 'Verify your email', robots: 'noindex' })
       </div>
 
       <form v-else class="space-y-3" @submit.prevent="resend">
-        <p class="text-sm text-ink-soft">Enter the email you registered with and we'll send a new verification link.</p>
+        <p class="text-sm text-ink-soft">Enter the email you registered with and we'll send a fresh activation link.</p>
         <input v-model="resendEmail" type="email" required autocomplete="username" placeholder="you@example.com" class="field" />
         <div class="absolute -left-[9999px] top-auto" aria-hidden="true">
           <label for="website">Website</label>

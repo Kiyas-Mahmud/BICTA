@@ -24,8 +24,10 @@ export default defineEventHandler(async (event) => {
   if (!account || expired) {
     throw createError({
       statusCode: 400,
+      // Team leaders have no leader to ask, so the message points at the
+      // self-service resend rather than assuming an invited teammate.
       statusMessage: expired
-        ? 'This invite link has expired. Ask your team leader to copy a fresh one from their dashboard.'
+        ? 'This link has expired. Request a fresh one at /portal/verify, or ask your team leader to copy a new invite from their dashboard.'
         : 'This link is invalid or was already used.',
     })
   }
