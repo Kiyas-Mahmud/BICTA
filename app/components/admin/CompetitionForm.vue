@@ -10,6 +10,8 @@ export interface CompetitionFormData {
   rules: string
   registrationOpen: boolean
   registrationDeadline: string | null
+  startsAt: string | null
+  endsAt: string | null
   judgingOpen: boolean
   teamBased: boolean
   maxTeamSize: number
@@ -30,6 +32,9 @@ const form = reactive<CompetitionFormData>({
   rules: props.initial?.rules ?? '',
   registrationOpen: props.initial?.registrationOpen ?? false,
   registrationDeadline: props.initial?.registrationDeadline ?? null,
+  // datetime-local wants 'YYYY-MM-DDTHH:mm'; the API stores full ISO UTC.
+  startsAt: toLocalInput(props.initial?.startsAt),
+  endsAt: toLocalInput(props.initial?.endsAt),
   judgingOpen: props.initial?.judgingOpen ?? true,
   teamBased: props.initial?.teamBased ?? false,
   maxTeamSize: props.initial?.maxTeamSize ?? 1,
@@ -38,8 +43,30 @@ const form = reactive<CompetitionFormData>({
   prizes: props.initial?.prizes ? props.initial.prizes.map((p) => ({ ...p })) : [],
 })
 
+// The competition window is stored as full ISO UTC, but <input
+// type="datetime-local"> only speaks naive local time. Converting at the two
+// edges keeps the stored value unambiguous — the scanner compares in UTC, so a
+// timezone-less string here would silently shift the window.
+function toLocalInput(iso?: string | null): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+function toIso(local?: string | null): string | null {
+  if (!local) return null
+  const d = new Date(local)
+  return Number.isNaN(d.getTime()) ? null : d.toISOString()
+}
+
 function submit() {
-  emit('submit', { ...form, prizes: form.prizes.filter((p) => p.position && p.amount) })
+  emit('submit', {
+    ...form,
+    startsAt: toIso(form.startsAt),
+    endsAt: toIso(form.endsAt),
+    prizes: form.prizes.filter((p) => p.position && p.amount),
+  })
 }
 </script>
 
@@ -74,6 +101,16 @@ function submit() {
         <div>
           <label class="label" for="cp-deadline">Deadline</label>
           <input id="cp-deadline" v-model="form.registrationDeadline" type="date" class="input" />
+        </div>
+        <div>
+          <label class="label" for="cp-starts">Competition starts</label>
+          <input id="cp-starts" v-model="form.startsAt" type="datetime-local" class="input" />
+          <p class="mt-1.5 text-xs text-ink-faint">QR scans are refused before this. Blank falls back to the event dates.</p>
+        </div>
+        <div>
+          <label class="label" for="cp-ends">Competition ends</label>
+          <input id="cp-ends" v-model="form.endsAt" type="datetime-local" class="input" />
+          <p class="mt-1.5 text-xs text-ink-faint">Kit and food scans stop working after this.</p>
         </div>
         <AdminSwitch v-model="form.teamBased" label="Team-based" hint="Adds the team roster to the form." />
         <div v-if="form.teamBased">

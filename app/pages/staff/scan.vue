@@ -20,9 +20,11 @@ interface ScanResult {
   tone: 'ok' | 'already' | 'error'
   name?: string
   team?: string
+  /** Which competition the scanned QR belongs to — shown so a mismatch is obvious. */
+  competition?: string
   message: string
   at: number
-  /** checkpoint ids this person already had, for the status chips */
+  /** checkpoint ids this participation already had, for the status chips */
   collected?: number[]
 }
 const last = ref<ScanResult | null>(null)
@@ -69,17 +71,20 @@ async function handleToken(token: string) {
   }
   busy.value = true
   try {
+    // The QR identifies one participation, so the check-in is keyed on that
+    // membership — never on the person, who may be in several competitions.
     const info = await $fetch('/api/staff/scan', { query: { token } })
     const res = await $fetch('/api/staff/checkin', {
       method: 'POST',
-      body: { accountId: info.account.id, checkpointId: activeCheckpoint.value },
+      body: { teamMemberId: info.participation.teamMemberId, checkpointId: activeCheckpoint.value },
     })
     const cpName = checkpoints.value?.find((c) => c.id === activeCheckpoint.value)?.name ?? 'item'
     const already = info.collected.map((c) => c.checkpointId)
     last.value = {
       tone: res.result === 'collected' ? 'ok' : 'already',
       name: info.account.fullName,
-      team: info.memberships[0]?.teamName ?? info.memberships[0]?.competition ?? '',
+      team: info.participation.teamName || info.participation.competition,
+      competition: info.participation.competition,
       message: res.result === 'collected' ? `${cpName} collected` : `${cpName} already collected`,
       at: now,
       collected: [...new Set([...already, activeCheckpoint.value])],
@@ -234,6 +239,9 @@ useSeoMeta({ title: 'Scanner', robots: 'noindex' })
         <Icon :name="tones[last.tone].icon" class="mx-auto text-4xl" />
         <p v-if="last.name" class="mt-2 text-xl font-extrabold">{{ last.name }}</p>
         <p v-if="last.team" class="text-sm text-white/80">{{ last.team }}</p>
+        <p v-if="last.competition" class="mt-1.5 inline-flex items-center gap-1.5 rounded-lg bg-black/20 px-2.5 py-1 text-xs font-bold">
+          <Icon name="lucide:trophy" /> {{ last.competition }}
+        </p>
         <p class="mt-1 text-base font-bold">{{ last.message }}</p>
 
         <ul v-if="last.collected && checkpoints?.length" class="mt-3.5 flex flex-wrap justify-center gap-1.5">

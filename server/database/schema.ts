@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, uniqueIndex, index } from 'drizzle-orm/sqlite-core'
 import { sql } from 'drizzle-orm'
 
 export const events = sqliteTable('events', {
@@ -115,6 +115,23 @@ export const competitions = sqliteTable('competitions', {
   evaluationCriteria: text('evaluation_criteria').notNull().default(''),
   resources: text('resources').notNull().default(''),
   sortOrder: integer('sort_order').notNull().default(0),
+  // ---- Application form (the custom fields in application_fields) ----
+  // When on, the form must be completed to register; when off, teams may
+  // register first and fill it in from their dashboard later.
+  applicationRequired: integer('application_required', { mode: 'boolean' }).notNull().default(false),
+  // Submission window, both optional. null start = open as soon as the
+  // competition is; null end = falls back to registrationDeadline.
+  applicationOpensAt: text('application_opens_at'),
+  applicationClosesAt: text('application_closes_at'),
+  // When this competition actually runs. Full ISO timestamps in UTC, unlike
+  // the parent event's plain dates. A scan outside this window is rejected;
+  // leaving them null falls back to the event's date range.
+  startsAt: text('starts_at'),
+  endsAt: text('ends_at'),
+  // Preliminary-selection results. Decisions can be recorded any time; the
+  // emails are held until this date so every team learns together. Null means
+  // "send as soon as the decision is made", preserving the old behaviour.
+  resultsAnnounceAt: text('results_announce_at'),
 })
 
 export const prizes = sqliteTable('prizes', {
@@ -143,6 +160,10 @@ export const registrations = sqliteTable(
     // an optional reason shown to the team in the decision email and portal.
     decisionNote: text('decision_note'),
     decisionAt: text('decision_at'),
+    // Set when the decision email actually goes out. A decision can be made
+    // well before that: the competition's resultsAnnounceAt holds the mail
+    // back so every team hears at the same moment. Null = not yet notified.
+    decisionNotifiedAt: text('decision_notified_at'),
     createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   },
   (t) => [uniqueIndex('registrations_competition_email_unique').on(t.competitionId, t.email)],
@@ -316,9 +337,43 @@ export const admins = sqliteTable('admins', {
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
-  // 'admin' = full panel; 'volunteer' = scan/check-in only (event-day staff).
-  role: text('role', { enum: ['admin', 'volunteer'] }).notNull().default('admin'),
+  // 'admin'     = full panel, including site settings, moderators and the log.
+  // 'moderator' = same day-to-day content work, but never settings/moderators/log.
+  // 'volunteer' = scan/check-in only (event-day staff).
+  role: text('role', { enum: ['admin', 'moderator', 'volunteer'] }).notNull().default('admin'),
+  // invited: emailed a set-password link, cannot sign in yet (password_hash
+  // is '' — see 0016_staff_invites.sql for why it is not null).
+  // active:  usable. banned: kept for the record, refused at login.
+  status: text('status', { enum: ['invited', 'active', 'banned'] }).notNull().default('active'),
+  inviteToken: text('invite_token').unique(),
+  inviteExpires: text('invite_expires'),
+  // Nullable, and set explicitly on insert: SQLite cannot ADD COLUMN with a
+  // non-constant default, and rows that predate the column have no real value.
+  createdAt: text('created_at'),
 })
+
+// Who did what in the console. Written by recordAudit() on every meaningful
+// write; readable by main admins only. Actor name/email are denormalised so a
+// deleted moderator's history stays legible.
+export const auditLogs = sqliteTable(
+  'audit_logs',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    actorId: integer('actor_id').references(() => admins.id, { onDelete: 'set null' }),
+    actorName: text('actor_name').notNull().default(''),
+    actorEmail: text('actor_email').notNull().default(''),
+    actorRole: text('actor_role').notNull().default(''),
+    // Verb: 'create' | 'update' | 'delete' | 'decide' | 'notify' | 'login'.
+    action: text('action').notNull(),
+    // Subject type, e.g. 'competition', 'judge', 'registration', 'moderator'.
+    entity: text('entity').notNull(),
+    entityId: integer('entity_id'),
+    // Human-readable one-liner, already safe to render (never raw PII bodies).
+    summary: text('summary').notNull().default(''),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  },
+  (t) => [index('audit_logs_created_idx').on(t.createdAt)],
+)
 
 // ---- Participant accounts + per-person QR check-in ----
 
@@ -353,12 +408,18 @@ export const teamMembers = sqliteTable(
     competitionId: integer('competition_id').notNull().references(() => competitions.id, { onDelete: 'cascade' }),
     accountId: integer('account_id').notNull().references(() => participantAccounts.id, { onDelete: 'cascade' }),
     role: text('role', { enum: ['leader', 'member'] }).notNull().default('member'),
+    // The QR a participant shows at a desk. Per membership, not per person:
+    // competitions run independently, so staff must be able to tell which
+    // registration is being scanned. Nullable only because the column was
+    // backfilled; every row created since carries one.
+    checkinToken: text('checkin_token'),
     createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   },
   (t) => [
     uniqueIndex('team_members_registration_account_unique').on(t.registrationId, t.accountId),
     // One account = one team per competition, for leaders and members alike.
     uniqueIndex('team_members_competition_account_unique').on(t.competitionId, t.accountId),
+    uniqueIndex('team_members_checkin_token_unique').on(t.checkinToken),
   ],
 )
 
@@ -465,6 +526,10 @@ export const checkins = sqliteTable(
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     accountId: integer('account_id').notNull().references(() => participantAccounts.id, { onDelete: 'cascade' }),
+    // The participation this pickup belongs to. This, not accountId, is what
+    // separates competitions: the same person collects a kit once per
+    // competition they entered, never once overall.
+    teamMemberId: integer('team_member_id').references(() => teamMembers.id, { onDelete: 'cascade' }),
     checkpointId: integer('checkpoint_id').notNull().references(() => checkpoints.id, { onDelete: 'cascade' }),
     // Recorded at scan time so the collection report can attribute a pickup to
     // a competition even for event-wide checkpoints.
@@ -472,8 +537,10 @@ export const checkins = sqliteTable(
     scannedBy: integer('scanned_by').references(() => admins.id),
     collectedAt: text('collected_at').notNull().default(sql`(datetime('now'))`),
   },
-  // One collection per person per checkpoint — the double-collection guard.
-  (t) => [uniqueIndex('checkins_account_checkpoint_unique').on(t.accountId, t.checkpointId)],
+  // One collection per *participation* per checkpoint — the double-collection
+  // guard, scoped so a kit collected for one competition leaves the other
+  // competition's kit uncollected.
+  (t) => [uniqueIndex('checkins_member_checkpoint_unique').on(t.teamMemberId, t.checkpointId)],
 )
 
 export const siteSettings = sqliteTable('site_settings', {

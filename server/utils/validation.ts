@@ -11,7 +11,7 @@ const imagePath = z
     'Invalid image URL',
   )
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
 
 export const eventSchema = z.object({
   title: z.string().trim().min(1).max(200),
@@ -141,6 +141,15 @@ export const competitionSchema = z.object({
   evaluationCriteria: z.string().max(50_000).default(''),
   resources: z.string().max(50_000).default(''),
   sortOrder: z.number().int().min(0).max(1000).default(0),
+  // Application form settings. The window is optional at both ends; a missing
+  // close date falls back to registrationDeadline.
+  applicationRequired: z.boolean().default(false),
+  applicationOpensAt: isoDate.nullable().optional(),
+  applicationClosesAt: isoDate.nullable().optional(),
+  // When the competition actually runs. Full ISO timestamps (UTC), unlike the
+  // plain dates above — the scanner compares against these to the minute.
+  startsAt: z.string().datetime().nullable().optional(),
+  endsAt: z.string().datetime().nullable().optional(),
   prizes: z.array(prizeSchema).max(20).default([]),
 })
 
@@ -173,11 +182,8 @@ export const registrationSchema = z.object({
   competitionId: z.number().int().positive(),
   fullName: z.string().trim().min(2).max(150),
   email: z.string().trim().toLowerCase().email().max(254),
-  // Leader's portal password, set at registration time (min 8 chars).
-  // Optional only because a signed-in participant entering an additional
-  // competition already has one; the handler requires it when there is no
-  // participant session.
-  password: z.string().min(8).max(200).optional(),
+  // No password here: the leader sets one through the emailed activation
+  // link, exactly like a teammate accepting an invite.
   phone: z.string().trim().min(5).max(30).regex(/^[+\d][\d\s-]+$/, 'Invalid phone number'),
   institution: z.string().trim().max(200).default(''),
   teamName: z.string().trim().max(150).nullable().optional(),
@@ -271,14 +277,49 @@ export const checkpointSchema = z.object({
   sortOrder: z.number().int().min(0).max(1000).default(0),
 })
 
+// Adding a volunteer takes a name and an email only — they set their own
+// password from the emailed link, so no password is ever typed by an admin.
 export const volunteerSchema = z.object({
+  name: z.string().trim().min(1).max(150),
+  email: z.string().trim().toLowerCase().email().max(254),
+})
+
+// Editing an existing staff account: rename, correct the address, or change
+// whether they may sign in. 'invited' is not offered — that state is produced
+// by creating or re-inviting, not by editing.
+export const staffUpdateSchema = z.object({
+  name: z.string().trim().min(1).max(150),
+  email: z.string().trim().toLowerCase().email().max(254),
+  status: z.enum(['active', 'banned']).optional(),
+})
+
+// Accepting a staff invite.
+export const staffSetPasswordSchema = z.object({
+  token: z.string().trim().min(10).max(200),
+  password: z.string().min(8).max(200),
+})
+
+// Moderators: console accounts that do content work but never reach site
+// settings, moderator management or the audit log.
+export const moderatorSchema = z.object({
   name: z.string().trim().min(1).max(150),
   email: z.string().trim().toLowerCase().email().max(254),
   password: z.string().min(8).max(200),
 })
 
+// Editing an existing moderator. Password is optional: omitted means "leave
+// the current one alone", so the same form handles rename and reset.
+export const moderatorUpdateSchema = z.object({
+  name: z.string().trim().min(1).max(150),
+  email: z.string().trim().toLowerCase().email().max(254),
+  password: z.string().min(8).max(200).optional().or(z.literal('')),
+})
+
+// Keyed on the participation (team_members.id), not the person: a check-in
+// belongs to one competition registration, so the account alone would be
+// ambiguous for anyone entered in more than one competition.
 export const checkinSchema = z.object({
-  accountId: z.number().int().positive(),
+  teamMemberId: z.number().int().positive(),
   checkpointId: z.number().int().positive(),
 })
 

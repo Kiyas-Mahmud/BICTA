@@ -1,10 +1,8 @@
-import { randomBytes } from 'node:crypto'
 import { eq, and, inArray } from 'drizzle-orm'
 import { useDb, schema } from '../../database/client'
 import { qrDataUrl } from '../../utils/qr'
 import { siteUrl } from '../../utils/email'
-
-const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000
+import { competitionWindow } from '../../utils/competitionWindow'
 
 // Everything the participant dashboard needs in one payload.
 export default defineEventHandler(async (event) => {
@@ -56,30 +54,51 @@ export default defineEventHandler(async (event) => {
     // deliberately: leaders only, still-invited members only, and the raw token
     // never leaves this branch.
     //
-    // Invite tokens expire (7 days). Rather than hand the leader a dead link
-    // and make them ask an admin to fix it, an expired one is silently
-    // rotated here — the leader never sees a difference, the link they copy
-    // always works.
+    // An expired invite is reported as such rather than silently rotated: the
+    // seat it held is released once anyone tries to use that address again, so
+    // quietly reviving the link here would keep the address locked forever.
+    // Re-inviting is an explicit action (remove the teammate, add them back).
     const isLeader = membership.role === 'leader'
     const roster = []
-    for (const { accountId, inviteToken, inviteExpires, ...m } of rosterRows) {
-      let link: string | null = null
-      if (isLeader && m.status === 'invited' && inviteToken) {
-        const expired = Boolean(inviteExpires) && new Date(inviteExpires!) < new Date()
-        const token = expired ? randomBytes(32).toString('hex') : inviteToken
-        if (expired) {
-          await db
-            .update(schema.participantAccounts)
-            .set({ inviteToken: token, inviteExpires: new Date(Date.now() + INVITE_TTL_MS).toISOString() })
-            .where(eq(schema.participantAccounts.id, accountId))
-        }
-        link = siteUrl(`/portal/set-password?token=${token}`)
-      }
-      roster.push({ ...m, inviteLink: link })
+    for (const { accountId: _accountId, inviteToken, inviteExpires, ...m } of rosterRows) {
+      const expired = m.status !== 'active' && Boolean(inviteExpires) && new Date(inviteExpires!) < new Date()
+      const link = isLeader && m.status === 'invited' && inviteToken && !expired
+        ? siteUrl(`/portal/set-password?token=${inviteToken}`)
+        : null
+      roster.push({ ...m, inviteLink: link, inviteExpired: expired })
     }
+
+    // This competition's own desks: the ones scoped to it, plus the
+    // event-wide ones. A kit desk belonging to another competition must not
+    // appear on this tab.
+    const checkpoints = comp
+      ? await db
+          .select()
+          .from(schema.checkpoints)
+          .where(and(eq(schema.checkpoints.eventId, comp.eventId), eq(schema.checkpoints.active, true)))
+          .orderBy(schema.checkpoints.sortOrder)
+      : []
+    const myCheckpoints = checkpoints.filter((c) => c.competitionId === null || c.competitionId === comp!.id)
+
+    // Scoped to this membership, so collecting under one competition leaves
+    // the other competition's list untouched.
+    const myCheckins = myCheckpoints.length
+      ? await db
+          .select()
+          .from(schema.checkins)
+          .where(
+            and(
+              eq(schema.checkins.teamMemberId, membership.id),
+              inArray(schema.checkins.checkpointId, myCheckpoints.map((c) => c.id)),
+            ),
+          )
+      : []
+
+    const window = comp ? competitionWindow(comp, ev) : null
 
     teams.push({
       registrationId: registration.id,
+      teamMemberId: membership.id,
       teamName: registration.teamName,
       status: registration.status,
       decisionNote: registration.decisionNote,
@@ -95,44 +114,28 @@ export default defineEventHandler(async (event) => {
             teamBased: comp.teamBased,
             maxTeamSize: comp.maxTeamSize,
             registrationDeadline: comp.registrationDeadline,
+            startsAt: comp.startsAt,
+            endsAt: comp.endsAt,
           }
         : null,
       event: ev ? { title: ev.title, startDate: ev.startDate, endDate: ev.endDate, venue: ev.venue } : null,
+      // One QR per participation. Falls back to the account-level token only
+      // for rows that predate the per-membership column.
+      qr: await qrDataUrl(membership.checkinToken ?? account.checkinToken),
+      window,
       roster,
+      collection: myCheckpoints.map((c) => ({
+        id: c.id,
+        name: c.name,
+        icon: c.icon,
+        collected: myCheckins.some((ci) => ci.checkpointId === c.id),
+        collectedAt: myCheckins.find((ci) => ci.checkpointId === c.id)?.collectedAt ?? null,
+      })),
     })
   }
 
-  // Collection checklist for the current event.
-  const currentEvent = await db.select().from(schema.events).where(eq(schema.events.isCurrent, true)).get()
-  const activeCheckpoints = currentEvent
-    ? await db
-        .select()
-        .from(schema.checkpoints)
-        .where(and(eq(schema.checkpoints.eventId, currentEvent.id), eq(schema.checkpoints.active, true)))
-        .orderBy(schema.checkpoints.sortOrder)
-    : []
-  const myCheckins = activeCheckpoints.length
-    ? await db
-        .select()
-        .from(schema.checkins)
-        .where(
-          and(
-            eq(schema.checkins.accountId, account.id),
-            inArray(schema.checkins.checkpointId, activeCheckpoints.map((c) => c.id)),
-          ),
-        )
-    : []
-
   return {
     account: { fullName: account.fullName, email: account.email, phone: account.phone },
-    qr: await qrDataUrl(account.checkinToken),
     teams,
-    collection: activeCheckpoints.map((c) => ({
-      id: c.id,
-      name: c.name,
-      icon: c.icon,
-      collected: myCheckins.some((ci) => ci.checkpointId === c.id),
-      collectedAt: myCheckins.find((ci) => ci.checkpointId === c.id)?.collectedAt ?? null,
-    })),
   }
 })

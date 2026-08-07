@@ -4,8 +4,7 @@ import { useDb, schema } from '../../../../../database/client'
 import { teamMemberAddSchema, idParam } from '../../../../../utils/validation'
 import { syncLegacyRoster } from '../../../../../utils/team'
 import { sendMail, inviteEmail, leaderConfirmationEmail } from '../../../../../utils/email'
-
-const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000
+import { INVITE_TTL_MS } from '../../../../../utils/invites'
 
 // Admin override of the leader's own "add teammate" — same rules (team size,
 // one team per competition) but never blocked by the registration deadline.
@@ -60,7 +59,7 @@ export default defineEventHandler(async (event) => {
 
   const inserted = await db
     .insert(schema.teamMembers)
-    .values({ registrationId, competitionId: comp.id, accountId: account!.id, role: 'member' })
+    .values({ registrationId, competitionId: comp.id, accountId: account!.id, role: 'member', checkinToken: randomBytes(24).toString('hex') })
     .onConflictDoNothing()
     .returning()
   if (!inserted.length) {

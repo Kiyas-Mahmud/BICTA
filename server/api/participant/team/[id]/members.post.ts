@@ -4,6 +4,7 @@ import { useDb, schema } from '../../../../database/client'
 import { teamMemberAddSchema, idParam } from '../../../../utils/validation'
 import { requireTeamLeader, syncLegacyRoster } from '../../../../utils/team'
 import { sendMail, inviteEmail, leaderConfirmationEmail } from '../../../../utils/email'
+import { INVITE_TTL_MS } from '../../../../utils/invites'
 
 // Leader adds a teammate after registration (until the deadline).
 export default defineEventHandler(async (event) => {
@@ -29,6 +30,7 @@ export default defineEventHandler(async (event) => {
         fullName: body.name,
         status: 'invited',
         inviteToken: randomBytes(32).toString('hex'),
+        inviteExpires: new Date(Date.now() + INVITE_TTL_MS).toISOString(),
         checkinToken: randomBytes(24).toString('hex'),
       })
       .returning()
@@ -54,7 +56,7 @@ export default defineEventHandler(async (event) => {
 
   const inserted = await db
     .insert(schema.teamMembers)
-    .values({ registrationId, competitionId: comp.id, accountId: account!.id, role: 'member' })
+    .values({ registrationId, competitionId: comp.id, accountId: account!.id, role: 'member', checkinToken: randomBytes(24).toString('hex') })
     .onConflictDoNothing()
     .returning()
   if (!inserted.length) {

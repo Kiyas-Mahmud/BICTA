@@ -1,14 +1,12 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import bcrypt from 'bcryptjs'
 import { eq, and, inArray, asc } from 'drizzle-orm'
 import { useDb, schema } from '../database/client'
 import { registrationSchema } from '../utils/validation'
-import { sendMail, inviteEmail, leaderConfirmationEmail, leaderVerifyEmail } from '../utils/email'
+import { sendMail, inviteEmail, leaderConfirmationEmail, leaderSetPasswordEmail } from '../utils/email'
 import { useUploads, contentTypeFor, APPLICATION_PREFIX } from '../utils/storage'
 import { sniffApplicationFile, APPLICATION_MAX_SIZE } from '../utils/fileSniff'
-
-const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
-const VERIFY_TTL_MS = 48 * 60 * 60 * 1000 // 48 hours
+import { INVITE_TTL_MS, releaseExpiredInvites } from '../utils/invites'
+import { applicationWindow } from '../utils/application'
 
 // Public write endpoint. Handler order is the security contract
 // (Security_Plan.md §6a): honeypot/time-trap → schema validation → business
@@ -20,9 +18,10 @@ const VERIFY_TTL_MS = 48 * 60 * 60 * 1000 // 48 hours
 // and again by the team_members (competition_id, account_id) unique index.
 //
 // After the registration row is stored this also provisions participant
-// accounts: the leader becomes an active account immediately (they chose a
-// password in the form); each teammate gets an invited account and an email
-// with a set-password link plus their personal check-in QR code.
+// accounts. Nobody picks a password in the form: the leader and every
+// teammate get an invited account plus an email carrying a set-password link
+// and their personal check-in QR code. Following that link is what activates
+// the account, and what proves the address belongs to them.
 export default defineEventHandler(async (event) => {
   assertRateLimit(event, { bucket: 'register', max: 15, windowMs: 60 * 60 * 1000 })
 
@@ -73,10 +72,6 @@ export default defineEventHandler(async (event) => {
   const sessionParticipant = (session as any)?.participant as { id: number; email: string } | undefined
   const leaderEmail = sessionParticipant?.email ?? body.email
 
-  if (!sessionParticipant && !body.password) {
-    throw createError({ statusCode: 400, statusMessage: 'Choose a dashboard password to finish registering.' })
-  }
-
   const db = useDb()
   const comp = await db.select().from(schema.competitions).where(eq(schema.competitions.id, body.competitionId)).get()
   if (!comp) throw createError({ statusCode: 404, statusMessage: 'Competition not found' })
@@ -97,13 +92,19 @@ export default defineEventHandler(async (event) => {
     .where(eq(schema.applicationFields.competitionId, comp.id))
     .orderBy(asc(schema.applicationFields.sortOrder))
 
+  // A field's own "required" only bites when the form as a whole is required
+  // at registration time and its window is open. Otherwise answers are still
+  // accepted here, but the team may equally leave them for their dashboard.
+  const window = applicationWindow(comp)
+  const mustComplete = comp.applicationRequired && window.state === 'open'
+
   const answerByFieldId = new Map(body.answers.map((a) => [a.fieldId, a.value]))
   const sniffedFiles = new Map<number, { data: Buffer; ext: string; mime: string; filename: string }>()
   for (const field of applicationFields) {
     if (field.fieldType === 'file') {
       const part = fileParts.get(field.id)
       if (!part) {
-        if (field.required) throw createError({ statusCode: 400, statusMessage: `${field.label} is required.` })
+        if (field.required && mustComplete) throw createError({ statusCode: 400, statusMessage: `${field.label} is required.` })
         continue
       }
       if (part.data.length > APPLICATION_MAX_SIZE) {
@@ -116,7 +117,7 @@ export default defineEventHandler(async (event) => {
       sniffedFiles.set(field.id, { data: part.data, ext: sniffed.ext, mime: sniffed.mime, filename: part.filename })
     } else {
       const value = answerByFieldId.get(field.id)?.trim()
-      if (field.required && !value) {
+      if (field.required && mustComplete && !value) {
         throw createError({ statusCode: 400, statusMessage: `${field.label} is required.` })
       }
     }
@@ -133,6 +134,18 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Each team member needs a different email address.' })
   }
 
+  // Invites that were never accepted inside the 24h window do not hold a seat.
+  // Releasing them first means the two uniqueness checks below only ever see
+  // people who completed setup or still have a live invite.
+  const allEmails = [leaderEmail, ...memberEmails]
+  const orphanedFiles = await releaseExpiredInvites(allEmails)
+  if (orphanedFiles.length) {
+    const uploads = useUploads(event)
+    await Promise.all(
+      orphanedFiles.map((url) => uploads.delete(`${APPLICATION_PREFIX}${url.split('/').pop()}`).catch(() => {})),
+    )
+  }
+
   const duplicate = await db
     .select({ id: schema.registrations.id })
     .from(schema.registrations)
@@ -144,7 +157,6 @@ export default defineEventHandler(async (event) => {
 
   // One team per competition, for everyone on the entry. Checked up front so
   // the message can name the person instead of surfacing a bare index error.
-  const allEmails = [leaderEmail, ...memberEmails]
   const clashes = await db
     .select({ email: schema.participantAccounts.email })
     .from(schema.teamMembers)
@@ -216,43 +228,42 @@ export default defineEventHandler(async (event) => {
   const findAccount = (email: string) =>
     db.select().from(schema.participantAccounts).where(eq(schema.participantAccounts.email, email)).get()
 
-  // Leader: create the account with the chosen password, but not as 'active'
-  // yet — nothing so far has proven they own this inbox (unlike a teammate,
-  // who must click an emailed link to ever get a password at all). A fresh
-  // account, or one that only ever existed as an *invited* teammate, goes to
-  // 'pending' with an email-verify token; login already rejects anything
-  // short of 'active', so an unverified leader simply cannot sign in yet. An
-  // account that is already 'active' (entering another competition) is left
-  // untouched — it was verified the first time and does not need to be again.
+  // Leader: no password is collected in the form. The account starts without
+  // one, as 'invited' plus an invite token, and the emailed set-password link
+  // is what activates it — the same contract teammates already have. Choosing
+  // the password through that link is what proves they own the inbox, so it
+  // doubles as the email verification the old 'pending' + verify-token step
+  // used to provide. Login rejects anything short of 'active', so a leader who
+  // never opens the mail simply cannot sign in. An account that is already
+  // 'active' (entering another competition) is left untouched — it was
+  // verified the first time and does not need to be again.
   let leader = await findAccount(leaderEmail)
   let newlyPending = false
   if (!leader) {
-    const passwordHash = await bcrypt.hash(body.password!, 12)
     ;[leader] = await db
       .insert(schema.participantAccounts)
       .values({
         email: leaderEmail,
-        passwordHash,
         fullName: body.fullName,
         phone: body.phone,
-        status: 'pending',
-        emailVerifyToken: randomBytes(32).toString('hex'),
-        emailVerifyExpires: new Date(Date.now() + VERIFY_TTL_MS).toISOString(),
+        status: 'invited',
+        inviteToken: randomBytes(32).toString('hex'),
+        inviteExpires: new Date(Date.now() + INVITE_TTL_MS).toISOString(),
         checkinToken: randomBytes(24).toString('hex'),
       })
       .returning()
     newlyPending = true
   } else if (!leader.passwordHash || leader.status !== 'active') {
-    const passwordHash = await bcrypt.hash(body.password!, 12)
+    // Covers someone who was previously only ever invited as a teammate, and
+    // re-issues a fresh link if an earlier one expired.
     ;[leader] = await db
       .update(schema.participantAccounts)
       .set({
-        passwordHash,
-        status: 'pending',
-        inviteToken: null,
-        inviteExpires: null,
-        emailVerifyToken: randomBytes(32).toString('hex'),
-        emailVerifyExpires: new Date(Date.now() + VERIFY_TTL_MS).toISOString(),
+        status: 'invited',
+        inviteToken: randomBytes(32).toString('hex'),
+        inviteExpires: new Date(Date.now() + INVITE_TTL_MS).toISOString(),
+        emailVerifyToken: null,
+        emailVerifyExpires: null,
         fullName: body.fullName,
         phone: body.phone,
       })
@@ -260,12 +271,27 @@ export default defineEventHandler(async (event) => {
       .returning()
     newlyPending = true
   }
-  await db
-    .insert(schema.teamMembers)
-    .values({ registrationId: registration!.id, competitionId: comp.id, accountId: leader!.id, role: 'leader' })
-    .onConflictDoNothing()
+  // The QR that goes in the email is this membership's, not the account's:
+  // it has to identify which competition is being scanned. onConflictDoNothing
+  // returns nothing when the row already exists, so fall back to reading it.
+  const leaderToken =
+    (
+      await db
+        .insert(schema.teamMembers)
+        .values({ registrationId: registration!.id, competitionId: comp.id, accountId: leader!.id, role: 'leader', checkinToken: randomBytes(24).toString('hex') })
+        .onConflictDoNothing()
+        .returning({ checkinToken: schema.teamMembers.checkinToken })
+    )[0]?.checkinToken ??
+    (
+      await db
+        .select({ checkinToken: schema.teamMembers.checkinToken })
+        .from(schema.teamMembers)
+        .where(and(eq(schema.teamMembers.registrationId, registration!.id), eq(schema.teamMembers.accountId, leader!.id)))
+        .get()
+    )?.checkinToken ??
+    leader!.checkinToken
 
-  const invites: { account: typeof leader; name: string }[] = []
+  const invites: { account: typeof leader; name: string; checkinToken: string }[] = []
   for (const m of teamMembers) {
     let account = await findAccount(m.email.toLowerCase())
     if (!account) {
@@ -281,11 +307,23 @@ export default defineEventHandler(async (event) => {
         })
         .returning()
     }
-    await db
-      .insert(schema.teamMembers)
-      .values({ registrationId: registration!.id, competitionId: comp.id, accountId: account!.id, role: 'member' })
-      .onConflictDoNothing()
-    invites.push({ account, name: m.name })
+    const memberToken =
+      (
+        await db
+          .insert(schema.teamMembers)
+          .values({ registrationId: registration!.id, competitionId: comp.id, accountId: account!.id, role: 'member', checkinToken: randomBytes(24).toString('hex') })
+          .onConflictDoNothing()
+          .returning({ checkinToken: schema.teamMembers.checkinToken })
+      )[0]?.checkinToken ??
+      (
+        await db
+          .select({ checkinToken: schema.teamMembers.checkinToken })
+          .from(schema.teamMembers)
+          .where(and(eq(schema.teamMembers.registrationId, registration!.id), eq(schema.teamMembers.accountId, account!.id)))
+          .get()
+      )?.checkinToken ??
+      account!.checkinToken
+    invites.push({ account, name: m.name, checkinToken: memberToken })
   }
 
   // ---- Emails (console transport in dev; Resend when key is set). Failures
@@ -294,16 +332,16 @@ export default defineEventHandler(async (event) => {
   // sent, which silently dropped these sends in production. ----
   const teamName = registration!.teamName ?? ''
   const leaderMail = newlyPending
-    ? await leaderVerifyEmail({ name: leader!.fullName, teamName, competition: comp.name, verifyToken: leader!.emailVerifyToken!, checkinToken: leader!.checkinToken })
-    : await leaderConfirmationEmail({ name: leader!.fullName, teamName, competition: comp.name, checkinToken: leader!.checkinToken })
+    ? await leaderSetPasswordEmail({ name: leader!.fullName, teamName, competition: comp.name, inviteToken: leader!.inviteToken!, checkinToken: leaderToken })
+    : await leaderConfirmationEmail({ name: leader!.fullName, teamName, competition: comp.name, checkinToken: leaderToken })
   await sendMail({ to: leader!.email, ...leaderMail }).catch(() => {})
 
-  for (const { account, name } of invites) {
+  for (const { account, name, checkinToken } of invites) {
     if (!account) continue
     const mail = account.inviteToken
-      ? await inviteEmail({ name, teamName, competition: comp.name, inviteToken: account.inviteToken, checkinToken: account.checkinToken })
+      ? await inviteEmail({ name, teamName, competition: comp.name, inviteToken: account.inviteToken, checkinToken })
       : // Existing active account added to a new team: no invite link needed.
-        await leaderConfirmationEmail({ name, teamName, competition: comp.name, checkinToken: account.checkinToken })
+        await leaderConfirmationEmail({ name, teamName, competition: comp.name, checkinToken })
     await sendMail({ to: account!.email, ...mail }).catch(() => {})
   }
 

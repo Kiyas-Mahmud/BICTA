@@ -5,6 +5,32 @@ const { data, refresh, pending } = await useFetch('/api/participant/me')
 // Competitions still open to this participant (one team per competition).
 const { data: available, refresh: refreshAvailable } = await useFetch('/api/participant/available-competitions')
 
+// Each competition is its own participation context: its own team, QR, kit
+// list and schedule. The dashboard shows one at a time rather than stacking
+// them, so nothing on screen belongs to a competition the user is not looking
+// at. Keyed by registrationId so the selection survives a refresh that
+// reorders the list.
+const activeRegistrationId = ref<number | null>(null)
+const teams = computed(() => data.value?.teams ?? [])
+watchEffect(() => {
+  if (!teams.value.length) return
+  const stillThere = teams.value.some((t: any) => t.registrationId === activeRegistrationId.value)
+  if (!stillThere) activeRegistrationId.value = teams.value[0].registrationId
+})
+const activeTeam = computed<any>(
+  () => teams.value.find((t: any) => t.registrationId === activeRegistrationId.value) ?? teams.value[0] ?? null,
+)
+
+// Mirrors the server's competitionWindow(): what the participant is told here
+// is exactly what the scanner will enforce.
+const windowNote = computed(() => {
+  const w = activeTeam.value?.window
+  if (!w || w.state === 'unscheduled') return null
+  if (w.state === 'upcoming') return { cls: 'badge badge-blue', text: `Starts ${formatDate(w.startsAt)}` }
+  if (w.state === 'ended') return { cls: 'badge badge-gray', text: 'Ended' }
+  return { cls: 'badge badge-green', text: 'Running now' }
+})
+
 function statusBadge(status: string) {
   if (status === 'confirmed') return 'badge badge-green'
   if (status === 'rejected') return 'badge badge-gray'
@@ -74,28 +100,71 @@ useSeoMeta({ title: 'My dashboard', robots: 'noindex' })
 
       <p v-if="err" class="form-error mt-5">{{ err }}</p>
 
-      <div class="mt-8 grid gap-6 lg:grid-cols-[340px_1fr]">
-        <!-- LEFT: QR + collection -->
+      <!-- Competition switcher. Tabs on desktop; scrolls sideways on a phone
+           rather than wrapping into a tall block above the fold. -->
+      <div v-if="teams.length > 1" class="mt-6 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div class="flex w-max gap-2 sm:w-auto sm:flex-wrap" role="tablist" aria-label="Your competitions">
+          <button
+            v-for="t in teams"
+            :key="t.registrationId"
+            type="button"
+            role="tab"
+            :aria-selected="t.registrationId === activeTeam?.registrationId"
+            class="flex shrink-0 items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold transition-colors"
+            :class="t.registrationId === activeTeam?.registrationId
+              ? 'border-brand-500 bg-brand-600 text-white shadow-soft'
+              : 'border-line bg-white text-ink-soft hover:border-brand-300 hover:text-ink'"
+            @click="activeRegistrationId = t.registrationId"
+          >
+            <Icon name="lucide:trophy" class="shrink-0" />
+            <span class="whitespace-nowrap">{{ t.competition?.name ?? 'Competition' }}</span>
+            <span
+              class="rounded-md px-1.5 py-0.5 text-[0.65rem] uppercase tracking-wide"
+              :class="t.registrationId === activeTeam?.registrationId ? 'bg-white/20' : 'bg-mist-1'"
+            >{{ t.status }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div v-if="activeTeam" class="mt-6 grid gap-6 lg:grid-cols-[340px_1fr]">
+        <!-- LEFT: this competition's QR + its own collection list -->
         <div class="space-y-6">
           <!-- QR card -->
           <div class="card overflow-hidden">
             <div class="gradient-brand px-6 py-4 text-white">
               <p class="flex items-center gap-2 text-sm font-bold"><Icon name="lucide:qr-code" /> Your entry QR</p>
-              <p class="mt-0.5 text-xs text-white/70">Show this at kit, food & snack booths.</p>
+              <p class="mt-0.5 text-xs text-white/70">
+                For {{ activeTeam.competition?.name }} — show this at its kit, food &amp; snack booths.
+              </p>
             </div>
             <div class="p-6 text-center">
-              <img :src="data.qr" alt="Your personal QR code" class="mx-auto h-52 w-52 rounded-xl border border-line" />
-              <a :href="data.qr" download="bicta-qr.png" class="btn-secondary mt-4 w-full">
+              <!-- Keyed so switching competitions swaps the image rather than
+                   reusing the cached one. -->
+              <img
+                :key="activeTeam.registrationId"
+                :src="activeTeam.qr"
+                :alt="`Your QR code for ${activeTeam.competition?.name}`"
+                class="mx-auto h-52 w-52 rounded-xl border border-line"
+              />
+              <p v-if="teams.length > 1" class="mt-3 text-xs text-ink-faint">
+                Each competition has its own QR. Show the one for the desk you are at.
+              </p>
+              <a
+                :href="activeTeam.qr"
+                :download="`bicta-${(activeTeam.competition?.name ?? 'entry').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-qr.png`"
+                class="btn-secondary mt-4 w-full"
+              >
                 <Icon name="lucide:download" /> Download QR
               </a>
             </div>
           </div>
 
-          <!-- Collection checklist -->
-          <div v-if="data.collection.length" class="card p-6">
+          <!-- Collection checklist, scoped to this competition -->
+          <div v-if="activeTeam.collection?.length" class="card p-6">
             <p class="flex items-center gap-2 font-bold"><Icon name="lucide:package-check" class="text-brand-600" /> Collected on event day</p>
+            <p class="mt-0.5 text-xs text-ink-faint">{{ activeTeam.competition?.name }}</p>
             <ul class="mt-4 space-y-2.5">
-              <li v-for="c in data.collection" :key="c.id" class="flex items-center justify-between rounded-xl border border-line px-4 py-3">
+              <li v-for="c in activeTeam.collection" :key="c.id" class="flex items-center justify-between rounded-xl border border-line px-4 py-3">
                 <span class="flex items-center gap-2.5 font-semibold">
                   <Icon :name="`lucide:${c.icon || 'circle'}`" class="text-ink-soft" />
                   {{ c.name }}
@@ -107,9 +176,9 @@ useSeoMeta({ title: 'My dashboard', robots: 'noindex' })
           </div>
         </div>
 
-        <!-- RIGHT: teams -->
+        <!-- RIGHT: the selected competition's team -->
         <div class="space-y-6">
-          <div v-for="team in data.teams" :key="team.registrationId" class="card p-6 sm:p-7">
+          <div v-for="team in [activeTeam]" :key="team.registrationId" class="card p-6 sm:p-7">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p class="text-xs font-bold uppercase tracking-wide text-brand-600">{{ team.competition?.name }}</p>
@@ -121,8 +190,17 @@ useSeoMeta({ title: 'My dashboard', robots: 'noindex' })
               <div class="flex flex-col items-end gap-2">
                 <span :class="statusBadge(team.status)">{{ team.status }}</span>
                 <span class="badge badge-blue">{{ team.myRole === 'leader' ? 'You are leader' : 'Member' }}</span>
+                <span v-if="windowNote" :class="windowNote.cls">{{ windowNote.text }}</span>
               </div>
             </div>
+
+            <p v-if="team.competition?.startsAt" class="mt-3 flex items-center gap-1.5 text-sm text-ink-soft">
+              <Icon name="lucide:clock" />
+              Competition runs:
+              <span class="font-bold text-ink">
+                {{ formatDate(team.competition.startsAt) }}<template v-if="team.competition.endsAt"> – {{ formatDate(team.competition.endsAt) }}</template>
+              </span>
+            </p>
 
             <div v-if="team.status !== 'pending'" class="mt-3 rounded-xl border border-line bg-mist-1/50 p-3.5">
               <p v-if="team.decisionAt" class="text-xs font-semibold text-ink-faint">Decided {{ formatDate(team.decisionAt) }}</p>
@@ -153,6 +231,11 @@ useSeoMeta({ title: 'My dashboard', robots: 'noindex' })
                   <div class="flex items-center justify-between sm:justify-end gap-2 border-t border-line/40 pt-2 sm:border-t-0 sm:pt-0">
                     <div class="flex items-center gap-1.5">
                       <span v-if="m.role === 'leader'" class="badge badge-blue">Leader</span>
+                      <span
+                        v-else-if="m.inviteExpired"
+                        class="badge badge-gray"
+                        title="The 24 hour invite window passed without a password being set. Remove and add them again to send a fresh invite."
+                      >Invite expired</span>
                       <span v-else-if="m.status === 'invited'" class="badge badge-amber" title="Hasn't set a password yet">Invited</span>
                       <span v-else class="badge badge-green">Active</span>
                     </div>
