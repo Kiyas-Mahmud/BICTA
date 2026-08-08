@@ -60,16 +60,13 @@ function openCount(e: EventListing) {
 const marqueePeople = computed(() => [...(data.value?.judges ?? []), ...(data.value?.speakers ?? [])])
 const galleryImages = computed(() => (data.value?.gallery ?? []).map((g: any) => g.url))
 
-// Hero collage data. Either upload path in admin lights the image column up:
-// the event's own hero image, or failing that the first gallery photos. With
-// neither, the column is dropped entirely and the hero centres as one column,
-// rather than holding the space with a placeholder panel that reads as missing
-// content on a site that simply has no photos yet.
-const heroPhotos = computed(() => {
-  const eventHero = current.value?.heroImage
-  const photos = galleryImages.value.slice(0, 2)
-  return (eventHero ? [eventHero, ...photos] : photos).slice(0, 2)
-})
+// The hero image column is driven *only* by the event's own hero image, set on
+// the event in admin. It used to fall back to gallery photos, which meant
+// uploading pictures for the Gallery section silently turned the hero into a
+// two-column layout -- a surprise, since those are two unrelated decisions.
+// With no hero image set the column is dropped and the hero centres as a
+// single column, rather than holding the space with a placeholder card.
+const heroPhotos = computed(() => (current.value?.heroImage ? [current.value.heroImage] : []))
 const hasHeroMedia = computed(() => heroPhotos.value.length > 0)
 const topPrize = computed(() => current.value?.competitions?.[0]?.prizes?.[0]?.amount ?? '')
 const registrationLive = computed(() => (current.value?.competitions ?? []).some((c: any) => c.registrationOpen))
