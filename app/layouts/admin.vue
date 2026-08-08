@@ -50,6 +50,7 @@ const allGroups = [
   {
     label: 'System',
     links: [
+      { to: '/admin/mailer', label: 'Send Mail', icon: 'lucide:send', mainAdmin: true },
       { to: '/admin/settings', label: 'Settings', icon: 'lucide:settings', mainAdmin: true },
       { to: '/admin/moderators', label: 'Moderators', icon: 'lucide:shield', mainAdmin: true },
       { to: '/admin/activity', label: 'Activity Log', icon: 'lucide:history', mainAdmin: true },

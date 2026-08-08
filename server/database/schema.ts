@@ -552,6 +552,22 @@ export const siteSettings = sqliteTable('site_settings', {
   value: text('value').notNull().default(''),
 })
 
+// History for the admin broadcast mailer. Read-only after the fact -- a send
+// cannot be un-sent -- so this exists purely so a later admin can see what
+// went out, to whom, and whether every recipient actually received it.
+export const mailCampaigns = sqliteTable('mail_campaigns', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  subject: text('subject').notNull(),
+  message: text('message').notNull().default(''),
+  audience: text('audience', { enum: ['newsletter', 'participants', 'custom'] }).notNull(),
+  recipientCount: integer('recipient_count').notNull().default(0),
+  sentCount: integer('sent_count').notNull().default(0),
+  failedCount: integer('failed_count').notNull().default(0),
+  sentByName: text('sent_by_name').notNull().default(''),
+  sentByEmail: text('sent_by_email').notNull().default(''),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+})
+
 export type Event = typeof events.$inferSelect
 export type Competition = typeof competitions.$inferSelect
 export type Prize = typeof prizes.$inferSelect
@@ -576,3 +592,4 @@ export type JudgeAccount = typeof judgeAccounts.$inferSelect
 export type Score = typeof scores.$inferSelect
 export type ApplicationField = typeof applicationFields.$inferSelect
 export type ApplicationResponse = typeof applicationResponses.$inferSelect
+export type MailCampaign = typeof mailCampaigns.$inferSelect

@@ -12,13 +12,18 @@ interface MailInput { to: string; subject: string; html: string; attachments?: A
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails'
 
-export async function sendMail({ to, subject, html, attachments }: MailInput): Promise<void> {
+// Returns whether the send actually succeeded. Every existing call site
+// ignores the return value (they only ever had one recipient and logging was
+// enough), so this is additive -- but the broadcast mailer sends to many
+// recipients in one request and needs real per-recipient signal to report
+// back an honest sent/failed count rather than assuming everything worked.
+export async function sendMail({ to, subject, html, attachments }: MailInput): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY
   const from = process.env.MAIL_FROM || 'BICTA <onboarding@resend.dev>'
 
   if (!apiKey) {
     console.info(`\n[mail:console] to=${to}\n[mail:console] subject=${subject}\n[mail:console] ${html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 400)}${attachments?.length ? `\n[mail:console] (+${attachments.length} inline attachment: QR)` : ''}\n`)
-    return
+    return true
   }
 
   try {
@@ -44,15 +49,25 @@ export async function sendMail({ to, subject, html, attachments }: MailInput): P
     if (!res.ok) {
       const detail = await res.text().catch(() => '')
       console.error(`[mail] send failed to=${to} subject="${subject}": ${res.status} ${detail.slice(0, 200)}`)
+      return false
     }
+    return true
   } catch (err: any) {
     console.error(`[mail] send failed to=${to} subject="${subject}": ${err?.message ?? err}`)
+    return false
   }
 }
 
 export function siteUrl(path = ''): string {
   const base = (process.env.PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
   return `${base}${path}`
+}
+
+// Admin-authored text (an org name, a subject line) going into a raw HTML
+// attribute or text node. Not a rich-text sanitizer -- just enough to stop a
+// stray `&`/`<`/`"` from breaking the surrounding markup.
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 // The QR is embedded as an inline CID attachment (renders in Gmail/Outlook/
@@ -259,4 +274,59 @@ export function judgeInviteEmail(opts: { name: string; inviteToken: string }) {
         para(`<span style="font-size:13px;color:${C.faint}">This link works once and expires in 7 days.</span>`),
     }),
   }
+}
+
+// ---- Admin broadcast mailer ----
+//
+// A different kind of email from everything above: an org-wide announcement
+// an admin writes on the spot, not a fixed transactional notice. It gets its
+// own header rather than reusing shell(), because shell()'s header is a
+// hardcoded "BICTA" wordmark -- fine for the transactional flows above, which
+// only ever ship as this codebase, but wrong for a feature whose whole point
+// is to actually show the organisation's current uploaded logo and name.
+// Every other visual (gradient strip, card, spacing, fonts) still matches the
+// rest of the mail system.
+export function broadcastEmail(opts: { subject: string; bodyHtml: string; logoUrl?: string | null; orgName: string }): { subject: string; html: string } {
+  const orgName = escapeHtml(opts.orgName || 'BICTA')
+  const brandMark = opts.logoUrl
+    ? `<img src="${escapeHtml(opts.logoUrl)}" alt="${orgName}" height="30" style="display:block;height:30px;width:auto;max-width:170px;border:0;" />`
+    : `<span style="font-family:${FONT};font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">${orgName}<span style="color:${C.brand};">.</span></span>`
+
+  // The rich-text body comes back from the admin editor as bare <p>/<h2>/<ul>
+  // etc with no inline styles (sanitizeRichText strips style attributes), so
+  // without this it would render as default black Times-ish text under a
+  // branded header -- a visible seam. Gmail, Apple Mail and Outlook.com all
+  // honour a <style> block in <head>; classic desktop Outlook mostly ignores
+  // it and falls back to plain (still legible) text, which is an acceptable
+  // degrade rather than a broken one.
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only">
+<style>
+  .mail-body p{margin:0 0 14px;}
+  .mail-body h2{margin:20px 0 10px;font-size:19px;font-weight:800;color:${C.ink};}
+  .mail-body h3{margin:18px 0 8px;font-size:16px;font-weight:800;color:${C.ink};}
+  .mail-body h4{margin:16px 0 6px;font-size:14px;font-weight:800;color:${C.ink};}
+  .mail-body ul,.mail-body ol{margin:0 0 14px;padding-left:20px;}
+  .mail-body li{margin:0 0 6px;}
+  .mail-body a{color:${C.brand};font-weight:700;}
+  .mail-body blockquote{margin:0 0 14px;padding-left:14px;border-left:3px solid ${C.line};color:${C.faint};}
+  .mail-body img{max-width:100%;height:auto;border-radius:8px;}
+</style>
+</head>
+<body style="margin:0;padding:0;background:${C.bg};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};padding:32px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 6px 28px rgba(15,23,42,0.08);">
+        <tr><td style="height:6px;${GRAD}font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr><td style="background:${C.ink};padding:22px 34px;">${brandMark}</td></tr>
+        <tr><td class="mail-body" style="padding:34px 34px 30px;font-family:${FONT};font-size:15px;line-height:1.65;color:${C.soft};">${opts.bodyHtml}</td></tr>
+        <tr><td style="padding:22px 34px;background:${C.mist};border-top:1px solid ${C.line};">
+          <p style="margin:0;font-family:${FONT};font-size:12px;line-height:1.6;color:${C.faint};">You're receiving this from ${orgName}.</p>
+        </td></tr>
+      </table>
+      <p style="font-family:${FONT};font-size:11px;color:${C.faint};margin:16px 0 0;">&copy; ${new Date().getFullYear()} ${orgName}</p>
+    </td></tr>
+  </table>
+</body></html>`
+
+  return { subject: opts.subject, html }
 }

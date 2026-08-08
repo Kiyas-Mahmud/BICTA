@@ -430,6 +430,23 @@ export const newsletterSchema = z.object({
   formToken: z.string().max(200).optional().default(''),
 })
 
+// Admin broadcast mail. Content is capped well under Resend's payload limit
+// and re-sanitized server-side regardless of what the rich text editor sent.
+// customEmails is required only when audience is 'custom' — enforced with
+// .refine below rather than a discriminated union, since every other field
+// is shared across all three audiences.
+export const mailerSendSchema = z
+  .object({
+    subject: z.string().trim().min(3).max(150),
+    message: z.string().trim().min(1).max(20_000),
+    audience: z.enum(['newsletter', 'participants', 'custom']),
+    customEmails: z.array(z.string().trim().toLowerCase().email()).max(500).optional().default([]),
+  })
+  .refine((v) => v.audience !== 'custom' || v.customEmails.length > 0, {
+    message: 'Add at least one recipient',
+    path: ['customEmails'],
+  })
+
 // Public contact form — third public write endpoint, same anti-spam contract.
 export const contactSchema = z.object({
   name: z.string().trim().min(2).max(150),
