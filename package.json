@@ -13,8 +13,8 @@
     "postinstall": "nuxt prepare",
     "cf:types": "wrangler types",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "wrangler d1 migrations apply bicta --local",
-    "db:migrate:remote": "wrangler d1 migrations apply bicta --remote",
+    "db:migrate": "wrangler d1 migrations apply bicta-net --local",
+    "db:migrate:remote": "wrangler d1 migrations apply bicta-net --remote",
     "setup": "npm install && npm run db:migrate && npm run seed",
     "seed": "tsx --env-file=.env scripts/seed-d1.ts",
     "seed:remote": "tsx --env-file=.env scripts/seed-d1.ts --remote"
@@ -36,6 +36,11 @@
     "uqr": "^0.1.3",
     "vue-echarts": "^8.1.0",
     "zod": "^3.25.0"
+  },
+  "//optionalDependencies": "rolldown ships its native binary as 15 optional deps, and npm prunes every one of them from package-lock.json (npm/cli#4828). `npm ci` then installs rolldown with no binary at all, so @nuxt/vite-builder fails to load and the build dies -- on Cloudflare's linux-x64 builder and, until now, locally on Windows too. Naming the two platforms we build on forces both into the lockfile; each package declares its own os/cpu, so npm still installs only the matching one. Pinned exact: a binding must match rolldown's version.",
+  "optionalDependencies": {
+    "@rolldown/binding-linux-x64-gnu": "1.0.3",
+    "@rolldown/binding-win32-x64-msvc": "1.0.3"
   },
   "devDependencies": {
     "@nuxt/fonts": "^0.11.4",
