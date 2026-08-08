@@ -14,12 +14,14 @@ const fullName = computed(() => s('hero_full_name', 'Bangladesh ICT Alliance'))
 // Only rows the admin has actually filled in. These previously fell back to a
 // placeholder email and city, which meant a fresh install published a fake
 // contact address as if it were real.
+//
+// No separate "Venue" row here: the full SiteVenueMap card now sits directly
+// above this card in the same section, so a second, text-only mention of the
+// same venue name right underneath it would just be a redundant echo.
 const contactInfo = computed(() =>
-  [
-    { icon: 'lucide:mail', label: 'Email', value: s('contact_email') },
-    { icon: 'lucide:map-pin', label: 'Venue', value: s('venue_name'), className: 'sm:col-span-1 xl:col-span-2' },
-  ].filter((row) => Boolean(row.value)),
+  [{ icon: 'lucide:mail', label: 'Email', value: s('contact_email') }].filter((row) => Boolean(row.value)),
 )
+const hasVenue = computed(() => visible('venue') && Boolean(s('venue_name') || s('venue_map_embed')))
 
 // Hero title: the admin-set brand name wins; otherwise fall back to the
 // current event's title with any trailing year stripped ("BICTA 2026" ->
@@ -511,32 +513,37 @@ useSeoMeta({
       </section>
     </SiteSectionReveal>
 
-    <!-- 12. FAQ + VENUE -->
-    <SiteSectionReveal v-if="(visible('faq') && data?.faqs?.length) || (visible('venue') && (s('venue_name') || s('venue_map_embed')))">
+    <!-- 12. FAQ -->
+    <!-- Venue used to live here, paired with FAQ rather than with Contact --
+         so on an event with no FAQs yet (the common early state) the map sat
+         alone in a half-width grid column with an empty cell beside it, then
+         the actual Contact card appeared in an entirely separate section
+         further down the page. Venue moved into the Contact section below,
+         where it visually belongs; FAQ stands on its own here. -->
+    <SiteSectionReveal v-if="visible('faq') && data?.faqs?.length">
       <section class="section !pt-0">
-        <div class="container-site grid gap-10 lg:grid-cols-2">
-          <div v-if="visible('faq') && data?.faqs?.length">
-            <h2 class="text-title">{{ s('faq_heading', 'Frequently asked questions') }}</h2>
-            <SiteFaqAccordion class="mt-6" :faqs="data!.faqs" />
-          </div>
-          <div v-if="visible('venue') && (s('venue_name') || s('venue_map_embed'))">
-            <h2 class="text-title">{{ s('venue_heading', 'Venue & location') }}</h2>
-            <SiteVenueMap
-              class="mt-6"
-              :name="s('venue_name')"
-              :address="s('venue_address')"
-              :directions="s('venue_directions')"
-              :map-embed="s('venue_map_embed')"
-            />
-          </div>
+        <div class="container-site">
+          <h2 class="text-title">{{ s('faq_heading', 'Frequently asked questions') }}</h2>
+          <SiteFaqAccordion class="mt-6 max-w-3xl" :faqs="data!.faqs" />
         </div>
       </section>
     </SiteSectionReveal>
 
-    <!-- 14. CONTACT -->
+    <!-- 14. VENUE + CONTACT -->
+    <!-- One section, one container: the map (when there is one) stacks
+         directly above the contact card with a single consistent gap,
+         instead of each living in its own independently-padded section. -->
     <SiteSectionReveal>
       <section class="section !pt-0">
-        <div class="container-site">
+        <div class="container-site mx-auto max-w-5xl">
+          <SiteVenueMap
+            v-if="hasVenue"
+            class="mb-8"
+            :name="s('venue_name')"
+            :address="s('venue_address')"
+            :directions="s('venue_directions')"
+            :map-embed="s('venue_map_embed')"
+          />
           <UiContactCard
             title="Get in touch"
             description="Questions about the festival, sponsorship, or partnerships? Fill out the form and we will respond within one business day."
