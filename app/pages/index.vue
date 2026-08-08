@@ -200,16 +200,22 @@ useSeoMeta({
     </section>
 
     <!-- 2. COUNTDOWN + STATS -->
-    <section class="container-site relative z-10 pb-8 sm:pb-10">
+    <!-- Every figure here counts something belonging to the current event, so
+         with no event the card was an empty shell of zeros beside a blank
+         countdown slot. It follows the event. -->
+    <section v-if="current" class="container-site relative z-10 pb-8 sm:pb-10">
       <div class="card flex flex-col gap-6 p-4 shadow-soft sm:gap-8 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
-        <div v-if="current?.startDate" class="w-full lg:w-auto">
+        <div v-if="current.startDate" class="w-full lg:w-auto">
           <p class="mb-3 text-center text-[0.7rem] font-bold uppercase tracking-[0.16em] text-ink-faint sm:text-xs lg:text-left">
             {{ current.title }} starts in
           </p>
           <UiAnimatedNumberCountdown :end-date="current.startDate" />
         </div>
 
-        <div class="h-px w-full bg-line/70 lg:h-20 lg:w-px" />
+        <!-- Separates the countdown from the stats, so it needs a countdown to
+             separate: without this guard an event with no start date shows a
+             rule floating above the stats on its own. -->
+        <div v-if="current.startDate" class="h-px w-full bg-line/70 lg:h-20 lg:w-px" />
 
         <!-- stats: icon column aligned, value dominant, label quiet -->
         <div class="grid w-full grid-cols-2 gap-2 sm:grid-cols-4 lg:w-auto lg:gap-3">
