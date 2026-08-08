@@ -42,6 +42,11 @@
     letter-spacing: -0.035em;
     line-height: 1.02;
   }
+  /* The hero is the one place display type is allowed to run bigger: it opens
+     the page, and with no image column beside it there is nothing to crowd. */
+  .text-display--hero {
+    font-size: clamp(3.25rem, 8.5vw, 6rem);
+  }
   .text-title {
     font-size: clamp(1.6rem, 3vw, 2.25rem);
     font-weight: 800;
@@ -52,6 +57,11 @@
     @apply inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.18em];
     background: theme('colors.brand.50');
     color: theme('colors.brand.600');
+  }
+  /* Hero-scale eyebrow. A modifier rather than a change to .eyebrow itself,
+     which every other section on the site also uses. */
+  .eyebrow--hero {
+    @apply px-4 py-1.5 text-sm;
   }
 
   /* signature sage gradient — reusable surface + text */

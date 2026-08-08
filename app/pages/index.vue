@@ -60,8 +60,17 @@ function openCount(e: EventListing) {
 const marqueePeople = computed(() => [...(data.value?.judges ?? []), ...(data.value?.speakers ?? [])])
 const galleryImages = computed(() => (data.value?.gallery ?? []).map((g: any) => g.url))
 
-// Hero collage data.
-const heroPhotos = computed(() => galleryImages.value.slice(0, 2))
+// Hero collage data. Either upload path in admin lights the image column up:
+// the event's own hero image, or failing that the first gallery photos. With
+// neither, the column is dropped entirely and the hero centres as one column,
+// rather than holding the space with a placeholder panel that reads as missing
+// content on a site that simply has no photos yet.
+const heroPhotos = computed(() => {
+  const eventHero = current.value?.heroImage
+  const photos = galleryImages.value.slice(0, 2)
+  return (eventHero ? [eventHero, ...photos] : photos).slice(0, 2)
+})
+const hasHeroMedia = computed(() => heroPhotos.value.length > 0)
 const topPrize = computed(() => current.value?.competitions?.[0]?.prizes?.[0]?.amount ?? '')
 const registrationLive = computed(() => (current.value?.competitions ?? []).some((c: any) => c.registrationOpen))
 
@@ -89,20 +98,31 @@ useSeoMeta({
         <div class="float-blob float-blob-2" />
       </div>
 
-      <div class="container-site pt-header-safe pt-header-safe--hero grid items-center gap-8 pb-10 sm:gap-10 sm:pb-12 lg:grid-cols-2 lg:pb-20">
-        <div>
-          <span class="eyebrow rise rise-1">{{ s('hero_eyebrow', 'National ICT Programming Festival') }}</span>
-          <h1 class="text-display rise rise-2 mt-3.5 sm:mt-5">
+      <div
+        class="container-site pt-header-safe pt-header-safe--hero grid items-center gap-8 pb-10 sm:gap-10 sm:pb-12 lg:pb-20"
+        :class="hasHeroMedia ? 'lg:grid-cols-2' : 'lg:grid-cols-1'"
+      >
+        <div :class="hasHeroMedia ? '' : 'mx-auto max-w-4xl text-center'">
+          <span class="eyebrow eyebrow--hero rise rise-1">{{ s('hero_eyebrow', 'National ICT Programming Festival') }}</span>
+          <h1 class="text-display text-display--hero rise rise-2 mt-3.5 sm:mt-5">
             {{ heroTitle }}
           </h1>
-          <p v-if="fullName" class="rise rise-2 mt-1.5 text-xl font-extrabold text-ink-soft sm:text-2xl">{{ fullName }}</p>
-          <p class="rise rise-2 mt-3 text-base font-bold text-ink-soft sm:mt-4 sm:text-xl sm:text-ink">{{ tagline }}</p>
-          <p class="rise rise-3 mt-2.5 max-w-md text-sm text-ink-soft sm:mt-3 sm:text-base">
+          <p v-if="fullName" class="rise rise-2 mt-2 text-2xl font-extrabold text-ink-soft sm:text-3xl lg:text-4xl">{{ fullName }}</p>
+          <p class="rise rise-2 mt-3.5 text-lg font-bold text-ink-soft sm:mt-4 sm:text-2xl sm:text-ink lg:text-3xl">{{ tagline }}</p>
+          <p
+            class="rise rise-3 mt-3 text-base text-ink-soft sm:mt-4 sm:text-lg lg:text-xl"
+            :class="hasHeroMedia ? 'max-w-lg' : 'mx-auto max-w-2xl'"
+          >
             {{ s('hero_blurb', 'The biggest national ICT programming festival with three tracks, a bigger prize pool, and a national stage for innovators.') }}
           </p>
 
-          <!-- mobile-only proof strip: the desktop collage carries these signals on large screens -->
-          <div class="rise rise-3 mt-5 flex flex-wrap items-center gap-2 lg:hidden">
+          <!-- Proof strip. The collage carries these signals on large screens, so
+               it is mobile-only -- but with no collage there is nothing else to
+               carry them, and it stays visible at every width. -->
+          <div
+            class="rise rise-3 mt-5 flex flex-wrap items-center gap-2"
+            :class="hasHeroMedia ? 'lg:hidden' : 'justify-center'"
+          >
             <span v-if="registrationLive" class="pill-open">
               <span class="dot-live" /> Registration open
             </span>
@@ -111,7 +131,10 @@ useSeoMeta({
             </span>
           </div>
 
-          <div class="rise rise-4 mt-7 flex w-full flex-col items-stretch gap-2.5 sm:mt-8 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+          <div
+            class="rise rise-4 mt-7 flex w-full flex-col items-stretch gap-2.5 sm:mt-8 sm:w-auto sm:flex-row sm:items-center sm:gap-3"
+            :class="hasHeroMedia ? '' : 'sm:justify-center'"
+          >
             <NuxtLink to="/events" class="btn-primary hero-cta w-full justify-center text-center sm:w-auto">
               Explore Competitions <Icon name="lucide:arrow-right" />
             </NuxtLink>
@@ -119,37 +142,31 @@ useSeoMeta({
           </div>
         </div>
 
-        <!-- layered photo collage + floating stat chips -->
-        <div class="rise rise-4 relative hidden min-h-[420px] lg:block">
+        <!-- layered photo collage + floating stat chips; dropped entirely when
+             nothing has been uploaded -->
+        <div v-if="hasHeroMedia" class="rise rise-4 relative hidden min-h-[420px] lg:block">
           <!-- decorative dot grids -->
           <div class="dot-grid absolute -top-4 right-0 h-36 w-36 opacity-60" aria-hidden="true" />
           <div class="dot-grid absolute -bottom-8 left-6 h-28 w-28 opacity-40" aria-hidden="true" />
 
-          <template v-if="heroPhotos.length">
-            <!-- main photo -->
-            <div class="floating relative ml-auto w-[78%] rotate-2">
-              <img
-                :src="heroPhotos[0]"
-                alt="Moments from BICTA"
-                class="aspect-[4/3] w-full rounded-3xl border-4 border-white object-cover shadow-lift"
-              />
-              <span v-if="registrationLive" class="pill-open absolute right-4 top-4 shadow-soft">
-                <span class="dot-live" /> Registration open
-              </span>
-            </div>
-            <!-- secondary photo -->
+          <!-- main photo -->
+          <div class="floating relative ml-auto w-[78%] rotate-2">
             <img
-              v-if="heroPhotos[1]"
-              :src="heroPhotos[1]"
-              alt="BICTA participants"
-              class="floating-slow absolute -bottom-6 left-0 w-48 -rotate-3 rounded-2xl border-4 border-white object-cover shadow-lift"
+              :src="heroPhotos[0]"
+              alt="Moments from BICTA"
+              class="aspect-[4/3] w-full rounded-3xl border-4 border-white object-cover shadow-lift"
             />
-          </template>
-
-          <!-- fallback panel when no gallery photos yet -->
-          <div v-else class="floating relative ml-auto flex aspect-[4/3] w-[78%] rotate-2 items-center justify-center rounded-3xl bg-gradient-to-br from-brand-600 to-brand-400 shadow-lift">
-            <Icon name="lucide:trophy" class="text-8xl text-white/80" />
+            <span v-if="registrationLive" class="pill-open absolute right-4 top-4 shadow-soft">
+              <span class="dot-live" /> Registration open
+            </span>
           </div>
+          <!-- secondary photo -->
+          <img
+            v-if="heroPhotos[1]"
+            :src="heroPhotos[1]"
+            alt="BICTA participants"
+            class="floating-slow absolute -bottom-6 left-0 w-48 -rotate-3 rounded-2xl border-4 border-white object-cover shadow-lift"
+          />
 
           <!-- prize chip -->
           <div v-if="topPrize" class="floating-delay card absolute left-0 top-10 flex items-center gap-3 p-4 shadow-lift">
