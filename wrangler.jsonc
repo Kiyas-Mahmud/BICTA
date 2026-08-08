@@ -1,6 +1,10 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "bicta-net",
+  // Keeps the existing Worker: its GitHub build connection, secrets
+  // (NUXT_SESSION_PASSWORD, RESEND_API_KEY) and cron trigger all live on this
+  // name. Only the bindings and domain move. The name is never user-visible
+  // once workers_dev is off.
+  "name": "bicta",
   // Nitro's cloudflare_module preset emits the Worker entry + static assets here.
   "main": ".output/server/index.mjs",
   "compatibility_date": "2026-07-20",
@@ -12,11 +16,9 @@
     "binding": "ASSETS"
   },
 
-  // TEMPORARY: on, so the new Worker is reachable for testing before
-  // bicta.net is delegated to Cloudflare. Set back to false the moment the
-  // custom domain is attached — the site should have exactly one address, and
-  // PUBLIC_SITE_URL (which every emailed link is built from) must name it.
-  "workers_dev": true,
+  // One address only. bytearo.online keeps serving until bicta.net is
+  // attached, so there is no need for a workers.dev fallback in between.
+  "workers_dev": false,
 
   // Custom domain. Declaring it here (rather than clicking it in the
   // dashboard) means the GitHub build owns it, so a redeploy can never
