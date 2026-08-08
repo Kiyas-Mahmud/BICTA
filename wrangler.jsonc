@@ -24,12 +24,10 @@
   // dashboard) means the GitHub build owns it, so a redeploy can never
   // silently drop it.
   //
-  // COMMENTED OUT UNTIL bicta.net IS AN ACTIVE ZONE in this Cloudflare
-  // account — wrangler fails the deploy if it cannot resolve the zone, which
-  // would break the build pipeline rather than just skipping the domain.
-  // Uncomment and push once the nameservers have moved and the zone shows
-  // "Active".
-  // "routes": [{ "pattern": "bicta.net", "custom_domain": true }],
+  // bicta.net is delegated to Cloudflare and Active, so the zone resolves and
+  // this is safe to declare. Listing it here means a redeploy re-asserts the
+  // domain instead of being able to silently drop it.
+  "routes": [{ "pattern": "bicta.net", "custom_domain": true }],
 
   "vars": {
     "PUBLIC_SITE_URL": "https://bicta.net",
