@@ -65,7 +65,12 @@ const PHASE_LABEL: Record<string, { text: string; cls: string }> = {
   'judging': { text: 'Judging', cls: 'bg-white/25' },
   'complete': { text: 'Complete', cls: 'bg-white/15' },
 }
-const phaseChip = computed(() => PHASE_LABEL[data.value?.phase?.phase ?? 'complete'])
+// No event means no phase to report. Without this guard the fallback renders a
+// "Complete" badge beside "No events yet" on a fresh install, which reads as
+// though the season had already finished.
+const phaseChip = computed(() =>
+  data.value?.event ? PHASE_LABEL[data.value.phase?.phase ?? 'complete'] : null,
+)
 
 /**
  * Exactly one hero figure per view, and which number it is depends on where
@@ -247,7 +252,7 @@ useSeoMeta({ title: 'Dashboard', robots: 'noindex' })
         </p>
       </AdminPanel>
 
-      <AdminPanel title="Sign-ups over time" :subtitle="`${data?.trend.from} to ${data?.trend.to}`" icon="lucide:trending-up">
+      <AdminPanel title="Sign-ups over time" :subtitle="data?.trend.from ? `${data.trend.from} to ${data.trend.to}` : undefined" icon="lucide:trending-up">
         <AdminChartsArea v-if="data?.trend.series.length" :series="data.trend.series" />
         <p v-if="data?.trend.windowShifted" class="mt-2 text-xs text-ink-faint">
           Showing the most recent period with activity, not the last 30 days.
