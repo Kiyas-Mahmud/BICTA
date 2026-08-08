@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "bicta",
+  "name": "bicta-net",
   // Nitro's cloudflare_module preset emits the Worker entry + static assets here.
   "main": ".output/server/index.mjs",
   "compatibility_date": "2026-07-20",
@@ -12,22 +12,33 @@
     "binding": "ASSETS"
   },
 
-  // Serve only on the custom domain. workers_dev:false retires the
-  // bicta.<subdomain>.workers.dev URL so the site has exactly one address —
-  // PUBLIC_SITE_URL is what every emailed link and invite link is built from,
-  // so the two must always name the same host.
-  "workers_dev": false,
+  // TEMPORARY: on, so the new Worker is reachable for testing before
+  // bicta.net is delegated to Cloudflare. Set back to false the moment the
+  // custom domain is attached — the site should have exactly one address, and
+  // PUBLIC_SITE_URL (which every emailed link is built from) must name it.
+  "workers_dev": true,
+
+  // Custom domain. Declaring it here (rather than clicking it in the
+  // dashboard) means the GitHub build owns it, so a redeploy can never
+  // silently drop it.
+  //
+  // COMMENTED OUT UNTIL bicta.net IS AN ACTIVE ZONE in this Cloudflare
+  // account — wrangler fails the deploy if it cannot resolve the zone, which
+  // would break the build pipeline rather than just skipping the domain.
+  // Uncomment and push once the nameservers have moved and the zone shows
+  // "Active".
+  // "routes": [{ "pattern": "bicta.net", "custom_domain": true }],
 
   "vars": {
-    "PUBLIC_SITE_URL": "https://bytearo.online",
-    "MAIL_FROM": "BICTA <no-reply@bytearo.online>"
+    "PUBLIC_SITE_URL": "https://bicta.net",
+    "MAIL_FROM": "BICTA <no-reply@bicta.net>"
   },
 
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "bicta",
-      "database_id": "78b3f77f-f4de-4ebc-b0c5-2a620f32c24e",
+      "database_name": "bicta-net",
+      "database_id": "498cf7cd-009f-429b-8292-5a1e542cdd76",
       // Drizzle Kit writes numbered .sql files here; wrangler applies them in order.
       "migrations_dir": "./server/database/migrations"
     }
@@ -36,7 +47,7 @@
   "r2_buckets": [
     {
       "binding": "UPLOADS",
-      "bucket_name": "bicta-uploads"
+      "bucket_name": "bicta-net-uploads"
     }
   ],
 
