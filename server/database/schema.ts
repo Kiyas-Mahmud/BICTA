@@ -283,6 +283,22 @@ export const people = sqliteTable('people', {
   sortOrder: integer('sort_order').notNull().default(0),
 })
 
+// Advisory panel shown on /about, grouped into three fixed tiers. Kept
+// separate from `people` (judges/speakers) rather than adding a third role to
+// it: advisors carry a different field set (designation + LinkedIn, no bio,
+// expertise or contact details), belong to the organisation rather than to an
+// event, and are grouped by tier on a page of their own.
+export const advisors = sqliteTable('advisors', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  designation: text('designation').notNull().default(''),
+  organization: text('organization').notNull().default(''),
+  photoUrl: text('photo_url'),
+  linkedinUrl: text('linkedin_url'),
+  category: text('category', { enum: ['university', 'industry', 'core'] }).notNull().default('university'),
+  sortOrder: integer('sort_order').notNull().default(0),
+})
+
 export const winners = sqliteTable('winners', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   // Which edition they won. Nullable so older rows that only recorded a year
@@ -593,3 +609,4 @@ export type Score = typeof scores.$inferSelect
 export type ApplicationField = typeof applicationFields.$inferSelect
 export type ApplicationResponse = typeof applicationResponses.$inferSelect
 export type MailCampaign = typeof mailCampaigns.$inferSelect
+export type Advisor = typeof advisors.$inferSelect

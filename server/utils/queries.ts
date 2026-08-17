@@ -138,6 +138,12 @@ export function getPeople() {
   return useDb().select().from(schema.people).orderBy(asc(schema.people.sortOrder)).all()
 }
 
+// Advisory panel for /about. Ordered by sortOrder only; the page groups them
+// into tiers itself, so a single ordered read is enough for all three.
+export function getAdvisors() {
+  return useDb().select().from(schema.advisors).orderBy(asc(schema.advisors.sortOrder)).all()
+}
+
 export function getWinners() {
   return useDb().select().from(schema.winners).orderBy(asc(schema.winners.sortOrder)).all()
 }

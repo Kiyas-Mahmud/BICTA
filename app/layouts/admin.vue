@@ -40,6 +40,7 @@ const allGroups = [
       { to: '/admin/timeline', label: 'Timeline', icon: 'lucide:milestone' },
       { to: '/admin/sponsors', label: 'Sponsors', icon: 'lucide:handshake' },
       { to: '/admin/people', label: 'Judges & Speakers', icon: 'lucide:users' },
+      { to: '/admin/advisors', label: 'Advisor Panel', icon: 'lucide:user-round-check' },
       { to: '/admin/winners', label: 'Winners', icon: 'lucide:trophy' },
       { to: '/admin/how-it-works', label: 'How It Works', icon: 'lucide:list-checks' },
       { to: '/admin/faq', label: 'FAQ', icon: 'lucide:circle-help' },

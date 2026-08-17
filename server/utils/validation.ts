@@ -378,6 +378,18 @@ export const personSchema = z.object({
   sortOrder: z.number().int().min(0).max(1000).default(0),
 })
 
+// Advisory panel on /about. Categories are a fixed enum rather than free text
+// so the public page can group by them without normalising strings.
+export const advisorSchema = z.object({
+  name: z.string().trim().min(1).max(150),
+  designation: z.string().trim().max(150).default(''),
+  organization: z.string().trim().max(150).default(''),
+  photoUrl: imagePath.nullable().optional(),
+  linkedinUrl: optUrl,
+  category: z.enum(['university', 'industry', 'core']).default('university'),
+  sortOrder: z.number().int().min(0).max(1000).default(0),
+})
+
 // Which competitions a judge is assigned to score.
 export const judgeAssignmentSchema = z.object({
   competitionIds: z.array(z.coerce.number().int().positive()).max(50).default([]),

@@ -138,48 +138,52 @@ onBeforeUnmount(() => {
     </ul>
   </nav>
 
-  <!-- ===== Desktop: floating top pill ===== -->
-  <div class="fixed top-6 left-1/2 z-50 hidden -translate-x-1/2 justify-center sm:flex">
-    <!-- No overflow-hidden: the Register button carries a drop shadow and a
-         -2px hover lift, both of which get sheared off by clipping and read
-         as the button sitting outside the bar. The active indicator is
-         self-contained, so nothing needs clipping anyway. -->
-    <nav ref="navContainerRef" class="relative flex items-center gap-1.5 rounded-full border border-line/70 bg-white/90 p-2 shadow-2xl backdrop-blur-2xl">
+  <!-- ===== Desktop: full-width top bar ===== -->
+  <!-- Was a floating centred pill. Full width gives the logo room to be shown
+       at a readable size instead of cropped into a 40px circle, and the wider
+       bar is what the links/actions split now sits inside. -->
+  <header class="nav-desktop hidden sm:block">
+    <div class="container-site flex h-20 items-center justify-between gap-6">
       <NuxtLink
         to="/"
-        class="relative z-10 flex shrink-0 items-center gap-2 rounded-full pr-2 text-sm font-extrabold text-ink"
+        class="flex shrink-0 items-center gap-3 text-ink"
         :aria-label="`${brandName} home`"
       >
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink">
-          <img v-if="logoUrl" :src="logoUrl" alt="" class="h-full w-full object-cover" />
-          <Icon v-else name="lucide:command" class="text-lg text-white" />
-        </span>
-        <span class="whitespace-nowrap">{{ brandName }}</span>
+        <!-- object-contain, no circular mask: the uploaded mark is a detailed
+             emblem, and cropping it to a circle cut off its outer ring. -->
+        <img v-if="logoUrl" :src="logoUrl" alt="" class="h-14 w-auto max-w-[13rem] shrink-0 object-contain" />
+        <Icon v-else name="lucide:command" class="text-3xl text-brand-600" />
+        <span class="whitespace-nowrap text-xl font-extrabold tracking-tight">{{ brandName }}</span>
       </NuxtLink>
 
-      <template v-for="(item, i) in items" :key="item.name">
-        <NuxtLink
-          v-if="item.url !== '/'"
-          :ref="(el: any) => { if (el?.$el) navItemRefs[i] = el.$el; else if (el) navItemRefs[i] = el as HTMLElement }"
-          :to="item.url"
-          class="relative z-10 flex h-10 shrink-0 items-center justify-center gap-2 rounded-full px-4 text-sm font-extrabold transition-colors"
-          :class="activeIndex === i ? 'text-brand-700' : 'text-ink-soft hover:bg-mist-1 hover:text-ink'"
-          :title="item.name"
-        >
-          <Icon :name="item.icon" class="shrink-0 text-lg" />
-          <span class="whitespace-nowrap">{{ item.name }}</span>
-        </NuxtLink>
-      </template>
+      <!-- No overflow-hidden: the Register button carries a drop shadow and a
+           -2px hover lift, both of which get sheared off by clipping. The
+           active indicator is self-contained, so nothing needs clipping. -->
+      <nav ref="navContainerRef" class="relative flex items-center gap-1" aria-label="Primary">
+        <template v-for="(item, i) in items" :key="item.name">
+          <NuxtLink
+            v-if="item.url !== '/'"
+            :ref="(el: any) => { if (el?.$el) navItemRefs[i] = el.$el; else if (el) navItemRefs[i] = el as HTMLElement }"
+            :to="item.url"
+            class="relative z-10 flex h-10 shrink-0 items-center justify-center gap-2 rounded-full px-4 text-sm font-extrabold transition-colors"
+            :class="activeIndex === i ? 'text-brand-700' : 'text-ink-soft hover:bg-mist-1 hover:text-ink'"
+            :title="item.name"
+          >
+            <Icon :name="item.icon" class="shrink-0 text-lg" />
+            <span class="whitespace-nowrap">{{ item.name }}</span>
+          </NuxtLink>
+        </template>
 
-      <!-- Active indicator: fully self-contained, so nothing can paint outside
-           the pill (the old version leaned on overflow clipping, which is
-           unreliable on an element that also carries a backdrop-filter). -->
-      <div
-        class="nav-desktop-indicator pointer-events-none absolute left-0 top-0 z-0"
-        :style="indicatorStyle"
-      />
+        <!-- Active indicator: fully self-contained, so nothing can paint
+             outside it (the old version leaned on overflow clipping, which is
+             unreliable on an element that also carries a backdrop-filter). -->
+        <div
+          class="nav-desktop-indicator pointer-events-none absolute left-0 top-0 z-0"
+          :style="indicatorStyle"
+        />
+      </nav>
 
-      <div class="ml-1.5 flex shrink-0 items-center gap-1.5 border-l border-line/60 pl-2.5">
+      <div class="flex shrink-0 items-center gap-1.5">
         <NuxtLink
           v-if="dashboard"
           :to="dashboard"
@@ -208,6 +212,6 @@ onBeforeUnmount(() => {
           </NuxtLink>
         </template>
       </div>
-    </nav>
-  </div>
+    </div>
+  </header>
 </template>

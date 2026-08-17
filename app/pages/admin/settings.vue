@@ -65,6 +65,17 @@ const groups: { id: string; title: string; icon: string; description: string; fi
     ],
   },
   {
+    id: 'about',
+    title: 'About page',
+    icon: 'lucide:info',
+    description: 'Intro text above the advisor panel on /about.',
+    fields: [
+      { key: 'about_eyebrow', label: 'Eyebrow', hint: 'Small label above the title. Defaults to "About us".' },
+      { key: 'about_heading', label: 'Page heading', hint: 'Defaults to "About BICTA".' },
+      { key: 'about_intro', label: 'Intro paragraph', type: 'textarea', colSpan: 2 },
+    ],
+  },
+  {
     id: 'legal',
     title: 'Legal pages',
     icon: 'lucide:scale',
