@@ -102,7 +102,7 @@ async function main() {
 
   // 5: guard against silently doubling data, then push.
   if (!force) {
-    const probe = wrangler(['d1', 'execute', 'bicta', target, '--json', '--command', 'select count(*) as n from events'])
+    const probe = wrangler(['d1', 'execute', 'bicta-net', target, '--json', '--command', 'select count(*) as n from events'])
     const existing = Number(JSON.parse(probe.slice(probe.indexOf('[')))?.[0]?.results?.[0]?.n ?? 0)
     if (existing > 0) {
       console.log(`Target ${remote ? 'remote' : 'local'} D1 already has ${existing} events — skipping. Pass --force to seed anyway.`)
@@ -110,7 +110,7 @@ async function main() {
     }
   }
 
-  console.log(wrangler(['d1', 'execute', 'bicta', target, '--file', OUT_SQL, '--yes']))
+  console.log(wrangler(['d1', 'execute', 'bicta-net', target, '--file', OUT_SQL, '--yes']))
   console.log(`Seeded ${remote ? 'remote' : 'local'} D1.`)
 }
 
