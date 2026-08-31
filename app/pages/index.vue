@@ -59,6 +59,28 @@ function openCount(e: EventListing) {
   return e.competitions.filter((c) => c.registrationOpen).length
 }
 
+// About: the advisory panel now renders on this page instead of a standalone
+// /about route. Same fixed tiers and order the old page used -- a panel only
+// renders when it has members, so a half-filled roster leaves no empty heading.
+const ADVISOR_CATEGORIES = [
+  { key: 'university', heading: 'University Advisors', icon: 'lucide:graduation-cap', tile: 'tile-blue' },
+  { key: 'industry', heading: 'Industry Advisors', icon: 'lucide:building-2', tile: 'tile-purple' },
+  { key: 'core', heading: 'Core Team', icon: 'lucide:users-round', tile: 'tile-green' },
+] as const
+
+const advisorPanels = computed(() =>
+  ADVISOR_CATEGORIES.map((c) => ({
+    ...c,
+    people: (data.value?.advisors ?? []).filter((a: any) => a.category === c.key),
+  })).filter((p) => p.people.length > 0),
+)
+
+// Follows the same rule as every other section here: hidden outright when
+// there is nothing to show, rather than a heading floating over blank space.
+const hasAbout = computed(
+  () => visible('about') && (advisorPanels.value.length > 0 || Boolean(s('about_intro'))),
+)
+
 const marqueePeople = computed(() => [...(data.value?.judges ?? []), ...(data.value?.speakers ?? [])])
 const galleryImages = computed(() => (data.value?.gallery ?? []).map((g: any) => g.url))
 
@@ -525,6 +547,36 @@ useSeoMeta({
         <div class="container-site">
           <h2 class="text-title">{{ s('faq_heading', 'Frequently asked questions') }}</h2>
           <SiteFaqAccordion class="mt-6 max-w-3xl" :faqs="data!.faqs" />
+        </div>
+      </section>
+    </SiteSectionReveal>
+
+    <!-- 13. ABOUT -->
+    <!-- Was a standalone /about route. Folded in above the venue/contact block
+         so the advisory panel reads as part of the page instead of something a
+         visitor had to go looking for. #about keeps the footer link working. -->
+    <SiteSectionReveal v-if="hasAbout">
+      <section id="about" class="section scroll-mt-24 !pt-0">
+        <div class="container-site">
+          <div class="mx-auto max-w-3xl text-center">
+            <span class="eyebrow">{{ s('about_eyebrow', 'About us') }}</span>
+            <h2 class="text-title mt-4">{{ s('about_heading', 'About BICTA') }}</h2>
+            <p v-if="s('about_intro')" class="mt-4 text-lg leading-relaxed text-ink-soft">{{ s('about_intro') }}</p>
+          </div>
+
+          <div v-if="advisorPanels.length" class="mt-14 space-y-14">
+            <section v-for="panel in advisorPanels" :key="panel.key">
+              <div class="flex items-center gap-3">
+                <span class="tile h-11 w-11 shrink-0 text-xl" :class="panel.tile">
+                  <Icon :name="panel.icon" />
+                </span>
+                <h3 class="text-title">{{ panel.heading }}</h3>
+              </div>
+              <div class="mt-8 grid gap-5" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr))">
+                <SiteAdvisorCard v-for="a in panel.people" :key="a.id" :advisor="a" />
+              </div>
+            </section>
+          </div>
         </div>
       </section>
     </SiteSectionReveal>

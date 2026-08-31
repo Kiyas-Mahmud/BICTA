@@ -161,8 +161,10 @@ onBeforeUnmount(() => {
            active indicator is self-contained, so nothing needs clipping. -->
       <nav ref="navContainerRef" class="relative flex items-center gap-1" aria-label="Primary">
         <template v-for="(item, i) in items" :key="item.name">
+          <!-- The home item used to be skipped here (the brand mark on the
+               left was the only way back). It renders as a real Home tab now,
+               which also means the active pill has something to sit on at /. -->
           <NuxtLink
-            v-if="item.url !== '/'"
             :ref="(el: any) => { if (el?.$el) navItemRefs[i] = el.$el; else if (el) navItemRefs[i] = el as HTMLElement }"
             :to="item.url"
             class="relative z-10 flex h-10 shrink-0 items-center justify-center gap-2 rounded-full px-4 text-sm font-extrabold transition-colors"

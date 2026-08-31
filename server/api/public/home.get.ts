@@ -11,10 +11,11 @@ import {
   getEventGallery,
   getHowItWorksSteps,
   getEventStats,
+  getAdvisors,
 } from '../../utils/queries'
 
 export default defineEventHandler(async () => {
-  const [current, news, settings, features, people, winners, faqs, steps] =
+  const [current, news, settings, features, people, winners, faqs, steps, advisors] =
     await Promise.all([
       getCurrentEventFull(),
       getPublishedNews(5),
@@ -24,6 +25,7 @@ export default defineEventHandler(async () => {
       getWinners(),
       getFaqs(),
       getHowItWorksSteps(),
+      getAdvisors(),
     ])
 
   // Sponsors, timeline, gallery and stats all hang off the current event, so
@@ -51,5 +53,6 @@ export default defineEventHandler(async () => {
     gallery,
     steps,
     stats,
+    advisors,
   }
 })

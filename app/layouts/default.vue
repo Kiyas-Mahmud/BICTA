@@ -4,10 +4,11 @@ import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 
 const { data: settings } = await useFetch('/api/public/settings', { key: 'site-settings' })
 
+// About is a section of the home page now, not a route of its own, so it is
+// reached from the footer's /#about link rather than taking a nav slot.
 const navItems = [
-  { name: 'BICTA', url: '/', icon: 'lucide:home' },
+  { name: 'Home', url: '/', icon: 'lucide:home' },
   { name: 'Events', url: '/events', icon: 'lucide:calendar' },
-  { name: 'About', url: '/about', icon: 'lucide:info' },
   { name: 'Gallery', url: '/gallery', icon: 'lucide:image' },
   { name: 'News', url: '/news', icon: 'lucide:newspaper' },
   { name: 'Contact', url: '/contact', icon: 'lucide:mail' },
@@ -55,7 +56,7 @@ const year = new Date().getFullYear()
           <ul class="mt-4 space-y-2.5 text-sm text-white/70">
             <li><NuxtLink to="/" class="transition-colors hover:text-white">Home</NuxtLink></li>
             <li><NuxtLink to="/events" class="transition-colors hover:text-white">Events</NuxtLink></li>
-            <li><NuxtLink to="/about" class="transition-colors hover:text-white">About us</NuxtLink></li>
+            <li><NuxtLink to="/#about" class="transition-colors hover:text-white">About us</NuxtLink></li>
             <li><NuxtLink to="/gallery" class="transition-colors hover:text-white">Gallery</NuxtLink></li>
             <li><NuxtLink to="/news" class="transition-colors hover:text-white">News</NuxtLink></li>
             <li><NuxtLink to="/login" class="transition-colors hover:text-white">Participant login</NuxtLink></li>
