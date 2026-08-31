@@ -582,25 +582,27 @@ useSeoMeta({
     </SiteSectionReveal>
 
     <!-- 14. VENUE + CONTACT -->
-    <!-- One section, one container: the map (when there is one) stacks
-         directly above the contact card with a single consistent gap,
-         instead of each living in its own independently-padded section. -->
+    <!-- One card, not two slabs. The map used to stack above the contact card
+         as its own full-width block, which read as an unrelated second panel
+         and left the contact card's left column empty beside a tall form. It
+         sits in that column now, so venue and contact are one thing. -->
     <SiteSectionReveal>
       <section class="section !pt-0">
         <div class="container-site mx-auto max-w-5xl">
-          <SiteVenueMap
-            v-if="hasVenue"
-            class="mb-8"
-            :name="s('venue_name')"
-            :address="s('venue_address')"
-            :directions="s('venue_directions')"
-            :map-embed="s('venue_map_embed')"
-          />
           <UiContactCard
             title="Get in touch"
             description="Questions about the festival, sponsorship, or partnerships? Fill out the form and we will respond within one business day."
             :contact-info="contactInfo"
           >
+            <template v-if="hasVenue" #aside>
+              <SiteVenueMap
+                flat
+                :name="s('venue_name')"
+                :address="s('venue_address')"
+                :directions="s('venue_directions')"
+                :map-embed="s('venue_map_embed')"
+              />
+            </template>
             <SiteContactForm />
           </UiContactCard>
         </div>

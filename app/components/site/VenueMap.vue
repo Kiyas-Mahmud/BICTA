@@ -1,5 +1,7 @@
 <script setup lang="ts">
-const props = defineProps<{ name?: string; address?: string; directions?: string; mapEmbed?: string }>()
+// `flat` drops the card chrome so this can sit inside another card (the
+// contact panel) without the doubled border-and-shadow of a card in a card.
+const props = defineProps<{ name?: string; address?: string; directions?: string; mapEmbed?: string; flat?: boolean }>()
 
 // What admins paste varies: the iframe src from Share > Embed a map, a short
 // share link (maps.app.goo.gl/...), a plain maps URL, or nothing at all. Only
@@ -52,8 +54,12 @@ const externalUrl = computed(() => {
 </script>
 
 <template>
-  <div class="card overflow-hidden">
-    <div v-if="embedSrc" class="aspect-[16/10] w-full bg-mist-2">
+  <div class="overflow-hidden" :class="flat ? '' : 'card'">
+    <div
+      v-if="embedSrc"
+      class="aspect-[16/10] w-full bg-mist-2"
+      :class="flat ? 'overflow-hidden rounded-xl border border-line' : ''"
+    >
       <iframe
         :src="embedSrc"
         class="h-full w-full"
@@ -63,7 +69,7 @@ const externalUrl = computed(() => {
         title="Venue location map"
       />
     </div>
-    <div class="flex items-start gap-3 p-6">
+    <div class="flex items-start gap-3" :class="flat ? 'pt-5' : 'p-6'">
       <span class="tile tile-blue h-11 w-11 shrink-0 text-xl"><Icon name="lucide:map-pin" /></span>
       <div class="min-w-0">
         <h3 v-if="name" class="font-extrabold tracking-tight">{{ name }}</h3>
