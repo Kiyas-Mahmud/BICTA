@@ -6,6 +6,13 @@ definePageMeta({ layout: false })
 
 const { session, fetch: refreshSession } = useUserSession()
 
+// This page sets `layout: false`, so it never inherited the navbar's branding
+// and was showing a generic glyph even once an admin had uploaded a logo.
+// Same settings key the layout uses, so the payload is shared, not refetched.
+const { data: siteSettings } = await useFetch('/api/public/settings', { key: 'site-settings' })
+const logoUrl = computed(() => siteSettings.value?.site_logo_url || '')
+const brandName = computed(() => siteSettings.value?.brand_name || 'BICTA')
+
 const staffUser = computed(() => (session.value as any)?.user)
 const participant = computed(() => (session.value as any)?.participant)
 const judge = computed(() => (session.value as any)?.judge)
@@ -61,10 +68,20 @@ useSeoMeta({ title: 'Sign in', robots: 'noindex' })
   <div class="flex min-h-screen items-center justify-center bg-paper px-4 py-10">
     <div class="rise w-full max-w-sm">
       <div class="mb-7 flex flex-col items-center text-center">
-        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-soft">
-          <Icon name="lucide:command" class="text-lg" />
-        </span>
-        <h1 class="mt-4 text-2xl font-extrabold tracking-[-0.02em] text-ink">Sign in to BICTA</h1>
+        <NuxtLink to="/" :aria-label="`${brandName} home`">
+          <!-- object-contain and no circular mask, matching the navbar: the
+               uploaded mark is a detailed emblem that a crop cuts into. -->
+          <img
+            v-if="logoUrl"
+            :src="logoUrl"
+            :alt="brandName"
+            class="h-14 w-auto max-w-[12rem] object-contain"
+          />
+          <span v-else class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-soft">
+            <Icon name="lucide:command" class="text-lg" />
+          </span>
+        </NuxtLink>
+        <h1 class="mt-4 text-2xl font-extrabold tracking-[-0.02em] text-ink">Sign in to {{ brandName }}</h1>
         <p class="mt-1.5 text-sm text-ink-soft">Organizers, volunteers and participants all use this form.</p>
       </div>
 

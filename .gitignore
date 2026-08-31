@@ -4,6 +4,9 @@ node_modules
 .data
 dist
 .env
+# ...and any local copy or backup of it. .env.example stays tracked.
+.env.*
+!.env.example
 # Local Worker secrets + miniflare state (local D1 / R2 emulation)
 .dev.vars
 .wrangler
