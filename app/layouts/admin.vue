@@ -133,12 +133,12 @@ async function logout() {
       :class="sidebarOpen ? 'translate-x-0 shadow-lift' : '-translate-x-full'"
     >
       <div class="flex h-16 shrink-0 items-center gap-2.5 border-b border-line px-5">
-        <img v-if="settings?.site_logo_url" :src="settings.site_logo_url" alt="BICTA" class="h-9 w-auto max-w-[3rem] shrink-0 object-contain" />
+        <img v-if="settings?.site_logo_url" :src="settings.site_logo_url" :alt="settings?.brand_name || 'BICTA'" class="h-9 w-auto max-w-[3rem] shrink-0 object-contain" />
         <span v-else class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-soft">
           <Icon name="lucide:command" class="text-lg" />
         </span>
         <div class="min-w-0 leading-tight">
-          <p class="text-sm font-extrabold tracking-tight">BICTA</p>
+          <p v-if="!settings?.site_logo_url" class="text-sm font-extrabold tracking-tight">{{ settings?.brand_name || 'BICTA' }}</p>
           <p class="console-label">Admin Console</p>
         </div>
         <button

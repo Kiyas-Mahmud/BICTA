@@ -34,7 +34,17 @@ const year = new Date().getFullYear()
     <footer class="mt-auto bg-ink text-white">
       <div class="container-site grid gap-10 py-14 md:grid-cols-[1.5fr_1fr_1fr]">
         <div>
-          <p class="text-2xl font-extrabold tracking-tight">BICTA<span class="text-brand-400">.</span></p>
+          <!-- The logo is shown on a light chip: uploads are commonly opaque
+               white-background PNGs, which would otherwise sit on this dark
+               panel as a bare white rectangle. -->
+          <NuxtLink v-if="settings?.site_logo_url" to="/" class="inline-flex rounded-xl bg-white p-2.5 shadow-soft">
+            <img
+              :src="settings.site_logo_url"
+              :alt="settings?.brand_name || 'BICTA'"
+              class="h-11 w-auto max-w-[9rem] object-contain"
+            />
+          </NuxtLink>
+          <p v-else class="text-2xl font-extrabold tracking-tight">{{ settings?.brand_name || 'BICTA' }}<span class="text-brand-400">.</span></p>
           <p class="mt-3 max-w-xs text-sm leading-relaxed text-white/60">
             {{ settings?.footer_text ?? 'The national ICT programming festival. Innovate. Code. Compete.' }}
           </p>

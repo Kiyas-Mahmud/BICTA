@@ -81,7 +81,9 @@ useSeoMeta({ title: 'Sign in', robots: 'noindex' })
             <Icon name="lucide:command" class="text-lg" />
           </span>
         </NuxtLink>
-        <h1 class="mt-4 text-2xl font-extrabold tracking-[-0.02em] text-ink">Sign in to {{ brandName }}</h1>
+        <h1 class="mt-4 text-2xl font-extrabold tracking-[-0.02em] text-ink">
+          {{ logoUrl ? 'Sign in' : `Sign in to ${brandName}` }}
+        </h1>
         <p class="mt-1.5 text-sm text-ink-soft">Organizers, volunteers and participants all use this form.</p>
       </div>
 

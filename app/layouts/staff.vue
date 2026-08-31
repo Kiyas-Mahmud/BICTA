@@ -39,11 +39,15 @@ async function logout() {
     <header class="sticky top-0 z-40 border-b border-white/10 bg-black/20 backdrop-blur-md">
       <div class="mx-auto flex h-14 w-full max-w-2xl items-center gap-3 px-4">
         <p class="flex items-center gap-2 font-extrabold tracking-tight">
-          <img v-if="settings?.site_logo_url" :src="settings.site_logo_url" alt="BICTA" class="h-7 w-auto max-w-[2.5rem] object-contain" />
+          <!-- Light chip: this header is dark and uploaded logos are usually
+               opaque white-background PNGs. -->
+          <span v-if="settings?.site_logo_url" class="flex items-center rounded-lg bg-white p-1">
+            <img :src="settings.site_logo_url" :alt="settings?.brand_name || 'BICTA'" class="h-6 w-auto max-w-[2.25rem] object-contain" />
+          </span>
           <span v-else class="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500/25 text-brand-300">
             <Icon name="lucide:scan-line" />
           </span>
-          BICTA <span class="text-white/50">Scanner</span>
+          <span v-if="!settings?.site_logo_url">{{ settings?.brand_name || 'BICTA' }} </span><span class="text-white/50">Scanner</span>
         </p>
 
         <span

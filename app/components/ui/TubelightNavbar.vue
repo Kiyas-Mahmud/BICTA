@@ -153,7 +153,9 @@ onBeforeUnmount(() => {
              emblem, and cropping it to a circle cut off its outer ring. -->
         <img v-if="logoUrl" :src="logoUrl" alt="" class="h-14 w-auto max-w-[13rem] shrink-0 object-contain" />
         <Icon v-else name="lucide:command" class="text-3xl text-brand-600" />
-        <span class="whitespace-nowrap text-xl font-extrabold tracking-tight">{{ brandName }}</span>
+        <!-- Only when there is no logo. An uploaded logo carries the brand's
+             own wordmark, so printing the name beside it says it twice. -->
+        <span v-if="!logoUrl" class="whitespace-nowrap text-xl font-extrabold tracking-tight">{{ brandName }}</span>
       </NuxtLink>
 
       <!-- No overflow-hidden: the Register button carries a drop shadow and a
