@@ -42,7 +42,9 @@ async function logout() {
           <!-- Light chip: this header is dark and uploaded logos are usually
                opaque white-background PNGs. -->
           <span v-if="settings?.site_logo_url" class="flex items-center rounded-lg bg-white p-1">
-            <img :src="settings.site_logo_url" :alt="settings?.brand_name || 'BICTA'" class="h-6 w-auto max-w-[2.25rem] object-contain" />
+            <span class="flex h-6 w-24 items-center overflow-hidden">
+              <img :src="settings.site_logo_url" :alt="settings?.brand_name || 'BICTA'" class="w-24 max-w-none object-contain" />
+            </span>
           </span>
           <span v-else class="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-500/25 text-brand-300">
             <Icon name="lucide:scan-line" />

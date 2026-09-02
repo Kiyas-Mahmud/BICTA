@@ -94,10 +94,12 @@ onBeforeUnmount(() => {
 
 <template>
   <!-- ===== Mobile: slim top bar (brand + account actions) ===== -->
-  <header class="nav-top-mobile sm:hidden">
+  <header class="nav-top-mobile lg:hidden">
     <div class="flex h-14 items-center justify-between gap-3 px-4">
       <NuxtLink to="/" class="flex items-center gap-2" :aria-label="`${brandName} home`">
-        <img v-if="logoUrl" :src="logoUrl" :alt="brandName ?? ''" class="h-8 w-auto max-w-[7rem] object-contain" />
+        <span v-if="logoUrl" class="flex h-9 w-32 shrink-0 items-center overflow-hidden">
+          <img :src="logoUrl" :alt="brandName ?? ''" class="w-32 max-w-none object-contain" />
+        </span>
         <span v-else class="text-lg font-extrabold tracking-tight text-ink">{{ brandName }}<span class="text-brand-600">.</span></span>
       </NuxtLink>
       <div class="flex items-center gap-1.5">
@@ -120,7 +122,7 @@ onBeforeUnmount(() => {
   </header>
 
   <!-- ===== Mobile: floating bottom tab bar ===== -->
-  <nav class="nav-bottom sm:hidden" aria-label="Primary">
+  <nav class="nav-bottom lg:hidden" aria-label="Primary">
     <ul class="nav-bottom-bar">
       <li v-for="(item, i) in items" :key="item.name" class="flex-1">
         <NuxtLink
@@ -130,8 +132,10 @@ onBeforeUnmount(() => {
         >
           <!-- indicator sits behind the content, animates between tabs -->
           <span class="nav-tab-pill" aria-hidden="true" />
-          <img v-if="logoUrl && item.url === '/'" :src="logoUrl" alt="" class="nav-tab-icon h-5 w-auto max-w-[3rem] object-contain" />
-          <Icon v-else :name="item.icon" class="nav-tab-icon" />
+          <!-- The home tab used to render the logo here. At 20px a padded
+               logo is an illegible sliver, and the tab is labelled Home
+               anyway, so it uses the same icon treatment as every other tab. -->
+          <Icon :name="item.icon" class="nav-tab-icon" />
           <span class="nav-tab-label">{{ item.name }}</span>
         </NuxtLink>
       </li>
@@ -142,26 +146,43 @@ onBeforeUnmount(() => {
   <!-- Was a floating centred pill. Full width gives the logo room to be shown
        at a readable size instead of cropped into a 40px circle, and the wider
        bar is what the links/actions split now sits inside. -->
-  <header class="nav-desktop hidden sm:block">
-    <div class="container-site flex h-20 items-center justify-between gap-6">
+  <!-- Switches at lg, not sm. A logo, five links and two buttons cannot fit
+       a 640-1023px row: the Register button was being clipped off the right
+       edge at tablet widths. Tablets get the same top bar + bottom tabs that
+       phones already use. -->
+  <header class="nav-desktop hidden lg:block">
+    <div class="container-site flex h-20 items-center gap-4 lg:gap-8">
       <NuxtLink
         to="/"
-        class="flex shrink-0 items-center gap-3 text-ink"
+        class="flex shrink-0 items-center text-ink"
         :aria-label="`${brandName} home`"
       >
-        <!-- object-contain, no circular mask: the uploaded mark is a detailed
-             emblem, and cropping it to a circle cut off its outer ring. -->
-        <img v-if="logoUrl" :src="logoUrl" alt="" class="h-14 w-auto max-w-[13rem] shrink-0 object-contain" />
-        <Icon v-else name="lucide:command" class="text-3xl text-brand-600" />
-        <!-- Only when there is no logo. An uploaded logo carries the brand's
-             own wordmark, so printing the name beside it says it twice. -->
-        <span v-if="!logoUrl" class="whitespace-nowrap text-xl font-extrabold tracking-tight">{{ brandName }}</span>
+        <!-- Sized by width inside a shorter frame that clips. Logos are often
+             exported on a square canvas with the mark as a band through the
+             middle -- the current one is 3000x3000 with the wordmark filling
+             22% of the height, so object-contain against a fixed height drew
+             it about 12px tall in a box of whitespace. Constraining width and
+             letting the frame crop the padding scales the mark up without
+             distorting it, and a already-trimmed wide logo simply fits the
+             frame instead of being cropped. -->
+        <span v-if="logoUrl" class="flex h-14 w-52 shrink-0 items-center overflow-hidden">
+          <img :src="logoUrl" :alt="brandName ?? ''" class="w-52 max-w-none object-contain" />
+        </span>
+        <template v-else>
+          <Icon name="lucide:command" class="text-3xl text-brand-600" />
+          <!-- Only without a logo: an uploaded logo carries its own wordmark,
+               so printing the name beside it would say it twice. -->
+          <span class="ml-3 whitespace-nowrap text-xl font-extrabold tracking-tight">{{ brandName }}</span>
+        </template>
       </NuxtLink>
 
       <!-- No overflow-hidden: the Register button carries a drop shadow and a
            -2px hover lift, both of which get sheared off by clipping. The
            active indicator is self-contained, so nothing needs clipping. -->
-      <nav ref="navContainerRef" class="relative flex items-center gap-1" aria-label="Primary">
+      <!-- flex-1 + justify-center: the links sit centred in whatever space is
+           left between logo and actions, so the row stays balanced instead of
+           the logo and nav being shoved to opposite ends by justify-between. -->
+      <nav ref="navContainerRef" class="relative flex flex-1 items-center justify-center gap-1" aria-label="Primary">
         <template v-for="(item, i) in items" :key="item.name">
           <!-- The home item used to be skipped here (the brand mark on the
                left was the only way back). It renders as a real Home tab now,

@@ -38,11 +38,9 @@ const year = new Date().getFullYear()
                white-background PNGs, which would otherwise sit on this dark
                panel as a bare white rectangle. -->
           <NuxtLink v-if="settings?.site_logo_url" to="/" class="inline-flex rounded-xl bg-white p-2.5 shadow-soft">
-            <img
-              :src="settings.site_logo_url"
-              :alt="settings?.brand_name || 'BICTA'"
-              class="h-11 w-auto max-w-[9rem] object-contain"
-            />
+            <span class="flex h-11 w-40 items-center overflow-hidden">
+              <img :src="settings.site_logo_url" :alt="settings?.brand_name || 'BICTA'" class="w-40 max-w-none object-contain" />
+            </span>
           </NuxtLink>
           <p v-else class="text-2xl font-extrabold tracking-tight">{{ settings?.brand_name || 'BICTA' }}<span class="text-brand-400">.</span></p>
           <p class="mt-3 max-w-xs text-sm leading-relaxed text-white/60">
@@ -97,7 +95,7 @@ const year = new Date().getFullYear()
       </div>
 
       <!-- clears the fixed bottom tab bar so the last row is never covered -->
-      <div class="nav-bottom-spacer sm:hidden" aria-hidden="true" />
+      <div class="nav-bottom-spacer lg:hidden" aria-hidden="true" />
     </footer>
   </div>
 </template>

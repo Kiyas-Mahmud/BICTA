@@ -670,7 +670,7 @@
 .pt-header-safe {
   padding-top: calc(4.5rem + env(safe-area-inset-top, 0px));
 }
-@media (min-width: 640px) {
+@media (min-width: 1024px) {
   .pt-header-safe { padding-top: 7rem; }
 }
 @media (min-width: 1024px) {

@@ -71,12 +71,9 @@ useSeoMeta({ title: 'Sign in', robots: 'noindex' })
         <NuxtLink to="/" :aria-label="`${brandName} home`">
           <!-- object-contain and no circular mask, matching the navbar: the
                uploaded mark is a detailed emblem that a crop cuts into. -->
-          <img
-            v-if="logoUrl"
-            :src="logoUrl"
-            :alt="brandName"
-            class="h-14 w-auto max-w-[12rem] object-contain"
-          />
+          <span v-if="logoUrl" class="flex h-16 w-56 items-center overflow-hidden">
+            <img :src="logoUrl" :alt="brandName" class="w-56 max-w-none object-contain" />
+          </span>
           <span v-else class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-soft">
             <Icon name="lucide:command" class="text-lg" />
           </span>
