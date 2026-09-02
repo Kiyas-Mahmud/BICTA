@@ -88,6 +88,28 @@ const C = {
 const GRAD = 'background:#5e6f54;background-image:linear-gradient(135deg,#445236 0%,#5b6d50 55%,#74886a 100%);'
 const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif"
 
+// The mail header's brand mark. MAIL_LOGO_URL points at a copy of the logo
+// trimmed to its content box: the site logo is a square export whose wordmark
+// fills about a fifth of the height, and the CSS crop the site uses for that
+// (overflow-hidden on an oversized image) is ignored by Outlook, so mailing
+// the site logo directly renders a few illegible pixels in a white box.
+//
+// Sized by height, on a white chip -- the header behind it is dark and logo
+// exports are routinely opaque white-background files, which would otherwise
+// read as a torn white rectangle. With no MAIL_LOGO_URL set this falls back to
+// the text wordmark every template used before, so mail is never unbranded.
+function brandMark(orgName: string, logoUrl?: string | null): string {
+  const url = logoUrl || (process.env.MAIL_LOGO_URL ? siteUrl(process.env.MAIL_LOGO_URL) : '')
+  const name = escapeHtml(orgName || 'BICTA')
+  if (!url) {
+    return `<span style="font-family:${FONT};font-size:23px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">${name}<span style="color:${C.brand};">.</span></span>`
+  }
+  return `<table role="presentation" cellpadding="0" cellspacing="0"><tr>
+    <td style="background:#ffffff;border-radius:8px;padding:7px 11px;">
+      <img src="${escapeHtml(url)}" alt="${name}" height="30" style="display:block;height:30px;width:auto;border:0;outline:none;text-decoration:none;" />
+    </td></tr></table>`
+}
+
 function shell(opts: { preheader?: string; body: string }) {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"></head>
 <body style="margin:0;padding:0;background:${C.bg};">
@@ -98,7 +120,7 @@ function shell(opts: { preheader?: string; body: string }) {
         <tr><td style="height:6px;${GRAD}font-size:0;line-height:0;">&nbsp;</td></tr>
         <tr><td style="background:${C.ink};padding:24px 34px;">
           <table role="presentation" width="100%"><tr>
-            <td style="font-family:${FONT};font-size:23px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">BICTA<span style="color:${C.brand};">.</span></td>
+            <td>${brandMark('BICTA')}</td>
             <td align="right" style="font-family:${FONT};font-size:10px;font-weight:700;color:${C.faint};letter-spacing:1.5px;text-transform:uppercase;">National ICT Festival</td>
           </tr></table>
         </td></tr>
@@ -288,9 +310,12 @@ export function judgeInviteEmail(opts: { name: string; inviteToken: string }) {
 // rest of the mail system.
 export function broadcastEmail(opts: { subject: string; bodyHtml: string; logoUrl?: string | null; orgName: string }): { subject: string; html: string } {
   const orgName = escapeHtml(opts.orgName || 'BICTA')
-  const brandMark = opts.logoUrl
-    ? `<img src="${escapeHtml(opts.logoUrl)}" alt="${orgName}" height="30" style="display:block;height:30px;width:auto;max-width:170px;border:0;" />`
-    : `<span style="font-family:${FONT};font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">${orgName}<span style="color:${C.brand};">.</span></span>`
+  // MAIL_LOGO_URL wins over the site logo passed in: the site logo is the
+  // padded square, which mails as an illegible smudge. brandMark() falls back
+  // to the caller's logo, then to the text wordmark.
+  const mark = process.env.MAIL_LOGO_URL
+    ? brandMark(opts.orgName, null)
+    : brandMark(opts.orgName, opts.logoUrl)
 
   // The rich-text body comes back from the admin editor as bare <p>/<h2>/<ul>
   // etc with no inline styles (sanitizeRichText strips style attributes), so
@@ -317,7 +342,7 @@ export function broadcastEmail(opts: { subject: string; bodyHtml: string; logoUr
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 6px 28px rgba(15,23,42,0.08);">
         <tr><td style="height:6px;${GRAD}font-size:0;line-height:0;">&nbsp;</td></tr>
-        <tr><td style="background:${C.ink};padding:22px 34px;">${brandMark}</td></tr>
+        <tr><td style="background:${C.ink};padding:22px 34px;">${mark}</td></tr>
         <tr><td class="mail-body" style="padding:34px 34px 30px;font-family:${FONT};font-size:15px;line-height:1.65;color:${C.soft};">${opts.bodyHtml}</td></tr>
         <tr><td style="padding:22px 34px;background:${C.mist};border-top:1px solid ${C.line};">
           <p style="margin:0;font-family:${FONT};font-size:12px;line-height:1.6;color:${C.faint};">You're receiving this from ${orgName}.</p>

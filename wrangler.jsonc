@@ -31,7 +31,13 @@
 
   "vars": {
     "PUBLIC_SITE_URL": "https://bicta.net",
-    "MAIL_FROM": "BICTA <no-reply@bicta.net>"
+    "MAIL_FROM": "BICTA <no-reply@bicta.net>",
+    // Email needs its own copy of the logo. The site logo is a square export
+    // whose wordmark fills ~22% of the height; the site crops that padding
+    // with overflow-hidden, which Outlook ignores, so in mail it renders as a
+    // few illegible pixels. This is the same logo trimmed to its content box.
+    // Unset it and every template falls back to the text wordmark.
+    "MAIL_LOGO_URL": "/uploads/9de3a765-75ec-4557-9129-e72bc7a5db6d.png"
   },
 
   "d1_databases": [
