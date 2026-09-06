@@ -14,9 +14,15 @@ const { data: settings } = await useFetch<Record<string, string>>('/api/public/s
 const brandName = computed(() => settings.value?.brand_name?.trim() || 'BICTA')
 const fullName = computed(() => settings.value?.hero_full_name?.trim() || 'Bangladesh ICT Alliance')
 const previewTitle = computed(() => `${brandName.value}, ${fullName.value}`)
-// Falls back to the bundled mark only when no logo has been uploaded, so the
-// tab is never iconless.
-const faviconHref = computed(() => settings.value?.site_logo_url || '/favicon.svg')
+// Deliberately NOT the site logo. A favicon is drawn at 16px, and the logo is
+// a 3.8:1 wordmark -- at that size its lettering is about three pixels tall
+// and reads as a smudge. /favicon.png is the logo's own B mark on a brand
+// tile, which stays legible. site_favicon_url lets an admin override it with a
+// square icon of their own without a deploy.
+const faviconHref = computed(() => settings.value?.site_favicon_url || '/favicon.png')
+// Square, higher-resolution version for iOS home screens and Android install
+// prompts, which upscale whatever they are given.
+const appleIconHref = computed(() => settings.value?.site_favicon_url || '/apple-touch-icon.png')
 const faviconType = computed(() => {
   const url = faviconHref.value.toLowerCase().split('?')[0] ?? ''
   if (url.endsWith('.svg')) return 'image/svg+xml'
@@ -33,7 +39,7 @@ useHead({
   link: computed(() => [
     { rel: 'icon', type: faviconType.value, href: faviconHref.value },
     { rel: 'shortcut icon', type: faviconType.value, href: faviconHref.value },
-    { rel: 'apple-touch-icon', href: faviconHref.value },
+    { rel: 'apple-touch-icon', href: appleIconHref.value },
   ]),
 })
 

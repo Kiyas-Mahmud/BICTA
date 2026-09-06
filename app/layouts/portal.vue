@@ -20,7 +20,7 @@ async function logout() {
     <header class="sticky top-0 z-40 border-b border-line bg-white/90 backdrop-blur">
       <div class="container-site flex h-16 items-center justify-between">
         <NuxtLink to="/portal" class="flex items-center gap-2 text-lg font-extrabold tracking-tight">
-          <span v-if="settings?.site_logo_url" class="flex h-8 w-32 items-center overflow-hidden">
+          <span v-if="settings?.site_logo_url" class="flex h-9 w-32 items-center overflow-hidden">
             <img :src="settings.site_logo_url" :alt="settings?.brand_name || 'BICTA'" class="w-32 max-w-none object-contain" />
           </span>
           <span v-else>{{ settings?.brand_name || 'BICTA' }}<span class="text-brand-600">.</span></span>
