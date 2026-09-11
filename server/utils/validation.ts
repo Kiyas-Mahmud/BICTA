@@ -31,6 +31,7 @@ export const eventSchema = z.object({
   emergencyContact: z.string().trim().max(200).default(''),
   entryFee: z.string().trim().max(100).default(''),
   certificate: z.boolean().default(true),
+  qrCheckIn: z.boolean().default(true),
   language: z.string().trim().max(100).default(''),
   eligibility: z.string().max(5_000).default(''),
   objectives: z.string().max(10_000).default(''),

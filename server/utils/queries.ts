@@ -141,22 +141,24 @@ export function getPeople() {
 // Advisory panel for /about. Ordered by sortOrder only; the page groups them
 // into tiers itself, so a single ordered read is enough for all three.
 /**
- * Whether an event has on-site check-in, and therefore an entry QR.
+ * Whether an event scans an entry QR: at the door, the kit desk, food, and any
+ * other checkpoint.
  *
- * Answered by the event's own format rather than a separate switch: `online`
- * means there is no door to scan at, so no QR is issued, emailed or shown.
- * `hybrid` keeps check-in -- it still has people arriving in person.
+ * Its own per-event switch, set by whoever creates the event -- not inferred
+ * from eventType, because the two are different questions. An in-person event
+ * may run no desks at all, and a hybrid one may still scan the people who turn
+ * up. Off means no QR is issued, emailed or shown, and no scan is accepted.
  *
  * Defaults to enabled when the event cannot be found, so a missing row never
- * silently strips the QR off an on-site event.
+ * silently strips the QR off an event that uses it.
  */
 export async function isCheckInEnabled(eventId: number): Promise<boolean> {
   const row = await useDb()
-    .select({ eventType: schema.events.eventType })
+    .select({ qrCheckIn: schema.events.qrCheckIn })
     .from(schema.events)
     .where(eq(schema.events.id, eventId))
     .get()
-  return row?.eventType !== 'online'
+  return row?.qrCheckIn !== false
 }
 
 export function getAdvisors() {

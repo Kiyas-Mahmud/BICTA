@@ -17,6 +17,7 @@ export interface EventFormData {
   emergencyContact: string
   entryFee: string
   certificate: boolean
+  qrCheckIn: boolean
   language: string
   eligibility: string
   objectives: string
@@ -74,6 +75,7 @@ const form = reactive<EventFormData>({
   emergencyContact: props.initial?.emergencyContact ?? '',
   entryFee: props.initial?.entryFee ?? '',
   certificate: props.initial?.certificate ?? true,
+  qrCheckIn: props.initial?.qrCheckIn ?? true,
   language: props.initial?.language ?? '',
   eligibility: props.initial?.eligibility ?? '',
   objectives: props.initial?.objectives ?? '',
@@ -277,6 +279,17 @@ const dateWarning = computed(() =>
         <span>
           <span class="font-semibold text-ink">Certificate provided</span>
           <span class="block text-xs text-ink-faint">Shown as a fact card to reassure participants.</span>
+        </span>
+      </label>
+      <label class="flex items-start gap-3">
+        <input v-model="form.qrCheckIn" type="checkbox" class="mt-0.5 h-4 w-4 accent-brand-600" />
+        <span>
+          <span class="font-semibold text-ink">Use QR check-in</span>
+          <span class="block text-xs text-ink-faint">
+            Tick this if you will scan participants at the door, kit desk, food or any other
+            checkpoint. Untick it for an online event: no entry QR is then created, emailed or shown
+            in the participant dashboard, and the scanner lists no desks.
+          </span>
         </span>
       </label>
     </AdminFormSection>

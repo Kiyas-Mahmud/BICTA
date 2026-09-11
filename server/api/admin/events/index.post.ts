@@ -33,6 +33,7 @@ export default defineEventHandler(async (event) => {
       emergencyContact: body.emergencyContact,
       entryFee: body.entryFee,
       certificate: body.certificate,
+      qrCheckIn: body.qrCheckIn,
       language: body.language,
       eligibility: body.eligibility,
       objectives: body.objectives,

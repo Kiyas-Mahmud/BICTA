@@ -10,14 +10,14 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
 
   const current = await db
-    .select({ id: schema.events.id, eventType: schema.events.eventType })
+    .select({ id: schema.events.id, qrCheckIn: schema.events.qrCheckIn })
     .from(schema.events)
     .where(eq(schema.events.isCurrent, true))
     .get()
   if (!current) return []
-  // Online edition: the scanner shows no desks at all, so a volunteer is not
+  // QR check-in switched off: show no desks at all, so a volunteer is never
   // offered a scan that checkin.post.ts would only reject.
-  if (current.eventType === 'online') return []
+  if (!current.qrCheckIn) return []
 
   const allowed = await allowedCompetitionIds(event, staff)
 

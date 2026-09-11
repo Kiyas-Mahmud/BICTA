@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
       endsAt: schema.competitions.endsAt,
       eventStart: schema.events.startDate,
       eventEnd: schema.events.endDate,
-      eventType: schema.events.eventType,
+      eventQrCheckIn: schema.events.qrCheckIn,
     })
     .from(schema.teamMembers)
     .innerJoin(schema.competitions, eq(schema.competitions.id, schema.teamMembers.competitionId))
@@ -38,14 +38,14 @@ export default defineEventHandler(async (event) => {
     .get()
   if (!membership) throw createError({ statusCode: 404, statusMessage: 'Participant registration not found' })
 
-  // 1b. Online edition: no on-site check-in exists to record. Enforced here
-  //     and not only by hiding desks in the scanner, because the UI is not a
-  //     control -- and because a checkpoint created before the event was
-  //     switched online would otherwise still accept scans.
-  if (membership.eventType === 'online') {
+  // 1b. This event does not scan QR codes, so there is nothing to record.
+  //     Enforced here and not only by hiding desks in the scanner, because the
+  //     UI is not a control -- and because a checkpoint created before QR
+  //     check-in was switched off would otherwise still accept scans.
+  if (!membership.eventQrCheckIn) {
     throw createError({
       statusCode: 409,
-      statusMessage: `${membership.competition} runs online — this event has no on-site check-in.`,
+      statusMessage: `${membership.competition} does not use QR check-in.`,
     })
   }
 

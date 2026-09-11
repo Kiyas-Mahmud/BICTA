@@ -129,14 +129,14 @@ useSeoMeta({ title: 'My dashboard', robots: 'noindex' })
       <div v-if="activeTeam" class="mt-6 grid gap-6 lg:grid-cols-[340px_1fr]">
         <!-- LEFT: this competition's QR + its own collection list -->
         <div class="space-y-6">
-          <!-- QR card. Absent for an online edition: the API sends qr: null
-               when the event has on-site check-in switched off. -->
+          <!-- QR card. Absent when the event does not use QR check-in: the
+               API sends qr: null and an empty collection list. -->
           <div v-if="!activeTeam.qr" class="card p-6 text-center">
-            <span class="tile tile-blue mx-auto h-12 w-12"><Icon name="lucide:monitor" /></span>
-            <p class="mt-3 font-bold text-ink">This event runs online</p>
+            <span class="tile tile-blue mx-auto h-12 w-12"><Icon name="lucide:info" /></span>
+            <p class="mt-3 font-bold text-ink">No entry QR for this event</p>
             <p class="mt-1 text-sm text-ink-soft">
-              There is no on-site check-in, so you do not need an entry QR. Joining details are sent to
-              your email and shown on the competition page.
+              This event does not use QR check-in, so there is nothing to scan. Joining details are sent
+              to your email and shown on the competition page.
             </p>
           </div>
           <div v-else class="card overflow-hidden">

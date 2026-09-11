@@ -22,6 +22,12 @@ export const events = sqliteTable('events', {
   emergencyContact: text('emergency_contact').notNull().default(''),
   entryFee: text('entry_fee').notNull().default(''),
   certificate: integer('certificate', { mode: 'boolean' }).notNull().default(true),
+  // Whether this edition scans an entry QR at the door / kit / food desks.
+  // Set per event by whoever creates it -- deliberately its own switch rather
+  // than something inferred from eventType, since an in-person event may run
+  // no desks and a hybrid one may still scan its on-site attendees.
+  // Defaults on so every existing event keeps the behaviour it has today.
+  qrCheckIn: integer('qr_check_in', { mode: 'boolean' }).notNull().default(true),
   language: text('language').notNull().default(''),
   eligibility: text('eligibility').notNull().default(''),
   objectives: text('objectives').notNull().default(''),
