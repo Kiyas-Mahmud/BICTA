@@ -331,17 +331,20 @@ export default defineEventHandler(async (event) => {
   // fire-and-forget): Workers can kill unawaited work once the response is
   // sent, which silently dropped these sends in production. ----
   const teamName = registration!.teamName ?? ''
+  // An online edition has no door to scan at, so the entry QR is left out of
+  // these emails entirely rather than shipping a code that opens nothing.
+  const qrOn = await isCheckInEnabled(comp.eventId)
   const leaderMail = newlyPending
-    ? await leaderSetPasswordEmail({ name: leader!.fullName, teamName, competition: comp.name, inviteToken: leader!.inviteToken!, checkinToken: leaderToken })
-    : await leaderConfirmationEmail({ name: leader!.fullName, teamName, competition: comp.name, checkinToken: leaderToken })
+    ? await leaderSetPasswordEmail({ name: leader!.fullName, teamName, competition: comp.name, inviteToken: leader!.inviteToken!, checkinToken: qrOn ? leaderToken : null })
+    : await leaderConfirmationEmail({ name: leader!.fullName, teamName, competition: comp.name, checkinToken: qrOn ? leaderToken : null })
   await sendMail({ to: leader!.email, ...leaderMail }).catch(() => {})
 
   for (const { account, name, checkinToken } of invites) {
     if (!account) continue
     const mail = account.inviteToken
-      ? await inviteEmail({ name, teamName, competition: comp.name, inviteToken: account.inviteToken, checkinToken })
+      ? await inviteEmail({ name, teamName, competition: comp.name, inviteToken: account.inviteToken, checkinToken: qrOn ? checkinToken : null })
       : // Existing active account added to a new team: no invite link needed.
-        await leaderConfirmationEmail({ name, teamName, competition: comp.name, checkinToken })
+        await leaderConfirmationEmail({ name, teamName, competition: comp.name, checkinToken: qrOn ? checkinToken : null })
     await sendMail({ to: account!.email, ...mail }).catch(() => {})
   }
 

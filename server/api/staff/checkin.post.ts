@@ -29,6 +29,7 @@ export default defineEventHandler(async (event) => {
       endsAt: schema.competitions.endsAt,
       eventStart: schema.events.startDate,
       eventEnd: schema.events.endDate,
+      eventType: schema.events.eventType,
     })
     .from(schema.teamMembers)
     .innerJoin(schema.competitions, eq(schema.competitions.id, schema.teamMembers.competitionId))
@@ -36,6 +37,17 @@ export default defineEventHandler(async (event) => {
     .where(eq(schema.teamMembers.id, body.teamMemberId))
     .get()
   if (!membership) throw createError({ statusCode: 404, statusMessage: 'Participant registration not found' })
+
+  // 1b. Online edition: no on-site check-in exists to record. Enforced here
+  //     and not only by hiding desks in the scanner, because the UI is not a
+  //     control -- and because a checkpoint created before the event was
+  //     switched online would otherwise still accept scans.
+  if (membership.eventType === 'online') {
+    throw createError({
+      statusCode: 409,
+      statusMessage: `${membership.competition} runs online — this event has no on-site check-in.`,
+    })
+  }
 
   // 2. The desk itself.
   const checkpoint = await db.select().from(schema.checkpoints).where(eq(schema.checkpoints.id, body.checkpointId)).get()

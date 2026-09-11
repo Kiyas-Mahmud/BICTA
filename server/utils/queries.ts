@@ -140,6 +140,25 @@ export function getPeople() {
 
 // Advisory panel for /about. Ordered by sortOrder only; the page groups them
 // into tiers itself, so a single ordered read is enough for all three.
+/**
+ * Whether an event has on-site check-in, and therefore an entry QR.
+ *
+ * Answered by the event's own format rather than a separate switch: `online`
+ * means there is no door to scan at, so no QR is issued, emailed or shown.
+ * `hybrid` keeps check-in -- it still has people arriving in person.
+ *
+ * Defaults to enabled when the event cannot be found, so a missing row never
+ * silently strips the QR off an on-site event.
+ */
+export async function isCheckInEnabled(eventId: number): Promise<boolean> {
+  const row = await useDb()
+    .select({ eventType: schema.events.eventType })
+    .from(schema.events)
+    .where(eq(schema.events.id, eventId))
+    .get()
+  return row?.eventType !== 'online'
+}
+
 export function getAdvisors() {
   return useDb().select().from(schema.advisors).orderBy(asc(schema.advisors.sortOrder)).all()
 }

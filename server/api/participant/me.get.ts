@@ -118,13 +118,20 @@ export default defineEventHandler(async (event) => {
             endsAt: comp.endsAt,
           }
         : null,
-      event: ev ? { title: ev.title, startDate: ev.startDate, endDate: ev.endDate, venue: ev.venue } : null,
+      event: ev
+        ? { title: ev.title, startDate: ev.startDate, endDate: ev.endDate, venue: ev.venue, eventType: ev.eventType }
+        : null,
       // One QR per participation. Falls back to the account-level token only
       // for rows that predate the per-membership column.
-      qr: await qrDataUrl(membership.checkinToken ?? account.checkinToken),
+      //
+      // null for an online edition: there is no door to scan at, so showing a
+      // QR and a pickup list would promise something that does not exist. The
+      // token still exists on the row, so re-enabling check-in restores it
+      // without reissuing anything.
+      qr: ev?.eventType === 'online' ? null : await qrDataUrl(membership.checkinToken ?? account.checkinToken),
       window,
       roster,
-      collection: myCheckpoints.map((c) => ({
+      collection: ev?.eventType === 'online' ? [] : myCheckpoints.map((c) => ({
         id: c.id,
         name: c.name,
         icon: c.icon,

@@ -9,8 +9,15 @@ export default defineEventHandler(async (event) => {
   const staff = await requireStaff(event)
   const db = useDb()
 
-  const current = await db.select({ id: schema.events.id }).from(schema.events).where(eq(schema.events.isCurrent, true)).get()
+  const current = await db
+    .select({ id: schema.events.id, eventType: schema.events.eventType })
+    .from(schema.events)
+    .where(eq(schema.events.isCurrent, true))
+    .get()
   if (!current) return []
+  // Online edition: the scanner shows no desks at all, so a volunteer is not
+  // offered a scan that checkin.post.ts would only reject.
+  if (current.eventType === 'online') return []
 
   const allowed = await allowedCompetitionIds(event, staff)
 

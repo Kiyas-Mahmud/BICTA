@@ -157,28 +157,37 @@ const infoRow = (label: string, value: string) =>
 
 // ---- Templates (async: they build the inline QR attachment) ----
 
-export async function inviteEmail(opts: { name: string; teamName: string; competition: string; inviteToken: string; checkinToken: string }) {
+// checkinToken null = this event runs online, so no entry QR is issued. The
+// QR block and its attachment are both dropped rather than shipping a code
+// that scans at no door.
+export async function inviteEmail(opts: { name: string; teamName: string; competition: string; inviteToken: string; checkinToken?: string | null }) {
   const link = siteUrl(`/portal/set-password?token=${opts.inviteToken}`)
   return {
     subject: `You're on ${opts.teamName || 'a team'} for ${opts.competition}`,
     html: shell({
-      preheader: `Set your password and get your entry QR for ${opts.competition}.`,
+      preheader: opts.checkinToken
+        ? `Set your password and get your entry QR for ${opts.competition}.`
+        : `Set your password to activate your account for ${opts.competition}.`,
       body:
         heading(`Welcome, ${opts.name}!`) +
         para(`You've been added to <strong style="color:${C.ink}">${opts.teamName || 'a team'}</strong> for <strong style="color:${C.ink}">${opts.competition}</strong>.`) +
-        para('Set a password to activate your account. Your dashboard shows your team, event details and your personal entry QR.') +
+        para(
+          opts.checkinToken
+            ? 'Set a password to activate your account. Your dashboard shows your team, event details and your personal entry QR.'
+            : 'Set a password to activate your account. Your dashboard shows your team and the event details.',
+        ) +
         button(link, 'Set my password') +
         para(`<span style="font-size:13px;color:${C.faint}">This link works once and expires in 24 hours. After that your place on the team is released.</span>`) +
-        qrBlock(),
+        (opts.checkinToken ? qrBlock() : ''),
     }),
-    attachments: [await qrAttachment(opts.checkinToken)],
+    attachments: opts.checkinToken ? [await qrAttachment(opts.checkinToken)] : undefined,
   }
 }
 
 // Leader's post-registration mail. Setting the password through this link is
 // both the activation step and the proof they own the address, so there is no
 // separate "verify your email" round trip.
-export async function leaderSetPasswordEmail(opts: { name: string; teamName: string; competition: string; inviteToken: string; checkinToken: string }) {
+export async function leaderSetPasswordEmail(opts: { name: string; teamName: string; competition: string; inviteToken: string; checkinToken?: string | null }) {
   const link = siteUrl(`/portal/set-password?token=${opts.inviteToken}`)
   return {
     subject: `Set your password — ${opts.competition}`,
@@ -190,26 +199,28 @@ export async function leaderSetPasswordEmail(opts: { name: string; teamName: str
         `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 6px;">${infoRow('Competition', opts.competition)}${opts.teamName ? infoRow('Team', opts.teamName) : ''}</table>` +
         button(link, 'Set my password') +
         para(`<span style="font-size:13px;color:${C.faint}">This link works once and expires in 24 hours. After that your place is released and you will need to register again.</span>`) +
-        qrBlock(),
+        (opts.checkinToken ? qrBlock() : ''),
     }),
-    attachments: [await qrAttachment(opts.checkinToken)],
+    attachments: opts.checkinToken ? [await qrAttachment(opts.checkinToken)] : undefined,
   }
 }
 
-export async function leaderConfirmationEmail(opts: { name: string; teamName: string; competition: string; checkinToken: string }) {
+export async function leaderConfirmationEmail(opts: { name: string; teamName: string; competition: string; checkinToken?: string | null }) {
   const link = siteUrl('/login')
   return {
     subject: `Registration received — ${opts.competition}`,
     html: shell({
-      preheader: `You're registered for ${opts.competition}. Here's your entry QR.`,
+      preheader: opts.checkinToken
+        ? `You're registered for ${opts.competition}. Here's your entry QR.`
+        : `You're registered for ${opts.competition}.`,
       body:
         heading(`You're in, ${opts.name}!`) +
         para(`Your registration for <strong style="color:${C.ink}">${opts.competition}</strong> was received. We'll confirm your spot soon — track it in your dashboard.`) +
         `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 6px;">${infoRow('Competition', opts.competition)}${opts.teamName ? infoRow('Team', opts.teamName) : ''}</table>` +
         button(link, 'Open my dashboard') +
-        qrBlock(),
+        (opts.checkinToken ? qrBlock() : ''),
     }),
-    attachments: [await qrAttachment(opts.checkinToken)],
+    attachments: opts.checkinToken ? [await qrAttachment(opts.checkinToken)] : undefined,
   }
 }
 

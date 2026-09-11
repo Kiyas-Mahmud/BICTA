@@ -65,9 +65,11 @@ export default defineEventHandler(async (event) => {
 
   await syncLegacyRoster(registrationId)
 
+  // No entry QR for an online edition -- see isCheckInEnabled.
+  const qrOn = await isCheckInEnabled(comp.eventId)
   const mail = account!.inviteToken
-    ? await inviteEmail({ name: body.name, teamName: registration.teamName ?? '', competition: comp.name, inviteToken: account!.inviteToken, checkinToken: account!.checkinToken })
-    : await leaderConfirmationEmail({ name: body.name, teamName: registration.teamName ?? '', competition: comp.name, checkinToken: account!.checkinToken })
+    ? await inviteEmail({ name: body.name, teamName: registration.teamName ?? '', competition: comp.name, inviteToken: account!.inviteToken, checkinToken: qrOn ? account!.checkinToken : null })
+    : await leaderConfirmationEmail({ name: body.name, teamName: registration.teamName ?? '', competition: comp.name, checkinToken: qrOn ? account!.checkinToken : null })
   await sendMail({ to: account!.email, ...mail }).catch(() => {})
 
   return { ok: true }
