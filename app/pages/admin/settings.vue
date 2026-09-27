@@ -18,8 +18,14 @@ const groups: { id: string; title: string; icon: string; description: string; fi
     icon: 'lucide:image',
     description: 'The name and logo shown in the navbar and home-page hero.',
     fields: [
-      { key: 'brand_name', label: 'Brand name', hint: 'The big title on the home page hero and the wordmark next to the navbar logo. Defaults to "BICTA".' },
+      { key: 'brand_name', label: 'Brand name', hint: 'The big title on the home page hero, and the navbar wordmark when no logo is uploaded. Defaults to "BICTA".' },
       { key: 'site_logo_url', label: 'Site logo', type: 'image', hint: 'Shown in the navbar. Falls back to the brand name wordmark when empty.' },
+      {
+        key: 'site_favicon_url',
+        label: 'Browser tab icon',
+        type: 'image',
+        hint: 'Made automatically from the site logo each time you upload a new one: its first letter on a tile in the logo colour, which stays readable at tab size. Upload a square image here to use your own instead.',
+      },
     ],
   },
   {
@@ -118,6 +124,32 @@ const src = (data.value as Record<string, string>) ?? {}
 
 const form = reactive<Record<string, string>>(Object.fromEntries(allTextKeys.map((k) => [k, src[k] ?? ''])))
 
+// A new logo regenerates the tab icon, so the two never drift apart -- the tab
+// used to be a static file that kept showing the previous logo forever. It
+// only fires on an actual change of logo, so an icon uploaded by hand survives
+// until the next logo upload. Both land in the form, so Save applies them
+// together; nothing goes live before that.
+const faviconBusy = ref(false)
+watch(
+  () => form.site_logo_url,
+  async (url, prev) => {
+    if (!url || url === prev) return
+    faviconBusy.value = true
+    try {
+      const blob = await faviconFromLogo(url)
+      const body = new FormData()
+      body.append('file', new File([blob], 'tab-icon.png', { type: 'image/png' }))
+      const res = await $fetch<{ url: string }>('/api/admin/upload', { method: 'POST', body })
+      form.site_favicon_url = res.url
+      useToast().success('Tab icon updated from the new logo', 'Save settings to apply both.')
+    } catch {
+      useToast().error('Could not make a tab icon from this logo', 'Upload a square image under Browser tab icon instead.')
+    } finally {
+      faviconBusy.value = false
+    }
+  },
+)
+
 // Google's "Embed a map" dialog shows the whole <iframe src="…"> tag to copy;
 // pasting all of it (rather than just the URL) silently breaks the map on the
 // public page. Clean it up as soon as the field is left.
@@ -207,6 +239,9 @@ const hiddenCount = computed(() => toggles.filter((t) => !vis[t.key]).length)
             <div v-for="f in g.fields" :key="f.key" :class="f.type === 'textarea' || f.type === 'image' ? 'sm:col-span-2' : ''">
               <label class="label" :for="`s-${f.key}`">{{ f.label }}</label>
               <AdminImageUploader v-if="f.type === 'image'" v-model="form[f.key]" />
+              <p v-if="f.key === 'site_favicon_url' && faviconBusy" class="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-brand-700">
+                <Icon name="lucide:loader-2" class="animate-spin" /> Making the tab icon from the logo…
+              </p>
               <textarea v-else-if="f.type === 'textarea'" :id="`s-${f.key}`" v-model="form[f.key]" class="input" rows="4" maxlength="2000" />
               <input
                 v-else
